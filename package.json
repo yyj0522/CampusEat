@@ -1,0 +1,20 @@
+{
+  "name": "campuseat",
+  "version": "1.0.0",
+  "description": "CampusEat - 대학생을 위한 종합 캠퍼스 플랫폼 (맛집 추천, 번개 모임, 학식/셔틀, 커뮤니티)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yyj0522/CampusEat.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yyj0522/CampusEat/issues"
+  },
+  "homepage": "https://github.com/yyj0522/CampusEat#readme"
+}
