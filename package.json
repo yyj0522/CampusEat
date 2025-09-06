@@ -16,5 +16,14 @@
   "bugs": {
     "url": "https://github.com/yyj0522/CampusEat/issues"
   },
-  "homepage": "https://github.com/yyj0522/CampusEat#readme"
+  "homepage": "https://github.com/yyj0522/CampusEat#readme",
+  "dependencies": {
+    "expo": "^53.0.22",
+    "react": "^19.1.1",
+    "react-native": "^0.80.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.12",
+    "@types/react-native": "^0.72.8"
+  }
 }
