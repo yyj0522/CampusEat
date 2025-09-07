@@ -25,8 +25,8 @@ jobs:
         run: npm install
         working-directory: apps/web
 
-      - name: Build
-        run: npm run build
+      - name: Build Expo Web
+        run: npx expo export -p web
         working-directory: apps/web
 
       - name: Install Netlify CLI
@@ -36,9 +36,9 @@ jobs:
         id: deploy-web
         run: |
           set -e
-          # 실제 빌드 결과 폴더 확인 후 --dir 경로 변경
+          # dist 폴더를 Netlify에 배포
           DEPLOY_OUTPUT=$(netlify deploy \
-            --dir=apps/web/web-build \
+            --dir=apps/web/dist \
             --auth=$NETLIFY_AUTH_TOKEN \
             --site=$NETLIFY_SITE_ID \
             --message "GitHub Actions Preview Deploy" \
