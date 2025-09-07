@@ -11,6 +11,7 @@ jobs:
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
     steps:
       - uses: actions/checkout@v3
 
@@ -28,21 +29,29 @@ jobs:
         working-directory: apps/web
 
       - name: Deploy to Vercel
-        id: deploy-web
+        id: vercel
         run: |
           set -e
-          DEPLOY_OUTPUT=$(npx vercel --prod --token $VERCEL_TOKEN --confirm --cwd apps/web)
-          echo "$DEPLOY_OUTPUT"
-          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | tail -n 1)
+          echo "🚀 Deploying to Vercel..."
+          DEPLOY_RESULT=$(npx vercel --prod --token $VERCEL_TOKEN --confirm --json)
+          echo "$DEPLOY_RESULT"
+          # JSON에서 URL 추출
+          DEPLOY_URL=$(echo "$DEPLOY_RESULT" | jq -r '.url')
+          DEPLOY_STATE=$(echo "$DEPLOY_RESULT" | jq -r '.state')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
+          echo "DEPLOY_STATE=$DEPLOY_STATE" >> $GITHUB_ENV
+
+      - name: Show deploy link
+        run: echo "✅ Vercel Deploy URL: $DEPLOY_URL"
 
       - name: Send Discord Notification
         if: always()
         run: |
-          if [ ${{ job.status }} == 'success' ]; then
+          if [ "$DEPLOY_STATE" = "READY" ]; then
             STATUS_EMOJI="✅ 성공"
           else
             STATUS_EMOJI="❌ 실패"
           fi
+          # Discord 메시지용 JSON 파일 생성
           echo "{\"content\": \"웹 배포 ${STATUS_EMOJI}!\n $DEPLOY_URL\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
