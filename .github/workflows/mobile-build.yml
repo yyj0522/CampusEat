@@ -44,15 +44,16 @@ jobs:
 
       - name: Show build link
         run: echo "✅ EAS Build Dashboard: $BUILD_URL"
-      
+
       - name: Send Discord Notification
         if: always()
         run: |
-          if [ "$BUILD_STATUS" = "finished" ]; then
+          if [ "${BUILD_STATUS}" = "finished" ]; then
             STATUS_EMOJI="✅ 성공"
           else
             STATUS_EMOJI="❌ 실패"
           fi
+
           curl -H "Content-Type: application/json" \
                -d "{\"content\": \"📦 Android 빌드 ${STATUS_EMOJI}!\n🔗 $BUILD_URL\"}" \
                $DISCORD_WEBHOOK
