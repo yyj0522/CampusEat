@@ -1,4 +1,4 @@
-name: Web Deploy
+name: Web Deploy (Netlify Preview)
 
 on:
   push:
@@ -19,14 +19,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18  # Node 18로 변경
+          node-version: 20
 
       - name: Install dependencies
         run: npm install
         working-directory: apps/web
 
-      - name: Build Expo Web
-        run: npx expo export -p web
+      - name: Build Next.js
+        run: |
+          npm run build
+          npm run export
         working-directory: apps/web
 
       - name: Install Netlify CLI
@@ -36,13 +38,8 @@ jobs:
         id: deploy-web
         run: |
           set -e
-          # dist 폴더 경로 확인 후 배포
-          if [ ! -d "apps/web/dist" ]; then
-            echo "❌ dist 폴더가 존재하지 않습니다. 빌드 확인 필요."
-            exit 1
-          fi
           DEPLOY_OUTPUT=$(netlify deploy \
-            --dir=apps/web/dist \
+            --dir=apps/web/out \
             --auth=$NETLIFY_AUTH_TOKEN \
             --site=$NETLIFY_SITE_ID \
             --message "GitHub Actions Preview Deploy" \
