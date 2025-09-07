@@ -10,8 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      NETLIFY_SITE_URL: "https://campuseat.netlify.app"
 
     steps:
       - uses: actions/checkout@v3
@@ -32,8 +31,8 @@ jobs:
       - name: Deploy to Netlify (via plugin)
         run: |
           set -e
-          echo "Deployment is handled automatically by @netlify/plugin-nextjs via netlify.toml"
-          echo "No manual netlify deploy command needed"
+          echo "Deployment handled automatically by @netlify/plugin-nextjs via netlify.toml"
+          echo "Use NETLIFY_SITE_URL as the site URL for notifications"
 
       - name: Send Discord Notification
         if: always()
@@ -43,5 +42,5 @@ jobs:
           else
             STATUS_EMOJI="❌ 실패"
           fi
-          echo "{\"content\": \"웹 배포 ${STATUS_EMOJI}!\"}" > discord_payload.json
+          echo "{\"content\": \"웹 배포 ${STATUS_EMOJI}!\nPreview URL: $NETLIFY_SITE_URL\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
