@@ -45,7 +45,8 @@ jobs:
           echo "BUILD_STATUS=$BUILD_STATUS" >> $GITHUB_ENV
 
       - name: Show build link
-        run: echo "✅ EAS Build Dashboard: $BUILD_URL"
+        run: |
+          echo "✅ EAS Build Dashboard: $BUILD_URL"
 
       - name: Send Discord Notification
         if: always()
