@@ -36,8 +36,9 @@ jobs:
         id: deploy-web
         run: |
           set -e
+          # 실제 빌드 결과 폴더 확인 후 --dir 경로 변경
           DEPLOY_OUTPUT=$(netlify deploy \
-            --dir=apps/web/dist \
+            --dir=apps/web/web-build \
             --auth=$NETLIFY_AUTH_TOKEN \
             --site=$NETLIFY_SITE_ID \
             --message "GitHub Actions Preview Deploy" \
