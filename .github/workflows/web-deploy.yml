@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      NETLIFY_SITE_URL: "https://campuseat.netlify.app"
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
     steps:
       - uses: actions/checkout@v3
@@ -20,19 +21,29 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
-        working-directory: apps/web
+      - name: Install dependencies & Build
+        run: |
+          cd apps/web
+          npm install
+          npm run build
 
-      - name: Build Next.js
-        run: npm run build
-        working-directory: apps/web
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
 
-      - name: Deploy to Netlify (via plugin)
+      - name: Deploy to Netlify Preview
+        id: deploy-web
         run: |
           set -e
-          echo "Deployment handled automatically by @netlify/plugin-nextjs via netlify.toml"
-          echo "No manual netlify deploy command needed"
+          cd apps/web
+          DEPLOY_OUTPUT=$(netlify deploy \
+            --prod \
+            --auth=$NETLIFY_AUTH_TOKEN \
+            --site=$NETLIFY_SITE_ID \
+            --message "GitHub Actions Production Deploy" \
+            --json)
+          echo "$DEPLOY_OUTPUT"
+          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.url')
+          echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification
         if: always()
@@ -42,5 +53,5 @@ jobs:
           else
             STATUS_EMOJI="❌ 실패"
           fi
-          echo "{\"content\": \"웹 배포 ${STATUS_EMOJI}!\nPreview URL: $NETLIFY_SITE_URL\"}" > discord_payload.json
+          echo "{\"content\": \"웹 배포 ${STATUS_EMOJI}!\nPreview URL: $DEPLOY_URL\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
