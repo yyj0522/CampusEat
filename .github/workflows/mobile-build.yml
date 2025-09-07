@@ -28,7 +28,9 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Install jq
-        run: brew install jq
+        run: |
+          brew update
+          brew install jq
 
       - name: Build Android (AAB)
         id: build
@@ -37,8 +39,8 @@ jobs:
           echo "🚀 Starting EAS build..."
           RESULT=$(npx eas build --platform android --profile production --non-interactive --json --wait)
           echo "$RESULT"
-          BUILD_URL=$(echo $RESULT | jq -r '.[0].webUrl')
-          BUILD_STATUS=$(echo $RESULT | jq -r '.[0].status')
+          BUILD_URL=$(echo "$RESULT" | jq -r '.[0].webUrl')
+          BUILD_STATUS=$(echo "$RESULT" | jq -r '.[0].status')
           echo "BUILD_URL=$BUILD_URL" >> $GITHUB_ENV
           echo "BUILD_STATUS=$BUILD_STATUS" >> $GITHUB_ENV
 
@@ -56,4 +58,4 @@ jobs:
 
           curl -H "Content-Type: application/json" \
                -d "{\"content\": \"📦 Android 빌드 ${STATUS_EMOJI}!\n🔗 $BUILD_URL\"}" \
-               $DISCORD_WEBHOOK
+               "${DISCORD_WEBHOOK}"
