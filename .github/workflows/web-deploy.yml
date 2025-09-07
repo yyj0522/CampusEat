@@ -29,10 +29,6 @@ jobs:
         run: npm run build
         working-directory: apps/web
 
-      - name: Export static HTML
-        run: npm run export
-        working-directory: apps/web
-
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
@@ -47,7 +43,6 @@ jobs:
             --message "GitHub Actions Preview Deploy" \
             --json)
           echo "$DEPLOY_OUTPUT"
-          # JSON에서 URL 추출
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.url')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
