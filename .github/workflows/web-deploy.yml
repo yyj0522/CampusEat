@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
     steps:
       - uses: actions/checkout@v3
 
@@ -25,5 +28,29 @@ jobs:
         working-directory: apps/web
 
       - name: Deploy to Vercel
-        run: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --confirm
-        working-directory: apps/web
+        id: vercel
+        run: |
+          set -e
+          echo "🚀 Deploying to Vercel..."
+          DEPLOY_RESULT=$(npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }} --confirm)
+          echo "$DEPLOY_RESULT"
+          # 성공 여부 체크 (Vercel CLI는 성공 시 exit 0)
+          if [ $? -eq 0 ]; then
+            DEPLOY_STATUS="success"
+          else
+            DEPLOY_STATUS="failure"
+          fi
+          echo "DEPLOY_STATUS=$DEPLOY_STATUS" >> $GITHUB_ENV
+
+      - name: Send Discord Notification
+        if: always()
+        run: |
+          if [ "$DEPLOY_STATUS" = "success" ]; then
+            STATUS_EMOJI="✅ 성공"
+          else
+            STATUS_EMOJI="❌ 실패"
+          fi
+          # Discord용 JSON 임시 파일 생성
+          echo "{\"content\": \"Web 빌드 ${STATUS_EMOJI}!\"}" > discord_payload.json
+          # curl로 전송
+          curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
