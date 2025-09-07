@@ -25,7 +25,7 @@ jobs:
         run: npm install
         working-directory: apps/web
 
-      - name: Build
+      - name: Build Next.js
         run: npm run build
         working-directory: apps/web
 
@@ -37,7 +37,6 @@ jobs:
         run: |
           set -e
           DEPLOY_OUTPUT=$(netlify deploy \
-            --dir=apps/web/out \
             --auth=$NETLIFY_AUTH_TOKEN \
             --site=$NETLIFY_SITE_ID \
             --message "GitHub Actions Preview Deploy" \
