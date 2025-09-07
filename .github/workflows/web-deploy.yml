@@ -1,4 +1,4 @@
-name: Web Deploy
+name: Web Deploy (Netlify Preview)
 
 on:
   push:
@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
     steps:
       - uses: actions/checkout@v3
@@ -28,15 +29,19 @@ jobs:
         run: npm run build
         working-directory: apps/web
 
-      - name: Deploy to Vercel (Preview)
+      - name: Deploy to Netlify Preview
         id: deploy-web
         run: |
           set -e
-          # --prod 제거 → Preview 배포
-          DEPLOY_OUTPUT=$(npx vercel --token $VERCEL_TOKEN --confirm --cwd apps/web)
+          # Preview 배포
+          DEPLOY_OUTPUT=$(npx netlify deploy \
+            --dir=apps/web/dist \
+            --auth=$NETLIFY_AUTH_TOKEN \
+            --site=$NETLIFY_SITE_ID \
+            --message "GitHub Actions Preview Deploy")
           echo "$DEPLOY_OUTPUT"
-          # 마지막 줄에 있는 URL 가져오기
-          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | tail -n 1)
+          # Preview URL 추출
+          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -o "https://[^\ ]*\.netlify\.app" | tail -n 1)
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification
@@ -47,6 +52,5 @@ jobs:
           else
             STATUS_EMOJI="❌ 실패"
           fi
-          # Discord 메시지 JSON 생성
-          echo "{\"content\": \"웹 배포 ${STATUS_EMOJI}!\nPreview URL: $DEPLOY_URL\"}" > discord_payload.json
+          echo "{\"content\": \"웹 Preview 배포 ${STATUS_EMOJI}!\nPreview URL: $DEPLOY_URL\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
