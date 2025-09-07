@@ -32,7 +32,7 @@ jobs:
         run: |
           set -e
           echo "Deployment handled automatically by @netlify/plugin-nextjs via netlify.toml"
-          echo "Use NETLIFY_SITE_URL as the site URL for notifications"
+          echo "No manual netlify deploy command needed"
 
       - name: Send Discord Notification
         if: always()
