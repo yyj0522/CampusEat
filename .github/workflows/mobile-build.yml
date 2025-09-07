@@ -11,10 +11,6 @@ jobs:
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v3
@@ -36,10 +32,6 @@ jobs:
           brew update
           brew install jq
 
-      - name: Login to Expo
-        run: npx eas login --token $EXPO_TOKEN
-        working-directory: apps/mobile
-
       - name: Build Android (AAB)
         id: build
         run: |
@@ -53,17 +45,20 @@ jobs:
           echo "BUILD_STATUS=$BUILD_STATUS" >> $GITHUB_ENV
 
       - name: Show build link
-        run: echo "✅ EAS Build Dashboard: $BUILD_URL"
+        run: |
+          echo "✅ EAS Build Dashboard: $BUILD_URL"
 
       - name: Send Discord Notification
         if: always()
         run: |
-          if [ "$BUILD_STATUS" = "finished" ]; then
+          if [ "${BUILD_STATUS}" = "finished" ]; then
             STATUS_EMOJI="✅ 성공"
           else
             STATUS_EMOJI="❌ 실패"
           fi
+
           # Discord 메시지용 임시 JSON 파일 생성
           echo "{\"content\": \"Android 빌드 ${STATUS_EMOJI}!\n $BUILD_URL\"}" > discord_payload.json
+
           # curl로 전송
-          curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
+          curl -H "Content-Type: application/json" -d @discord_payload.json "${DISCORD_WEBHOOK}"
