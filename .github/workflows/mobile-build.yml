@@ -10,6 +10,10 @@ jobs:
     runs-on: macos-latest
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v3
 
@@ -28,14 +32,3 @@ jobs:
       - name: Build Android
         run: npx eas build --platform android --non-interactive
         working-directory: apps/mobile
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-
-      - name: Build iOS
-        run: npx eas build --platform ios --non-interactive
-        working-directory: apps/mobile
-     
