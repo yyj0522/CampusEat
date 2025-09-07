@@ -55,4 +55,9 @@ jobs:
           else
             STATUS_EMOJI="❌ 실패"
           fi
-          curl -H "Content-Type: application/json" -d "{\"content\":\"📦 Android 빌드 ${STATUS_EMOJI}!\n🔗 $BUILD_URL\"}" "${DISCORD_WEBHOOK}"
+
+          # Discord용 JSON 임시 파일 생성
+          echo "{\"content\": \"📦 Android 빌드 ${STATUS_EMOJI}!\n🔗 $BUILD_URL\"}" > discord_payload.json
+
+          # curl로 전송
+          curl -H "Content-Type: application/json" -d @discord_payload.json "${DISCORD_WEBHOOK}"
