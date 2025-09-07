@@ -55,7 +55,4 @@ jobs:
           else
             STATUS_EMOJI="❌ 실패"
           fi
-
-          curl -H "Content-Type: application/json" \
-               -d "{\"content\": \"📦 Android 빌드 ${STATUS_EMOJI}!\n🔗 $BUILD_URL\"}" \
-               "${DISCORD_WEBHOOK}"
+          curl -H "Content-Type: application/json" -d "{\"content\":\"📦 Android 빌드 ${STATUS_EMOJI}!\n🔗 $BUILD_URL\"}" "${DISCORD_WEBHOOK}"
