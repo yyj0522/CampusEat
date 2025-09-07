@@ -14,8 +14,7 @@
     "production": {
       "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle",
-        "credentials": "env"
+        "buildType": "app-bundle"
       }
     }
   },
