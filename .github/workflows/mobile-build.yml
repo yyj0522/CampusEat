@@ -13,7 +13,8 @@ jobs:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -27,10 +28,9 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Install jq
-        run: |
-          brew update
-          brew install jq
+      - name: EAS Login
+        run: npx eas login --token $EXPO_TOKEN
+        working-directory: apps/mobile
 
       - name: Build Android (AAB)
         id: build
@@ -45,8 +45,7 @@ jobs:
           echo "BUILD_STATUS=$BUILD_STATUS" >> $GITHUB_ENV
 
       - name: Show build link
-        run: |
-          echo "✅ EAS Build Dashboard: $BUILD_URL"
+        run: echo "✅ EAS Build Dashboard: $BUILD_URL"
 
       - name: Send Discord Notification
         if: always()
@@ -56,9 +55,5 @@ jobs:
           else
             STATUS_EMOJI="❌ 실패"
           fi
-
-          # Discord 메시지용 임시 JSON 파일 생성
           echo "{\"content\": \"Android 빌드 ${STATUS_EMOJI}!\n $BUILD_URL\"}" > discord_payload.json
-
-          # curl로 전송
           curl -H "Content-Type: application/json" -d @discord_payload.json "${DISCORD_WEBHOOK}"
