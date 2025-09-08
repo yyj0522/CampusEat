@@ -55,5 +55,6 @@ jobs:
           else
             STATUS_EMOJI="❌ 실패"
           fi
+
           echo "{\"content\": \"Android 빌드 ${STATUS_EMOJI}!\n $BUILD_URL\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "${DISCORD_WEBHOOK}"
