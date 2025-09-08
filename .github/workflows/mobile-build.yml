@@ -45,7 +45,8 @@ jobs:
           echo "BUILD_STATUS=$BUILD_STATUS" >> $GITHUB_ENV
 
       - name: Show build link
-        run: echo "✅ EAS Build Dashboard: $BUILD_URL"
+        run: |
+          echo "✅ EAS Build Dashboard: ${{ env.BUILD_URL }}"
 
       - name: Send Discord Notification
         if: always()
@@ -56,5 +57,5 @@ jobs:
             STATUS_EMOJI="❌ 실패"
           fi
 
-          echo "{\"content\": \"Android 빌드 ${STATUS_EMOJI}!\n $BUILD_URL\"}" > discord_payload.json
+          echo "{\"content\": \"Android 빌드 ${STATUS_EMOJI}!\n ${{ env.BUILD_URL }}\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "${DISCORD_WEBHOOK}"
