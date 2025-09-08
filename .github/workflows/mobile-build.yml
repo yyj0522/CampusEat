@@ -36,7 +36,7 @@ jobs:
           echo "🚀 Starting EAS APK build..."
           RESULT=$(npx eas build --platform android --profile production --non-interactive --json --wait)
           echo "$RESULT"
-          BUILD_URL=$(echo "$RESULT" | jq -r '.[0].webUrl')
+          BUILD_URL=$(echo "$RESULT" | jq -r '.[0].artifacts.buildUrl')
           BUILD_STATUS=$(echo "$RESULT" | jq -r '.[0].status')
           echo "BUILD_URL=$BUILD_URL" >> $GITHUB_ENV
           echo "BUILD_STATUS=$BUILD_STATUS" >> $GITHUB_ENV
