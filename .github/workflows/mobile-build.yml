@@ -28,10 +28,6 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: EAS Login
-        run: npx eas login --token $EXPO_TOKEN
-        working-directory: apps/mobile
-
       - name: Build Android (AAB)
         id: build
         run: |
