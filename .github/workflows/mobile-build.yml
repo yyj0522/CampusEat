@@ -28,12 +28,12 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build Android (AAB)
+      - name: Build Android APK
         id: eas_build
         working-directory: apps/mobile
         run: |
           set -e
-          echo "🚀 Starting EAS build..."
+          echo "🚀 Starting EAS APK build..."
           RESULT=$(npx eas build --platform android --profile production --non-interactive --json --wait)
           echo "$RESULT"
           BUILD_URL=$(echo "$RESULT" | jq -r '.[0].webUrl')
@@ -56,5 +56,5 @@ jobs:
             STATUS_EMOJI="❌ 실패"
           fi
 
-          echo "{\"content\": \"Android 빌드 ${STATUS_EMOJI}!\n $BUILD_URL\"}" > discord_payload.json
+          echo "{\"content\": \"Android APK 빌드 ${STATUS_EMOJI}!\n$BUILD_URL\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
