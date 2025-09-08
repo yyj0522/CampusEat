@@ -29,8 +29,8 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Build Android (AAB)
-        working-directory: apps/mobile
         id: eas_build
+        working-directory: apps/mobile
         run: |
           set -e
           echo "🚀 Starting EAS build..."
@@ -44,7 +44,8 @@ jobs:
           echo "BUILD_STATUS=$BUILD_STATUS"
 
       - name: Show build link
-        run: echo "✅ EAS Build Dashboard: $BUILD_URL"
+        run: |
+          echo "✅ EAS Build Dashboard: $BUILD_URL"
 
       - name: Send Discord Notification
         if: always()
