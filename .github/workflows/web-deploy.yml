@@ -25,11 +25,15 @@ jobs:
         run: |
           cd apps/web
           npm install
-          npm rebuild          # ⚡ Linux native 모듈 재빌드
+          # ⚡ Linux native 모듈 재빌드
+          npm rebuild @tailwindcss/node
           npm run build
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
+
+      - name: Ensure jq is installed
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Deploy to Netlify Production
         id: deploy-web
