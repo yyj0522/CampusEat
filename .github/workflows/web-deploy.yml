@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies in web
+      - name: Install dependencies
         run: |
           cd apps/web
           npm install
@@ -29,8 +29,7 @@ jobs:
       - name: Build Web
         run: |
           cd apps/web
-          npm install
-          npx next build
+          NODE_ENV=production npx next build
         id: build-web
 
       - name: Install Netlify CLI
