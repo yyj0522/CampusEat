@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "npm@9.8.0",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -21,5 +22,10 @@
     "@netlify/plugin-nextjs": "^5.13.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.2"
+  },
+  "workspaces": [],
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
   }
 }
