@@ -27,36 +27,37 @@ jobs:
           npm install
 
       - name: Build Web
+        id: build-web
         run: |
           cd apps/web
+          echo "=== Build Start ==="
           npx next build
-        id: build-web
+          echo "=== Build End ==="
 
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
-      - name: Ensure jq is installed
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Deploy to Netlify Production (without build)
-        if: success()
+      - name: Deploy to Netlify
         id: deploy-web
         run: |
           cd apps/web
+          NETLIFY_DIR="$PWD/.next"
+
+          if [ ! -d "$NETLIFY_DIR" ]; then
+            echo ".next 폴더가 없음, 빌드 실패 확인 필요"
+            exit 1
+          fi
+
           DEPLOY_OUTPUT=$(netlify deploy \
             --prod \
-            --dir=.next \
+            --dir="$NETLIFY_DIR" \
             --auth=$NETLIFY_AUTH_TOKEN \
             --site=$NETLIFY_SITE_ID \
             --message "GitHub Actions Production Deploy" \
             --json)
-          echo "$DEPLOY_OUTPUT"
 
-          # SSL URL 추출 (없으면 empty)
+          echo "$DEPLOY_OUTPUT"
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
-      - name: Send Discord Notification (빌드 성공 + URL 존재 시)
+      - name: Send Discord Notification
         if: success()
         run: |
           if [ -n "$DEPLOY_URL" ]; then
@@ -64,4 +65,4 @@ jobs:
             echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
             curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
           else
-            echo "빌드는 성공했지만 URL 없음 → Discord 전송 없음"
+            echo "빌드는 성공했지만 배포 URL이 없음 → Discord 알림 전송 안함"
