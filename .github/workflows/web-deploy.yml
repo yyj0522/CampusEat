@@ -23,49 +23,42 @@ jobs:
 
       - name: Install dependencies
         run: |
-          set -x
           cd apps/web
           npm install
 
-      - name: Build Web (with detailed logging)
+      - name: Build Web
         run: |
-          set -x
           cd apps/web
           npx next build
         id: build-web
 
       - name: Install Netlify CLI
-        run: |
-          set -x
-          npm install -g netlify-cli
+        run: npm install -g netlify-cli
 
       - name: Ensure jq is installed
-        run: |
-          set -x
-          sudo apt-get update
-          sudo apt-get install -y jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Deploy to Netlify Production
+      - name: Deploy to Netlify Production (without build)
         if: success()
         id: deploy-web
         run: |
-          set -x
           cd apps/web
           DEPLOY_OUTPUT=$(netlify deploy \
             --prod \
+            --dir=.next \
             --auth=$NETLIFY_AUTH_TOKEN \
             --site=$NETLIFY_SITE_ID \
             --message "GitHub Actions Production Deploy" \
             --json)
           echo "$DEPLOY_OUTPUT"
 
+          # SSL URL 추출 (없으면 empty)
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification (빌드 성공 + URL 존재 시)
         if: success()
         run: |
-          set -x
           if [ -n "$DEPLOY_URL" ]; then
             MESSAGE="✅ 웹 빌드 성공!\nPreview URL: $DEPLOY_URL"
             echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
