@@ -14,18 +14,15 @@ jobs:
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Install dependencies in web
-        run: |
-          cd apps/web
-          npm install
-
+      # node_modules와 package-lock.json이 이미 apps/web에 존재하므로 설치 단계 생략
       - name: Build Web
         run: |
           cd apps/web
