@@ -21,13 +21,14 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies at root
-        run: npm ci
+      - name: Install dependencies
+        run: |
+          cd apps/web
+          npm install
 
       - name: Build Web
         run: |
           cd apps/web
-          # 루트 node_modules 사용
           npm run build
         id: build-web
 
