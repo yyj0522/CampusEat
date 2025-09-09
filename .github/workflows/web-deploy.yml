@@ -21,35 +21,35 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies in web
+      - name: Install dependencies
         run: |
+          set -x
           cd apps/web
-          echo "Current dir: $(pwd)"
-          echo "Listing files:"
-          ls -al
-          echo "Installing dependencies..."
           npm install
-          echo "Installed node_modules:"
-          ls -al node_modules
 
-      - name: Build Web (full log)
+      - name: Build Web (with detailed logging)
         run: |
-          set -x  # 실행되는 명령 모두 출력
+          set -x
           cd apps/web
-          echo "Running next build..."
           npx next build
         id: build-web
 
       - name: Install Netlify CLI
-        run: npm install -g netlify-cli
+        run: |
+          set -x
+          npm install -g netlify-cli
 
       - name: Ensure jq is installed
-        run: sudo apt-get update && sudo apt-get install -y jq
+        run: |
+          set -x
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: Deploy to Netlify Production
         if: success()
         id: deploy-web
         run: |
+          set -x
           cd apps/web
           DEPLOY_OUTPUT=$(netlify deploy \
             --prod \
@@ -59,13 +59,13 @@ jobs:
             --json)
           echo "$DEPLOY_OUTPUT"
 
-          # SSL URL 추출 (없으면 empty)
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification (빌드 성공 + URL 존재 시)
         if: success()
         run: |
+          set -x
           if [ -n "$DEPLOY_URL" ]; then
             MESSAGE="✅ 웹 빌드 성공!\nPreview URL: $DEPLOY_URL"
             echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
