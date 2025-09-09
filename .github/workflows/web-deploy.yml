@@ -27,6 +27,7 @@ jobs:
       - name: Build Web
         run: |
           cd apps/web
+          npm install  # 웹 전용 의존성 설치 (lockfile 없어도 가능)
           npm run build
         id: build-web
 
@@ -49,11 +50,15 @@ jobs:
             --json)
           echo "$DEPLOY_OUTPUT"
 
+          # URL 추출 (없으면 빈값)
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification
         if: success() && env.DEPLOY_URL != ''
         run: |
-          echo "{\"content\": \"웹 빌드 성공!\nPreview URL: $DEPLOY_URL\"}" > discord_payload.json
+          STATUS_EMOJI="✅ 성공"
+          MESSAGE="웹 빌드 성공!\nPreview URL: $DEPLOY_URL"
+
+          echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
