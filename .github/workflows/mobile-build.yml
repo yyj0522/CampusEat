@@ -66,9 +66,7 @@ jobs:
           echo "Raw BUILD_STATUS='${{ env.BUILD_STATUS }}'"
           echo "Raw BUILD_URL='${{ env.BUILD_URL }}'"
 
-          STATUS=$(echo "${{ env.BUILD_STATUS }}" | tr -d '\n' | tr -d '\r' | tr -d ' ')
-
-          if [ "$STATUS" = "finished" ]; then
+          if [ -n "${{ env.BUILD_URL }}" ] && [ "${{ env.BUILD_URL }}" != "null" ]; then
             STATUS_EMOJI="✅ 성공"
           else
             STATUS_EMOJI="❌ 실패"
