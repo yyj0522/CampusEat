@@ -14,19 +14,21 @@ jobs:
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Install dependencies & Build
+      - name: Install dependencies from root
+        run: npm ci
+
+      - name: Build Web
         run: |
           cd apps/web
-          npm ci
           npm run build
+        id: build-web
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
@@ -35,6 +37,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Deploy to Netlify Production
+        if: success()
         id: deploy-web
         run: |
           cd apps/web
@@ -46,12 +49,11 @@ jobs:
             --json)
           echo "$DEPLOY_OUTPUT"
 
-          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url')
+          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification
         if: success() && env.DEPLOY_URL != ''
         run: |
-          STATUS_EMOJI="✅ 성공"
-          echo "{\"content\": \"웹 빌드 ${STATUS_EMOJI}!\nPreview URL: $DEPLOY_URL\"}" > discord_payload.json
+          echo "{\"content\": \"웹 빌드 성공!\nPreview URL: $DEPLOY_URL\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
