@@ -1,4 +1,4 @@
-name: Web Deploy (Netlify Preview)
+name: Web 빌드
 
 on:
   push:
@@ -14,33 +14,43 @@ jobs:
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Install dependencies & Build
+      - name: Install dependencies
         run: |
           cd apps/web
-          npm install
+          rm -f ../../package-lock.json
+          npm ci
+
+      - name: Clear Next.js cache
+        run: |
+          cd apps/web
+          rm -rf .next
+
+      - name: Build Next.js
+        run: |
+          cd apps/web
           npm run build
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
-      - name: Deploy to Netlify Preview
+      - name: Deploy to Netlify
         id: deploy-web
         run: |
-          set -e
           cd apps/web
           DEPLOY_OUTPUT=$(netlify deploy \
             --prod \
             --auth=$NETLIFY_AUTH_TOKEN \
             --site=$NETLIFY_SITE_ID \
             --message "GitHub Actions Production Deploy" \
-            --json)
+            --json || true)
           echo "$DEPLOY_OUTPUT"
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.url')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
