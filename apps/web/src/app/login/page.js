@@ -34,7 +34,7 @@ export default function LoginPage() {
         {/* 로그인 버튼 (입력칸 2줄 높이) */}
         <button
           className={styles.button}
-          style={{ height: 'calc(2 * 56px + 16px)' }} // 입력칸 높이*2 + gap
+          style={{ height: 'calc(2 * 56px + 32px)' }} // 입력칸 높이*2 + gap
         >
           로그인
         </button>
