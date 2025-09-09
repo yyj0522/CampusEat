@@ -21,14 +21,15 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies at root
-        run: npm ci
-
-      - name: Build Web (using root next)
+      - name: Install dependencies in web
         run: |
           cd apps/web
-          # 루트 node_modules의 next 사용
-          node ../../node_modules/next/dist/bin/next build
+          npm ci
+
+      - name: Build Web
+        run: |
+          cd apps/web
+          npm run build
         id: build-web
 
       - name: Install Netlify CLI
