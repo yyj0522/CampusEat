@@ -1,17 +1,15 @@
 "use client";
+
 import Image from "next/image";
-import { Button, Input } from "components"; 
-import logo from "/icon.png"; 
+import Button from "../components/Button";
+import Input from "../components/Input";
 
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-      
       <div className="flex items-center mb-6 space-x-3">
-        <Image src={logo} alt="CampusEat Logo" width={80} height={80} />
-        <h1 className="text-[80px] font-extrabold leading-none">
-          캠퍼스잇
-        </h1>
+        <Image src="/icon.png" alt="CampusEat Logo" width={80} height={80} />
+        <h1 className="text-[80px] font-extrabold leading-none">캠퍼스잇</h1>
       </div>
 
       <p className="text-gray-600 text-center mb-8 text-lg">
