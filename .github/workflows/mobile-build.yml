@@ -11,7 +11,7 @@ jobs:
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      EAS_SKIP_AUTO_FINGERPRINT: 1  # fingerprint 계산 스킵
+      EAS_SKIP_AUTO_FINGERPRINT: 1  
       NODE_ENV: production
 
     steps:
@@ -50,7 +50,6 @@ jobs:
           BUILD_URL=$(echo "$RESULT" | jq -r '.[0].artifacts.buildUrl')
           BUILD_STATUS=$(echo "$RESULT" | jq -r '.[0].status')
 
-          # Save to GitHub env for later steps
           echo "BUILD_URL=$BUILD_URL" >> $GITHUB_ENV
           echo "BUILD_STATUS=$BUILD_STATUS" >> $GITHUB_ENV
 
@@ -67,8 +66,7 @@ jobs:
           echo "Raw BUILD_STATUS='${{ env.BUILD_STATUS }}'"
           echo "Raw BUILD_URL='${{ env.BUILD_URL }}'"
 
-          # Remove any hidden whitespace/newlines
-          STATUS=$(echo "${{ env.BUILD_STATUS }}" | tr -d '\n' | tr -d '\r' | xargs)
+          STATUS=$(echo "${{ env.BUILD_STATUS }}" | tr -d '\n' | tr -d '\r' | tr -d ' ')
 
           if [ "$STATUS" = "finished" ]; then
             STATUS_EMOJI="✅ 성공"
