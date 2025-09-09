@@ -14,7 +14,8 @@ jobs:
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -45,17 +46,12 @@ jobs:
             --json)
           echo "$DEPLOY_OUTPUT"
 
-          # 배포 URL 추출
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification
-        if: always()
+        if: success() && env.DEPLOY_URL != ''
         run: |
-          if [ "${{ job.status }}" == 'success' ]; then
-            STATUS_EMOJI="✅ 성공"
-          else
-            STATUS_EMOJI="❌ 실패"
-          fi
+          STATUS_EMOJI="✅ 성공"
           echo "{\"content\": \"웹 빌드 ${STATUS_EMOJI}!\nPreview URL: $DEPLOY_URL\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
