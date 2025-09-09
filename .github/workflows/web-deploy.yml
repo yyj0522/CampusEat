@@ -29,28 +29,30 @@ jobs:
           cd apps/web
           npm install
 
-      # 4️⃣ Next.js 빌드
-      - name: Build Web
+      # 4️⃣ Next.js 빌드 및 정적 내보내기
+      - name: Build and Export Next.js
         id: build-web
         run: |
           cd apps/web
           echo "=== Build Start ==="
           npx next build
-          echo "=== Build End ==="
+          echo "=== Export Start ==="
+          npx next export
+          echo "=== Build and Export End ==="
 
       # 5️⃣ Netlify CLI 설치
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
-      # 6️⃣ Netlify 배포
+      # 6️⃣ Netlify 배포 (out 폴더 기준)
       - name: Deploy to Netlify
         id: deploy-web
         run: |
           cd apps/web
-          NETLIFY_DIR="$PWD/.next"
+          NETLIFY_DIR="$PWD/out"
 
           if [ ! -d "$NETLIFY_DIR" ]; then
-            echo ".next 폴더가 없음, 빌드 실패 확인 필요"
+            echo "out 폴더 없음 → 빌드/내보내기 실패"
             exit 1
           fi
 
