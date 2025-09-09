@@ -1,4 +1,4 @@
-name: Web 빌드
+name: Web Deploy (Netlify Production)
 
 on:
   push:
@@ -14,33 +14,39 @@ jobs:
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
     steps:
+      # 1. 코드 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2. Node.js 설정
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
+      # 3. 의존성 설치
       - name: Install dependencies
         run: |
           cd apps/web
-          rm -f ../../package-lock.json
-          npm ci
+          npm install
 
+      # 4. Next.js 캐시 삭제
       - name: Clear Next.js cache
         run: |
           cd apps/web
           rm -rf .next
 
+      # 5. Next.js 빌드
       - name: Build Next.js
         run: |
           cd apps/web
           npm run build
 
+      # 6. Netlify CLI 설치
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
+      # 7. Netlify 배포
       - name: Deploy to Netlify
         id: deploy-web
         run: |
@@ -55,6 +61,7 @@ jobs:
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.url')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
+      # 8. Discord 알림
       - name: Send Discord Notification
         if: always()
         run: |
