@@ -21,15 +21,23 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies for web
+      - name: Install dependencies in web
         run: |
           cd apps/web
+          echo "Current dir: $(pwd)"
+          echo "Listing files:"
+          ls -al
+          echo "Installing dependencies..."
           npm install
+          echo "Installed node_modules:"
+          ls -al node_modules
 
-      - name: Build Web
+      - name: Build Web (full log)
         run: |
+          set -x  # 실행되는 명령 모두 출력
           cd apps/web
-          ./node_modules/.bin/next build
+          echo "Running next build..."
+          npx next build
         id: build-web
 
       - name: Install Netlify CLI
