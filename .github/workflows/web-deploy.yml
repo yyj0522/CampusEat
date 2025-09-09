@@ -14,37 +14,29 @@ jobs:
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
     steps:
-      # 1️⃣ 레포지토리 체크아웃
       - uses: actions/checkout@v3
 
-      # 2️⃣ Node.js 설정
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      # 3️⃣ 의존성 설치
       - name: Install dependencies
         run: |
           cd apps/web
           npm install
 
-      # 4️⃣ Next.js 빌드 및 정적 내보내기
-      - name: Build and Export Next.js
+      - name: Build Web
         id: build-web
         run: |
           cd apps/web
           echo "=== Build Start ==="
           npx next build
-          echo "=== Export Start ==="
-          npx next export
-          echo "=== Build and Export End ==="
+          echo "=== Build End ==="
 
-      # 5️⃣ Netlify CLI 설치
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
-      # 6️⃣ Netlify 배포 (out 폴더 기준)
       - name: Deploy to Netlify
         id: deploy-web
         run: |
@@ -52,7 +44,7 @@ jobs:
           NETLIFY_DIR="$PWD/out"
 
           if [ ! -d "$NETLIFY_DIR" ]; then
-            echo "out 폴더 없음 → 빌드/내보내기 실패"
+            echo "out 폴더 없음 → 빌드 실패"
             exit 1
           fi
 
@@ -68,7 +60,6 @@ jobs:
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
-      # 7️⃣ Discord 알림
       - name: Send Discord Notification
         if: success()
         run: |
