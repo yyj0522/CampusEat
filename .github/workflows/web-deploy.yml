@@ -43,16 +43,20 @@ jobs:
         id: deploy-web
         run: |
           cd apps/web
-          DEPLOY_OUTPUT=$(netlify deploy \
+          
+          # Netlify 배포 결과 JSON 파일로 저장
+          netlify deploy \
             --prod \
             --auth=$NETLIFY_AUTH_TOKEN \
             --site=$NETLIFY_SITE_ID \
             --message "GitHub Actions Production Deploy" \
-            --json)
-          echo "$DEPLOY_OUTPUT"
+            --json > deploy_output.json
+
+          # 배포 JSON 확인 (디버깅용)
+          cat deploy_output.json
 
           # SSL URL 추출 (없으면 empty)
-          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
+          DEPLOY_URL=$(jq -r '.deploy.ssl_url // empty' deploy_output.json)
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification (빌드 성공 + URL 존재 시)
