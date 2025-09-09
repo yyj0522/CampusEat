@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install dependencies in web
         run: |
           cd apps/web
           npm install
@@ -43,20 +43,16 @@ jobs:
         id: deploy-web
         run: |
           cd apps/web
-          
-          # Netlify 배포 결과 JSON 파일로 저장
-          netlify deploy \
+          DEPLOY_OUTPUT=$(netlify deploy \
             --prod \
             --auth=$NETLIFY_AUTH_TOKEN \
             --site=$NETLIFY_SITE_ID \
             --message "GitHub Actions Production Deploy" \
-            --json > deploy_output.json
-
-          # 배포 JSON 확인 (디버깅용)
-          cat deploy_output.json
+            --json)
+          echo "$DEPLOY_OUTPUT"
 
           # SSL URL 추출 (없으면 empty)
-          DEPLOY_URL=$(jq -r '.deploy.ssl_url // empty' deploy_output.json)
+          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification (빌드 성공 + URL 존재 시)
