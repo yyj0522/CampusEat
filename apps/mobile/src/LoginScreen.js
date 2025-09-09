@@ -10,7 +10,7 @@ export default function LoginScreen({ navigation }) {
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }).start(() => {
-      Animated.timing(moveAnim, { toValue: -150, duration: 800, easing: Easing.out(Easing.quad), useNativeDriver: true }).start(() => {
+      Animated.timing(moveAnim, { toValue: -50, duration: 800, easing: Easing.out(Easing.quad), useNativeDriver: true }).start(() => {
         setShowLogin(true);
       });
     });
@@ -37,8 +37,14 @@ export default function LoginScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", alignItems: "center", justifyContent: "center", padding: 24 },
-  logoContainer: { alignItems: "center", marginBottom: 20 },
-  logo: { width: 80, height: 80 },
-  title: { fontSize: 36, fontWeight: "800", marginTop: 8 },
+  logoContainer: { 
+    flexDirection: "row",  
+    alignItems: "center", 
+    marginBottom: 20,
+    marginLeft: -55
+  },
+  logo: { width: 160, height: 160 }, 
+  title: { fontSize: 60, fontWeight: "800", marginLeft: -30 }, 
   loginContainer: { width: "100%", marginTop: 40 },
 });
+
