@@ -11,7 +11,7 @@ jobs:
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      EAS_SKIP_AUTO_FINGERPRINT: 1 
+      EAS_SKIP_AUTO_FINGERPRINT: 1  # fingerprint 계산 스킵
       NODE_ENV: production
 
     steps:
@@ -64,7 +64,13 @@ jobs:
       - name: Send Discord Notification
         if: always()
         run: |
-          if [ "${{ env.BUILD_STATUS }}" = "finished" ]; then
+          echo "Raw BUILD_STATUS='${{ env.BUILD_STATUS }}'"
+          echo "Raw BUILD_URL='${{ env.BUILD_URL }}'"
+
+          # Remove any hidden whitespace/newlines
+          STATUS=$(echo "${{ env.BUILD_STATUS }}" | tr -d '\n' | tr -d '\r' | xargs)
+
+          if [ "$STATUS" = "finished" ]; then
             STATUS_EMOJI="✅ 성공"
           else
             STATUS_EMOJI="❌ 실패"
