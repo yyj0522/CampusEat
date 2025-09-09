@@ -1,4 +1,4 @@
-name: Web Deploy (Netlify Preview)
+name: Web Deploy (Netlify Production)
 
 on:
   push:
@@ -24,9 +24,7 @@ jobs:
       - name: Install dependencies & Build
         run: |
           cd apps/web
-          npm install
-          # ⚡ Linux native 모듈 재빌드
-          npm rebuild @tailwindcss/node
+          npm ci
           npm run build
 
       - name: Install Netlify CLI
@@ -59,5 +57,5 @@ jobs:
           else
             STATUS_EMOJI="❌ 실패"
           fi
-          echo "{\"content\": \"웹 빌드 ${STATUS_EMOJI}!\nPreview URL: $DEPLOY_URL\"}" > discord_payload.json
+          echo "{\"content\": \"웹 빌드 ${STATUS_EMOJI}!\nProduction URL: $DEPLOY_URL\"}" > discord_payload.json
           curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"

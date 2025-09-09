@@ -1,10 +1,14 @@
-// next/font 제거
-import './globals.css';
+import "./globals.css";
+
+export const metadata = {
+  title: "CampusEat",
+  description: "CampusEat Web App",
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="antialiased">
+      <body className="font-sans antialiased">
         {children}
       </body>
     </html>

@@ -1,11 +1,18 @@
-/* Google Fonts 직접 임포트 */
 @import url('https://fonts.googleapis.com/css2?family=Geist&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Geist+Mono&display=swap');
 
+:root {
+  --font-geist-sans: 'Geist', sans-serif;
+  --font-geist-mono: 'Geist Mono', monospace;
+}
+
 body {
-  font-family: 'Geist', 'Geist Mono', sans-serif;
+  font-family: var(--font-geist-sans); 
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+.font-sans { font-family: var(--font-geist-sans); }
+.font-mono { font-family: var(--font-geist-mono); }
