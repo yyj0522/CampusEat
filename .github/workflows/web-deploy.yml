@@ -21,13 +21,13 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies from root
+      - name: Install dependencies at root
         run: npm ci
 
       - name: Build Web
         run: |
           cd apps/web
-          npm install  # 웹 전용 의존성 설치 (lockfile 없어도 가능)
+          # 루트 node_modules 사용
           npm run build
         id: build-web
 
@@ -50,15 +50,16 @@ jobs:
             --json)
           echo "$DEPLOY_OUTPUT"
 
-          # URL 추출 (없으면 빈값)
+          # SSL URL 추출 (없으면 empty)
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
-      - name: Send Discord Notification
-        if: success() && env.DEPLOY_URL != ''
+      - name: Send Discord Notification (빌드 성공 + URL 존재 시)
+        if: success()
         run: |
-          STATUS_EMOJI="✅ 성공"
-          MESSAGE="웹 빌드 성공!\nPreview URL: $DEPLOY_URL"
-
-          echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
-          curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
+          if [ -n "$DEPLOY_URL" ]; then
+            MESSAGE="✅ 웹 빌드 성공!\nPreview URL: $DEPLOY_URL"
+            echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
+            curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
+          else
+            echo "빌드는 성공했지만 URL 없음 → Discord 전송 없음"
