@@ -11,7 +11,7 @@ jobs:
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      EAS_SKIP_AUTO_FINGERPRINT: 1  # fingerprint 계산 스킵
+      EAS_SKIP_AUTO_FINGERPRINT: 1 
       NODE_ENV: production
 
     steps:
@@ -46,12 +46,16 @@ jobs:
           echo "🚀 Starting EAS APK build..."
           RESULT=$(npx eas build --platform android --profile production --non-interactive --json --wait)
           echo "$RESULT"
+
           BUILD_URL=$(echo "$RESULT" | jq -r '.[0].artifacts.buildUrl')
           BUILD_STATUS=$(echo "$RESULT" | jq -r '.[0].status')
+
+          # Save to GitHub env for later steps
           echo "BUILD_URL=$BUILD_URL" >> $GITHUB_ENV
           echo "BUILD_STATUS=$BUILD_STATUS" >> $GITHUB_ENV
-          echo "BUILD_URL=$BUILD_URL"
-          echo "BUILD_STATUS=$BUILD_STATUS"
+
+          echo "Parsed BUILD_URL=$BUILD_URL"
+          echo "Parsed BUILD_STATUS=$BUILD_STATUS"
 
       - name: Show build link
         run: |
@@ -60,7 +64,7 @@ jobs:
       - name: Send Discord Notification
         if: always()
         run: |
-          if [ "${BUILD_STATUS}" = "finished" ]; then
+          if [ "${{ env.BUILD_STATUS }}" = "finished" ]; then
             STATUS_EMOJI="✅ 성공"
           else
             STATUS_EMOJI="❌ 실패"
