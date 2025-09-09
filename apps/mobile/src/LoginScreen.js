@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Image, Animated, Easing } from "react-native";
-import { Button, Input } from "components/app"; 
+import Button from "./Button";
+import Input from "./Input";
 
 export default function LoginScreen({ navigation }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -8,17 +9,8 @@ export default function LoginScreen({ navigation }) {
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start(() => {
-      Animated.timing(moveAnim, {
-        toValue: -150,
-        duration: 800,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }).start(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }).start(() => {
+      Animated.timing(moveAnim, { toValue: -150, duration: 800, easing: Easing.out(Easing.quad), useNativeDriver: true }).start(() => {
         setShowLogin(true);
       });
     });
@@ -26,17 +18,8 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.logoContainer,
-          { opacity: fadeAnim, transform: [{ translateY: moveAnim }] },
-        ]}
-      >
-        <Image
-          source={require("../../../icon.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+      <Animated.View style={[styles.logoContainer, { opacity: fadeAnim, transform: [{ translateY: moveAnim }] }]}>
+        <Image source={require("./icon.png")} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>캠퍼스잇</Text>
       </Animated.View>
 
@@ -45,12 +28,7 @@ export default function LoginScreen({ navigation }) {
           <Input placeholder="이메일" />
           <Input placeholder="비밀번호" secureTextEntry style={{ marginTop: 12 }} />
           <Button label="로그인" onPress={() => alert("로그인 시도")} style={{ marginTop: 12 }} />
-          <Button
-            label="회원가입"
-            variant="secondary"
-            onPress={() => navigation.navigate("Signup")}
-            style={{ marginTop: 8 }}
-          />
+          <Button label="회원가입" variant="secondary" onPress={() => alert("회원가입 이동")} style={{ marginTop: 8 }} />
         </View>
       )}
     </View>

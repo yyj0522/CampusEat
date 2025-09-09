@@ -1,7 +1,5 @@
-import path from "path";
-import { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+const path = require("path");
+const nextConfig = {
   webpack: (config) => {
     if (!config.resolve) config.resolve = {};
     if (!config.resolve.alias) config.resolve.alias = {};
@@ -15,4 +13,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
