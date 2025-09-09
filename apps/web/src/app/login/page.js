@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import styles from "./LoginPage.module.css";
+import styles from "./LoginPage.css";
 
 export default function LoginPage() {
   return (
