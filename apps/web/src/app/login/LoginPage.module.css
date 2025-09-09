@@ -1,3 +1,6 @@
+/* 로그인 페이지 전체 CSS */
+
+/* 전체 컨테이너 */
 .container {
   display: flex;
   flex-direction: column;
@@ -7,8 +10,10 @@
   background-color: #ffffff;
   box-sizing: border-box;
   padding: 2vw;
+  text-align: center;
 }
 
+/* 로고 영역 */
 .logoContainer {
   display: flex;
   align-items: center;
@@ -21,6 +26,7 @@
   height: auto;
 }
 
+/* 제목 및 부제목 */
 .title {
   font-size: 6vw;
   font-weight: 800;
@@ -36,35 +42,38 @@
   text-align: center;
 }
 
+/* 폼 컨테이너 (좌: 입력칸+링크, 우: 버튼) */
 .formContainer {
-  display: flex;
-  width: 90%;
-  max-width: 90%; 
-  gap: 2vw;
-  flex-wrap: wrap; 
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* 왼쪽: 입력칸+링크 / 오른쪽: 버튼 */
+  column-gap: 1vw;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  align-items: stretch; /* 양쪽 컬럼 높이 동일 */
 }
 
+/* 입력칸 + 링크 묶음 */
 .inputsColumn {
   display: flex;
   flex-direction: column;
-  gap: 1.5vw;
-  flex: 1 1 auto; 
-  min-width: 200px; 
+  gap: 0.6vw; /* 아이디칸-비번칸, 입력칸-링크 사이 여백 (작게) */
+  justify-content: space-between;
+  height: 100%;
 }
 
+/* 입력칸 */
 .input {
-  width: 48%; 
   padding: 1.2vw 1.5vw;
   font-size: 1.5vw;
   border: 1px solid #d1d5db;
   border-radius: 1vw;
   box-sizing: border-box;
-  flex-shrink: 1;
+  width: 100%;
 }
 
+/* 버튼 (왼쪽 전체 높이에 맞춤) */
 .button {
-  width: 15vw; 
-  min-width: 80px;
   background-color: #3b82f6;
   color: white;
   font-size: 1.5vw;
@@ -72,7 +81,7 @@
   border: none;
   border-radius: 1vw;
   cursor: pointer;
-  flex-shrink: 1;
+  height: 100%; /* 입력칸 + 링크 묶음 높이에 딱 맞춤 */
 }
 
 .button:hover {
@@ -84,7 +93,7 @@
   justify-content: center;
   gap: 2vw;
   font-size: 1vw;
-  margin-top: 1vw;
+  margin-top: 0.2vw; /* 아주 작은 여백 */
 }
 
 .link {
@@ -104,14 +113,15 @@
     font-size: 4vw;
     margin-bottom: 2vw;
   }
-  .input {
-    font-size: 4vw;
-    padding: 2vw;
+  .formContainer {
+    grid-template-columns: 1fr; 
+    row-gap: 2vw;
   }
-  .button {
-    width: 30vw;
+  .input, .button {
     font-size: 4vw;
     padding: 2vw;
+    width: 100%;
+    height: auto;
   }
   .linksContainer {
     gap: 4vw;

@@ -57,7 +57,7 @@ jobs:
             --json)
 
           echo "$DEPLOY_OUTPUT"
-          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // empty')
+          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // .url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification
