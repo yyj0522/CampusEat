@@ -63,9 +63,11 @@ jobs:
       - name: Send Discord Notification
         if: success()
         run: |
+          DEPLOY_URL="${DEPLOY_URL:-}"
           if [ -n "$DEPLOY_URL" ]; then
             MESSAGE="✅ 웹 빌드 성공!\nPreview URL: $DEPLOY_URL"
             echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
             curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
           else
             echo "빌드는 성공했지만 배포 URL이 없음 → Discord 알림 전송 안함"
+          fi
