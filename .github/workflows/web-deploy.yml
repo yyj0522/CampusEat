@@ -29,6 +29,7 @@ jobs:
       - name: Build Web
         run: |
           cd apps/web
+          npm install
           npx next build
         id: build-web
 
