@@ -25,6 +25,7 @@ jobs:
         run: |
           cd apps/web
           npm install
+          npm rebuild          # ⚡ Linux native 모듈 재빌드
           npm run build
 
       - name: Install Netlify CLI
