@@ -31,13 +31,13 @@ export default function HomePage() {
   const renderContent = () => {
     switch (activeTab) {
       case "맛집추천":
-        return <div>맛집 추천 들어갈 공간임ㅋㅋ</div>;
+        return <div>맛집 추천 들어갈 공간</div>;
       case "번개모임":
-        return <div>번개모임 들어갈 공간임ㅋㅋ</div>;
+        return <div>번개모임 들어갈 공간</div>;
       case "학식&셔틀정보":
-        return <div>학식/셔틀 들어갈 공간임ㅋㅋ</div>;
+        return <div>학식/셔틀 들어갈 공간</div>;
       case "자유게시판":
-        return <div>자유게시판 들어갈 공간임ㅋㅋ</div>;
+        return <div>자유게시판 들어갈 공간</div>;
       default:
         return null;
     }
