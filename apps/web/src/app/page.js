@@ -1,28 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import "./page.css"; 
 
-export default function HomePage() {
-  const router = useRouter();
-
+export default function DebugEnv() {
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push("/login");
-    }, 1500);
+    console.log("NEXT_PUBLIC_FIREBASE_API_KEY:", process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+    console.log("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:", process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN);
+    console.log("NEXT_PUBLIC_FIREBASE_PROJECT_ID:", process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+  }, []);
 
-    return () => clearTimeout(timer);
-  }, [router]);
-
-  return (
-    <div className="page-container">
-      <h1 className="page-title">
-        캠퍼스잇에 오신 것을 환영합니다!
-      </h1>
-      <p className="page-subtitle">
-        캠퍼스 생활을 더 즐겁게 만드는 당신의 친구!
-      </p>
-    </div>
-  );
+  return <div>환경변수 확인 중... 콘솔 확인</div>;
 }
