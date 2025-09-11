@@ -2,11 +2,10 @@ import path from "path";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  output: "export",       
+  reactStrictMode: true,   
 
   images: {
-    unoptimized: true, // 🚀 정적 export 시 이미지 최적화 비활성화
+    unoptimized: true, 
   },
 
   webpack: (config) => {

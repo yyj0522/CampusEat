@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "../../firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import styles from "./LoginPage.module.css";
 
 export default function LoginForm() {
@@ -15,18 +15,6 @@ export default function LoginForm() {
     if (!email || !password) return alert("이메일과 비밀번호 입력 필수!");
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      alert("로그인 성공!");
-      router.push("/home");
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const handleSignUp = async () => {
-    if (!email || !password) return alert("이메일과 비밀번호 입력 필수!");
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      alert("회원가입 성공!");
       router.push("/home");
     } catch (err) {
       alert(err.message);

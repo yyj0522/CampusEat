@@ -2,16 +2,17 @@
 
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"; 
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBCqhLLYnqtN1l0eJiKhI05u0DkxcPgnk8",   
-  authDomain: "whattoday-ccdce.firebaseapp.com",
-  projectId: "whattoday-ccdce",
-  storageBucket: "whattoday-ccdce.appspot.com",
-  messagingSenderId: "804568381273",
-  appId: "1:804568381273:web:93d6b20675652d69113e48",
-  measurementId: "G-JNFTBEV1WE"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
+export const db = getFirestore(app); 
