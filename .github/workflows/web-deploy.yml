@@ -40,20 +40,12 @@ jobs:
           echo "=== Build Start ==="
           npx next build
           echo "=== Build End ==="
-        env:
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          GMAIL_ID: ${{ secrets.GMAIL_ID }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
       - name: Deploy to Netlify
+        id: deploy
         run: |
           cd apps/web
           echo "=== Deploy Start ==="
@@ -72,7 +64,8 @@ jobs:
 
       - name: Send Discord Notification
         run: |
-          DEPLOY_URL="${DEPLOY_URL:-}"
+          # $GITHUB_ENV에서 DEPLOY_URL 읽기
+          source $GITHUB_ENV
           if [ -n "$DEPLOY_URL" ]; then
             MESSAGE="✅ 웹 빌드 성공!\nPreview URL: $DEPLOY_URL"
             echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json

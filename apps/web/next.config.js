@@ -2,10 +2,10 @@ import path from "path";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,   
-
+  reactStrictMode: true,
+  output: "standalone",       // Netlify + Next.js 호환
   images: {
-    unoptimized: true, 
+    unoptimized: true,
   },
 
   webpack: (config) => {
