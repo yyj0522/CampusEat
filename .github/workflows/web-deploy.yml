@@ -48,6 +48,7 @@ jobs:
       - name: Deploy to Netlify
         run: |
           cd apps/web
+          echo "=== Deploy Start ==="
           DEPLOY_OUTPUT=$(netlify deploy \
             --prod \
             --dir="$PWD" \
@@ -60,6 +61,7 @@ jobs:
           echo "$DEPLOY_OUTPUT"
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // .url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
+          echo "=== Deploy End ==="
 
       - name: Send Discord Notification
         if: success()
