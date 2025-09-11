@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "whattoday-ccdce"
-  }
+    "default": "whattoday-ccdce",
+    "prod": "whattoday-ccdce"
+  },
+  "targets": {},
+  "etags": {}
 }

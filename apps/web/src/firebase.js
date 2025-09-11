@@ -13,8 +13,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-for (const [key, value] of Object.entries(firebaseConfig)) {
-  if (!value) console.warn(`Firebase config missing: ${key}`);
+const missingKeys = Object.entries(firebaseConfig)
+  .filter(([key, value]) => !value)
+  .map(([key]) => key);
+
+if (missingKeys.length > 0) {
+  console.error(
+    `Firebase config missing these keys: ${missingKeys.join(", ")}`
+  );
+  throw new Error(
+    "Firebase config is incomplete. Check Netlify environment variables."
+  );
 }
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
