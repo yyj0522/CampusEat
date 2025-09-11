@@ -97,7 +97,7 @@ export default function InformationPage() {
             }}
           >
             <div style={{ flex: 1, textAlign: "center", padding: "16px" }}>
-              <h2 style={{ fontWeight: "bold", marginBottom: "16px" }}>학식</h2>
+              <h2 style={{ fontWeight: "bold", marginBottom: "16px" }}>학식 정보</h2>
               <p>학식 메뉴, 가격, 시간 등 정보 표시</p>
             </div>
             <div
@@ -107,7 +107,7 @@ export default function InformationPage() {
               }}
             ></div>
             <div style={{ flex: 1, textAlign: "center", padding: "16px" }}>
-              <h2 style={{ fontWeight: "bold", marginBottom: "16px" }}>셔틀</h2>
+              <h2 style={{ fontWeight: "bold", marginBottom: "16px" }}>셔틀 정보</h2>
               <p>셔틀 시간표, 경로 등 정보 표시</p>
             </div>
           </div>
