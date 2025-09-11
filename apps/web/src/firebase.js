@@ -13,6 +13,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+for (const [key, value] of Object.entries(firebaseConfig)) {
+  if (!value) console.warn(`Firebase config missing: ${key}`);
+}
+
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
-export const db = getFirestore(app); 
+export const db = getFirestore(app);
