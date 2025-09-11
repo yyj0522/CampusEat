@@ -1,8 +1,8 @@
 [build]
   base = "apps/web"
   command = "npm run build"
-  publish = ".next"
-  functions = "netlify/functions"
+  publish = ".next"                   # Next.js 빌드 폴더
+  functions = "netlify/functions"     # API 함수 경로
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

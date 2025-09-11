@@ -1,4 +1,4 @@
-name: Web Deploy (Netlify Preview)
+name: Web Deploy (Netlify)
 
 on:
   push:
@@ -37,18 +37,14 @@ jobs:
       - name: Build Web
         run: |
           cd apps/web
-          echo "=== Build Start ==="
-          npx next build
-          echo "=== Build End ==="
+          npm run build
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
       - name: Deploy to Netlify
-        id: deploy
         run: |
           cd apps/web
-          echo "=== Deploy Start ==="
           DEPLOY_OUTPUT=$(netlify deploy \
             --prod \
             --dir="$PWD" \
@@ -60,12 +56,9 @@ jobs:
           echo "$DEPLOY_OUTPUT"
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // .url // empty')
           echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
-          echo "=== Deploy End ==="
 
       - name: Send Discord Notification
         run: |
-          # $GITHUB_ENV에서 DEPLOY_URL 읽기
-          source $GITHUB_ENV
           if [ -n "$DEPLOY_URL" ]; then
             MESSAGE="✅ 웹 빌드 성공!\nPreview URL: $DEPLOY_URL"
             echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
