@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "firebase": "^12.2.1"
+  },
+  "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.13.1"
   }
 }
