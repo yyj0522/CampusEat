@@ -34,13 +34,6 @@ jobs:
           cd apps/web
           npm install
 
-      - name: Build Web
-        run: |
-          cd apps/web
-          echo "=== Build Start ==="
-          npm run build
-          echo "=== Build End ==="
-
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
@@ -48,8 +41,7 @@ jobs:
         run: |
           cd apps/web
           echo "=== Deploy Start ==="
-          DEPLOY_OUTPUT=$(netlify deploy --prod \
-                          --dir=".netlify/build" \
+          DEPLOY_OUTPUT=$(netlify deploy --build --prod \
                           --auth="$NETLIFY_AUTH_TOKEN" \
                           --site="$NETLIFY_SITE_ID" \
                           --message "GitHub Actions Production Deploy" \
@@ -63,7 +55,7 @@ jobs:
         run: |
           DEPLOY_URL="${DEPLOY_URL:-}"
           if [ -n "$DEPLOY_URL" ]; then
-            MESSAGE="✅ 웹 빌드 성공!\nPreview URL: $DEPLOY_URL"
+            MESSAGE="✅ 웹 빌드 & 배포 성공!\nPreview URL: $DEPLOY_URL"
             echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
             curl -H "Content-Type: application/json" -d @discord_payload.json "$DISCORD_WEBHOOK"
           else
