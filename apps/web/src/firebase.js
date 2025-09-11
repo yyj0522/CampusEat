@@ -1,8 +1,6 @@
-"use client";
-
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore"; 
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,19 +11,6 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const missingKeys = Object.entries(firebaseConfig)
-  .filter(([key, value]) => !value)
-  .map(([key]) => key);
-
-if (missingKeys.length > 0) {
-  console.error(
-    `Firebase config missing these keys: ${missingKeys.join(", ")}`
-  );
-  throw new Error(
-    "Firebase config is incomplete. Check Netlify environment variables."
-  );
-}
-
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
