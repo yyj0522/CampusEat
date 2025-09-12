@@ -30,32 +30,43 @@ export default function ResetPwForm() {
   return (
     <div
       style={{
-        maxWidth: 400,
-        margin: "0 auto",
         display: "flex",
-        flexDirection: "column",
-        gap: 12,
-        padding: 20,
-        border: "1px solid #ddd",
-        borderRadius: 8,
+        justifyContent: "center", 
+        alignItems: "center",   
+        minHeight: "100vh",       
+        backgroundColor: "#f9f9f9", 
       }}
     >
-      <h2>비밀번호 재설정</h2>
-      <input
-        type="password"
-        placeholder="새 비밀번호 입력"
-        value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
-        className={styles.input}
-      />
-      <button className={styles.button} onClick={handleReset}>
-        비밀번호 변경
-      </button>
-      {message && (
-        <span style={{ color: message.includes("실패") ? "red" : "green", fontSize: 14 }}>
-          {message}
-        </span>
-      )}
+      <div
+        style={{
+          maxWidth: 400,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          padding: 20,
+          border: "1px solid #ddd",
+          borderRadius: 8,
+          backgroundColor: "#fff",
+        }}
+      >
+        <h2>비밀번호 재설정</h2>
+        <input
+          type="password"
+          placeholder="새 비밀번호 입력"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className={styles.input}
+        />
+        <button className={styles.button} onClick={handleReset}>
+          비밀번호 변경
+        </button>
+        {message && (
+          <span style={{ color: message.includes("실패") ? "red" : "green", fontSize: 14 }}>
+            {message}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
