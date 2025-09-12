@@ -7,7 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import Image from "next/image";
 import Script from "next/script";
-import styles from "./HomePage.module.css";
+import styles from "../home/HomePage.module.css";
 
 function AdBanner({ width = "90%", height = "600px", marginLeft = 0, marginRight = 0 }) {
   const isDev = process.env.NODE_ENV === "development";
