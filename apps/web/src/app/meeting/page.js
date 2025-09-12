@@ -6,7 +6,58 @@ import { auth, db } from "../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import Image from "next/image";
+import Script from "next/script";
 import styles from "./HomePage.module.css";
+
+function AdBanner({ width = "90%", height = "600px", marginLeft = 0, marginRight = 0 }) {
+  const isDev = process.env.NODE_ENV === "development";
+
+  if (isDev) {
+    return (
+      <div
+        style={{
+          width: "200px",
+          height,
+          marginLeft,
+          marginRight,
+          marginTop: "50px",
+          backgroundColor: "#e5e7eb",
+          borderRadius: "12px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#555",
+          fontWeight: "bold",
+          fontSize: "14px",
+        }}
+      >
+        테스트 광고
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ width, height, marginLeft, marginRight, textAlign: "center" }}>
+      <Script
+        id="adsense"
+        strategy="afterInteractive"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+        crossOrigin="anonymous"
+      />
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block", width: "100%", height }}
+        data-ad-client="ca-pub-3940256099942544"
+        data-ad-slot="6300978111"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      ></ins>
+      <Script id="adsense-init" strategy="afterInteractive">
+        {`(adsbygoogle = window.adsbygoogle || []).push({});`}
+      </Script>
+    </div>
+  );
+}
 
 export default function MeetingPage() {
   const router = useRouter();
@@ -72,10 +123,12 @@ export default function MeetingPage() {
           </button>
         </div>
       </div>
-      <div style={{ display: "flex", marginTop: "32px" }}>
-        <div style={{ flex: "1", textAlign: "center", color: "#aaa" }}>
-          광고 배너
+
+      <div style={{ display: "flex", marginTop: "32px", gap: "16px" }}>
+        <div style={{ flex: "1", display: "flex", justifyContent: "flex-start" }}>
+          <AdBanner width="80%" height="700px" marginLeft="64px" />
         </div>
+
         <div style={{ flex: "3", textAlign: "center" }}>
           <h1 style={{ fontSize: "28px", fontWeight: "bold", marginBottom: "8px" }}>
             {university ? `${university} 번개모임!` : "번개모임!"}
@@ -84,7 +137,14 @@ export default function MeetingPage() {
             새로운 인연을 만들어보세요!
           </p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              alignItems: "center",
+            }}
+          >
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
@@ -92,8 +152,8 @@ export default function MeetingPage() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  width: "75%",   
-                  height: "150px",  
+                  width: "75%",
+                  height: "150px",
                   backgroundColor: "#fff",
                   borderRadius: "12px",
                   boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
@@ -122,8 +182,8 @@ export default function MeetingPage() {
             ))}
           </div>
         </div>
-        <div style={{ flex: "1", textAlign: "center", color: "#aaa" }}>
-          광고 배너
+        <div style={{ flex: "1", display: "flex", justifyContent: "flex-end" }}>
+          <AdBanner width="80%" height="700px" marginRight="64px" />
         </div>
       </div>
     </div>

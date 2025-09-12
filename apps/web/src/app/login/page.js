@@ -4,10 +4,12 @@ import Image from "next/image";
 import { useState } from "react";
 import LoginForm from "./LoginForm";
 import SignUpForm from "./SignUpForm";
+import IdFind from "./IdFind";
+import PwFind from "./PwFind";
 import styles from "./LoginPage.module.css";
 
 export default function LoginPage() {
-  const [showSignUp, setShowSignUp] = useState(false);
+  const [mode, setMode] = useState("login"); // login, signup, findID, findPW
 
   return (
     <div className={styles.container}>
@@ -17,18 +19,34 @@ export default function LoginPage() {
       </div>
       <p className={styles.subtitle}>캠퍼스 생활을 더 즐겁게 만드는 당신의 친구!</p>
 
-      {!showSignUp ? (
-        <>
-          <LoginForm />
-          <div
-            style={{ marginTop: "12px", color: "#3b82f6", cursor: "pointer" }}
-            onClick={() => setShowSignUp(true)}
+      {/* 모드에 따라 화면 전환 */}
+      {mode === "login" && <LoginForm />}
+      {mode === "signup" && <SignUpForm onComplete={() => setMode("login")} />}
+      {mode === "findID" && <IdFind onComplete={() => setMode("login")} />}
+      {mode === "findPW" && <PwFind onComplete={() => setMode("login")} />}
+
+      {/* 하단 버튼: 로그인 모드에서만 표시 */}
+      {mode === "login" && (
+        <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 12 }}>
+          <span
+            style={{ color: "#3b82f6", cursor: "pointer" }}
+            onClick={() => setMode("signup")}
           >
             회원가입
-          </div>
-        </>
-      ) : (
-        <SignUpForm onComplete={() => setShowSignUp(false)} />
+          </span>
+          <span
+            style={{ color: "#3b82f6", cursor: "pointer" }}
+            onClick={() => setMode("findID")}
+          >
+            ID찾기
+          </span>
+          <span
+            style={{ color: "#3b82f6", cursor: "pointer" }}
+            onClick={() => setMode("findPW")}
+          >
+            PW찾기
+          </span>
+        </div>
       )}
     </div>
   );

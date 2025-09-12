@@ -7,7 +7,59 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import Image from "next/image";
 import { FiChevronRight } from "react-icons/fi";
+import Script from "next/script";
 import styles from "./HomePage.module.css";
+
+// 광고 배너 컴포넌트 (환경별 자동 변경)
+function TestAdBanner({ width = "100%", height = "100px", marginLeft = 0, marginRight = 0 }) {
+  const isDev = process.env.NODE_ENV === "development";
+
+  if (isDev) {
+    // 로컬 개발 환경: 단순 박스 광고
+    return (
+      <div
+        style={{
+          width,
+          height,
+          marginLeft,
+          marginRight,
+          backgroundColor: "#e5e7eb",
+          borderRadius: "12px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#555",
+          fontWeight: "bold",
+        }}
+      >
+        테스트 광고
+      </div>
+    );
+  }
+
+  // 배포 환경: Google AdSense 테스트 배너
+  return (
+    <div style={{ width, height, marginLeft, marginRight, textAlign: "center" }}>
+      <Script
+        id="adsense-test"
+        strategy="afterInteractive"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+        crossOrigin="anonymous"
+      />
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block", width: "100%", height }}
+        data-ad-client="ca-pub-3940256099942544"
+        data-ad-slot="6300978111"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      ></ins>
+      <Script id="adsense-init" strategy="afterInteractive">
+        {`(adsbygoogle = window.adsbygoogle || []).push({});`}
+      </Script>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -30,14 +82,14 @@ export default function HomePage() {
     { label: "맛집추천", path: "/restaurant" },
     { label: "번개모임", path: "/meeting" },
     { label: "자유게시판", path: "/chat" },
-    { label: "특별이벤트", path: "/information" }, 
+    { label: "학식&셔틀정보", path: "/information" }, 
   ];
 
   const cards = [
     { title: "맛집 추천", desc: "학교 주변 인기 맛집!", path: "/restaurant" },
     { title: "번개 모임", desc: "새로운 친구와 모임!", path: "/meeting" },
     { title: "자유게시판", desc: "학교 생활 이야기!", path: "/chat" },
-    { title: "특별 이벤트", desc: "오늘의 특별 이벤트!", path: "/information" },
+    { title: "학식&셔틀정보", desc: "다양한 학교 정보!", path: "/information" },
   ];
 
   const cardStyles = [
@@ -49,6 +101,7 @@ export default function HomePage() {
 
   return (
     <div className={styles.container}>
+      {/* 상단 네비게이션 */}
       <div className={styles.navbar}>
         <div className={styles.navLeft} onClick={() => router.push("/home")} style={{ cursor: "pointer" }}>
           <Image src="/icon.png" alt="캠퍼스잇 로고" width={40} height={40} />
@@ -67,12 +120,20 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 상단 광고 영역 */}
       <div style={{ display: "flex", gap: "16px", marginTop: "24px" }}>
-        <div style={{ flex: "1", height: "150px", backgroundColor: "#f3f4f6", borderRadius: "12px", textAlign: "center", lineHeight: "150px", color: "#aaa" }}>좌측 광고</div>
-        <div style={{ flex: "2", height: "150px", backgroundColor: "#e5e7eb", borderRadius: "12px", textAlign: "center", lineHeight: "150px", color: "#aaa" }}>상단 가로 광고</div>
-        <div style={{ flex: "1", height: "150px", backgroundColor: "#f3f4f6", borderRadius: "12px", textAlign: "center", lineHeight: "150px", color: "#aaa" }}>우측 광고</div>
+        <div style={{ flex: "1" }}>
+          <TestAdBanner height="250px" width="95%" marginLeft="16px" />
+        </div>
+        <div style={{ flex: "2" }}>
+          <TestAdBanner height="250px" width="100%" />
+        </div>
+        <div style={{ flex: "1" }}>
+          <TestAdBanner height="250px" width="95%" marginRight="32px" />
+        </div>
       </div>
 
+      {/* 기능 카드 영역 */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "3fr 1.8fr",

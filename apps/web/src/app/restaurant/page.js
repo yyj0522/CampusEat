@@ -6,7 +6,58 @@ import { auth, db } from "../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import Image from "next/image";
+import Script from "next/script";
 import styles from "./HomePage.module.css";
+
+function AdBanner({ width = "90%", height = "600px", marginLeft = 0, marginRight = 0 }) {
+  const isDev = process.env.NODE_ENV === "development";
+
+  if (isDev) {
+    return (
+      <div
+        style={{
+          width : "200px",
+          height,
+          marginLeft,
+          marginRight,
+          marginTop : "50px",
+          backgroundColor: "#e5e7eb",
+          borderRadius: "12px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#555",
+          fontWeight: "bold",
+          fontSize: "14px",
+        }}
+      >
+        테스트 광고
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ width, height, marginLeft, marginRight, textAlign: "center" }}>
+      <Script
+        id="adsense"
+        strategy="afterInteractive"
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+        crossOrigin="anonymous"
+      />
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block", width: "100%", height }}
+        data-ad-client="ca-pub-3940256099942544"
+        data-ad-slot="6300978111"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      ></ins>
+      <Script id="adsense-init" strategy="afterInteractive">
+        {`(adsbygoogle = window.adsbygoogle || []).push({});`}
+      </Script>
+    </div>
+  );
+}
 
 export default function RestaurantPage() {
   const router = useRouter();
@@ -22,7 +73,7 @@ export default function RestaurantPage() {
         const snap = await getDoc(docRef);
         if (snap.exists()) {
           setNickname(snap.data().nickname);
-          setUniversity(snap.data().university); 
+          setUniversity(snap.data().university);
         }
       } else {
         router.push("/login");
@@ -73,9 +124,9 @@ export default function RestaurantPage() {
         </div>
       </div>
 
-      <div style={{ display: "flex", marginTop: "32px" }}>
-        <div style={{ flex: "1", textAlign: "center", color: "#aaa" }}>
-          광고 배너
+      <div style={{ display: "flex", marginTop: "32px", gap: "16px" }}>
+        <div style={{ flex: "1", display: "flex", justifyContent: "flex-start" }}>
+          <AdBanner width="80%" height="700px" marginLeft="64px" />
         </div>
 
         <div style={{ flex: "3", textAlign: "center" }}>
@@ -105,8 +156,8 @@ export default function RestaurantPage() {
             ))}
           </div>
         </div>
-        <div style={{ flex: "1", textAlign: "center", color: "#aaa" }}>
-          광고 배너
+        <div style={{ flex: "1", display: "flex", justifyContent: "flex-end" }}>
+          <AdBanner width="80%" height="700px" marginRight="64px" />
         </div>
       </div>
     </div>
