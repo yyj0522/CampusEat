@@ -9,55 +9,32 @@ import Image from "next/image";
 import Script from "next/script";
 import styles from "../home/HomePage.module.css";
 
+// ------------------------ 광고 배너 ------------------------
 function AdBanner({ width = "90%", height = "600px", marginLeft = 0, marginRight = 0 }) {
-  const isDev = process.env.NODE_ENV === "development";
-
-  if (isDev) {
-    return (
-      <div
-        style={{
-          width : "200px",
-          height,
-          marginLeft,
-          marginRight,
-          marginTop : "50px",
-          backgroundColor: "#e5e7eb",
-          borderRadius: "12px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          color: "#555",
-          fontWeight: "bold",
-          fontSize: "14px",
-        }}
-      >
-        테스트 광고
-      </div>
-    );
-  }
-
+  // 항상 테스트 광고 표시
   return (
-    <div style={{ width, height, marginLeft, marginRight, textAlign: "center" }}>
-      <Script
-        id="adsense"
-        strategy="afterInteractive"
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-        crossOrigin="anonymous"
-      />
-      <ins
-        className="adsbygoogle"
-        style={{ display: "block", width: "100%", height }}
-        data-ad-client="ca-pub-3940256099942544"
-        data-ad-slot="6300978111"
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      ></ins>
-      <Script id="adsense-init" strategy="afterInteractive">
-        {`(adsbygoogle = window.adsbygoogle || []).push({});`}
-      </Script>
+    <div
+      style={{
+        width: "200px",
+        height,
+        marginLeft,
+        marginRight,
+        marginTop: "50px",
+        backgroundColor: "#e5e7eb",
+        borderRadius: "12px",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        color: "#555",
+        fontWeight: "bold",
+        fontSize: "14px",
+      }}
+    >
+      테스트 광고
     </div>
   );
 }
+
 
 export default function RestaurantPage() {
   const router = useRouter();

@@ -10,12 +10,10 @@ import { FiChevronRight } from "react-icons/fi";
 import Script from "next/script";
 import styles from "./HomePage.module.css";
 
-// 광고 배너 컴포넌트 (환경별 자동 변경)
 function TestAdBanner({ width = "100%", height = "100px", marginLeft = 0, marginRight = 0 }) {
   const isDev = process.env.NODE_ENV === "development";
 
   if (isDev) {
-    // 로컬 개발 환경: 단순 박스 광고
     return (
       <div
         style={{
@@ -37,7 +35,6 @@ function TestAdBanner({ width = "100%", height = "100px", marginLeft = 0, margin
     );
   }
 
-  // 배포 환경: Google AdSense 테스트 배너
   return (
     <div style={{ width, height, marginLeft, marginRight, textAlign: "center" }}>
       <Script
@@ -81,8 +78,8 @@ export default function HomePage() {
   const tabs = [
     { label: "맛집추천", path: "/restaurant" },
     { label: "번개모임", path: "/meeting" },
-    { label: "자유게시판", path: "/chat" },
     { label: "학식&셔틀정보", path: "/information" }, 
+    { label: "자유게시판", path: "/chat" },
   ];
 
   const cards = [
@@ -101,7 +98,6 @@ export default function HomePage() {
 
   return (
     <div className={styles.container}>
-      {/* 상단 네비게이션 */}
       <div className={styles.navbar}>
         <div className={styles.navLeft} onClick={() => router.push("/home")} style={{ cursor: "pointer" }}>
           <Image src="/icon.png" alt="캠퍼스잇 로고" width={40} height={40} />
@@ -120,7 +116,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 상단 광고 영역 */}
       <div style={{ display: "flex", gap: "16px", marginTop: "24px" }}>
         <div style={{ flex: "1" }}>
           <TestAdBanner height="250px" width="95%" marginLeft="16px" />
@@ -133,7 +128,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 기능 카드 영역 */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "3fr 1.8fr",

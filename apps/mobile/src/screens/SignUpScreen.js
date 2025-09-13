@@ -1,4 +1,3 @@
-// apps/mobile/src/screens/SignUpScreen.js
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import Input from "../components/Input";
@@ -18,7 +17,7 @@ export default function SignUpScreen({ navigation }) {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       alert("회원가입 성공!");
-      navigation.goBack(); // 로그인 화면으로 이동
+      navigation.goBack(); 
     } catch (error) {
       alert(error.message);
     }

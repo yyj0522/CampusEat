@@ -10,15 +10,28 @@ export default function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleLogin = async () => {
-    if (!email || !password) return alert("이메일과 비밀번호 입력 필수!");
+    setErrorMessage("");
+    if (!email || !password) {
+      setErrorMessage("이메일과 비밀번호 입력 필수!");
+      return;
+    }
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/home");
     } catch (err) {
-      alert(err.message);
+      if (
+        err.code === "auth/user-not-found" ||
+        err.code === "auth/wrong-password"
+      ) {
+        setErrorMessage("아이디 또는 비밀번호를 확인해주세요.");
+      } else if (err.code === "auth/invalid-email") {
+        setErrorMessage("올바른 이메일 형식이 아닙니다.");
+      } else {
+        setErrorMessage("아이디 또는 비밀번호가 일치하지 않습니다.");
+      }
     }
   };
 
@@ -42,8 +55,16 @@ export default function LoginForm() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        <button className={styles.button} onClick={handleLogin}>로그인</button>
+        <button className={styles.button} onClick={handleLogin}>
+          로그인
+        </button>
       </div>
+
+      {errorMessage && (
+        <p style={{ color: "red", fontSize: "14px", marginTop: "10px", textAlign: "center" }}>
+          {errorMessage}
+        </p>
+      )}
     </div>
   );
 }
