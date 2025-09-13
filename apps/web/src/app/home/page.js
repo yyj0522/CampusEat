@@ -7,53 +7,26 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import Image from "next/image";
 import { FiChevronRight } from "react-icons/fi";
-import Script from "next/script";
 import styles from "./HomePage.module.css";
 
 function TestAdBanner({ width = "100%", height = "100px", marginLeft = 0, marginRight = 0 }) {
-  const isDev = process.env.NODE_ENV === "development";
-
-  if (isDev) {
-    return (
-      <div
-        style={{
-          width,
-          height,
-          marginLeft,
-          marginRight,
-          backgroundColor: "#e5e7eb",
-          borderRadius: "12px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          color: "#555",
-          fontWeight: "bold",
-        }}
-      >
-        테스트 광고
-      </div>
-    );
-  }
-
   return (
-    <div style={{ width, height, marginLeft, marginRight, textAlign: "center" }}>
-      <Script
-        id="adsense-test"
-        strategy="afterInteractive"
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
-        crossOrigin="anonymous"
-      />
-      <ins
-        className="adsbygoogle"
-        style={{ display: "block", width: "100%", height }}
-        data-ad-client="ca-pub-3940256099942544"
-        data-ad-slot="6300978111"
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      ></ins>
-      <Script id="adsense-init" strategy="afterInteractive">
-        {`(adsbygoogle = window.adsbygoogle || []).push({});`}
-      </Script>
+    <div
+      style={{
+        width,
+        height,
+        marginLeft,
+        marginRight,
+        backgroundColor: "#e5e7eb",
+        borderRadius: "12px",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        color: "#555",
+        fontWeight: "bold",
+      }}
+    >
+      테스트 광고
     </div>
   );
 }
@@ -78,7 +51,7 @@ export default function HomePage() {
   const tabs = [
     { label: "맛집추천", path: "/restaurant" },
     { label: "번개모임", path: "/meeting" },
-    { label: "학식&셔틀정보", path: "/information" }, 
+    { label: "학식&셔틀정보", path: "/information" },
     { label: "자유게시판", path: "/chat" },
   ];
 
@@ -90,10 +63,10 @@ export default function HomePage() {
   ];
 
   const cardStyles = [
-    { gridColumn: "1 / 2", gridRow: "1 / 2" }, 
+    { gridColumn: "1 / 2", gridRow: "1 / 2" },
     { gridColumn: "2 / 3", gridRow: "1 / 2" },
-    { gridColumn: "1 / 2", gridRow: "2 / 3" }, 
-    { gridColumn: "2 / 3", gridRow: "2 / 3" }, 
+    { gridColumn: "1 / 2", gridRow: "2 / 3" },
+    { gridColumn: "2 / 3", gridRow: "2 / 3" },
   ];
 
   return (
@@ -104,7 +77,7 @@ export default function HomePage() {
           <span className={styles.appName}>캠퍼스잇</span>
         </div>
         <div className={styles.navCenter}>
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <span key={tab.path} className={styles.navTab} onClick={() => router.push(tab.path)}>
               {tab.label}
             </span>
@@ -112,7 +85,9 @@ export default function HomePage() {
         </div>
         <div className={styles.navRight}>
           {nickname && <span>{nickname}님 환영합니다!</span>}
-          <button className={styles.logoutBtn} onClick={() => router.push("/profile")}>프로필</button>
+          <button className={styles.logoutBtn} onClick={() => router.push("/profile")}>
+            프로필
+          </button>
         </div>
       </div>
 
@@ -127,15 +102,16 @@ export default function HomePage() {
           <TestAdBanner height="250px" width="95%" marginRight="32px" />
         </div>
       </div>
-
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "3fr 1.8fr",
-        gridTemplateRows: "5fr 1.2fr",
-        gap: "16px",
-        marginTop: "32px",
-        padding: "0 16px",
-      }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "3fr 1.8fr",
+          gridTemplateRows: "5fr 1.2fr",
+          gap: "16px",
+          marginTop: "32px",
+          padding: "0 16px",
+        }}
+      >
         {cards.map((card, idx) => (
           <div
             key={card.path}
@@ -153,8 +129,8 @@ export default function HomePage() {
               padding: "12px",
               ...cardStyles[idx],
             }}
-            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-4px)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
           >
             <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "bold" }}>{card.title}</h3>
             <p style={{ margin: "4px 0", textAlign: "center", color: "#555" }}>{card.desc}</p>
