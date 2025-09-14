@@ -9,38 +9,20 @@ import Image from "next/image";
 import Script from "next/script";
 import styles from "../home/HomePage.module.css";
 
-// ------------------------ 광고 배너 ------------------------
-function AdBanner({ width = "90%", height = "600px", marginLeft = 0, marginRight = 0 }) {
-  // 항상 테스트 광고 표시
+function AdBanner({ height = "600px" }) {
   return (
-    <div
-      style={{
-        width: "200px",
-        height,
-        marginLeft,
-        marginRight,
-        marginTop: "50px",
-        backgroundColor: "#e5e7eb",
-        borderRadius: "12px",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        color: "#555",
-        fontWeight: "bold",
-        fontSize: "14px",
-      }}
-    >
-      테스트 광고
+    <div className={styles.adBanner} style={{ height }}>
+      서브페이지 광고
     </div>
   );
 }
-
 
 export default function RestaurantPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [nickname, setNickname] = useState("");
   const [university, setUniversity] = useState("");
+  const currentPath = "/restaurant";
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -82,7 +64,9 @@ export default function RestaurantPage() {
           {tabs.map((tab) => (
             <span
               key={tab.path}
-              className={styles.navTab}
+              className={`${styles.navTab} ${
+                currentPath === tab.path ? styles.activeTab : ""
+              }`}
               onClick={() => router.push(tab.path)}
             >
               {tab.label}
@@ -101,41 +85,26 @@ export default function RestaurantPage() {
         </div>
       </div>
 
-      <div style={{ display: "flex", marginTop: "32px", gap: "16px" }}>
-        <div style={{ flex: "1", display: "flex", justifyContent: "flex-start" }}>
-          <AdBanner width="80%" height="700px" marginLeft="64px" />
-        </div>
-
-        <div style={{ flex: "3", textAlign: "center" }}>
-          <h2 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "24px" }}>
-            {university ? `${university} 맛집추천!` : "맛집추천!"}
-          </h2>
-
-          <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: "200px",
-                  height: "250px",
-                  backgroundColor: "#fff",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: "bold",
-                  color: "#999",
-                }}
-              >
-                카드 {i}
-              </div>
-            ))}
+      <div className={styles.content}>
+        <AdBanner height="700px" />
+        <div className={styles.mainContentContainer}>
+          <div className={styles.boardSection}>
+            <h1 className={styles.boardTitle}>
+              {university ? `${university} 맛집추천!` : "맛집추천!"}
+            </h1>
+            <p style={{ fontSize: "18px", color: "#555", marginBottom: "32px" }}>
+              새로운 인연을 만들어보세요!
+            </p>
+            <div className={styles.restaurantCardContainer}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className={styles.restaurantCard}>
+                  카드 {i}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div style={{ flex: "1", display: "flex", justifyContent: "flex-end" }}>
-          <AdBanner width="80%" height="700px" marginRight="64px" />
-        </div>
+        <AdBanner height="700px" />
       </div>
     </div>
   );

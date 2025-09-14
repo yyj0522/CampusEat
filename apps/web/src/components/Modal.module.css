@@ -1,0 +1,75 @@
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContainer {
+    background-color: white;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    animation: fadeInScale 0.3s ease-out;
+}
+
+.modalMessage {
+    font-size: 16px;
+    margin-bottom: 24px;
+    color: #333;
+}
+
+.modalButtons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.confirmBtn,
+.cancelBtn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    font-weight: 500;
+}
+
+.confirmBtn {
+    background-color: #4f46e5;
+    color: white;
+}
+
+.confirmBtn:hover {
+    background-color: #4338ca;
+}
+
+.cancelBtn {
+    background-color: #e5e7eb;
+    color: #4b5563;
+}
+
+.cancelBtn:hover {
+    background-color: #d1d5db;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

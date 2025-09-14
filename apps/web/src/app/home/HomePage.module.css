@@ -1,68 +1,512 @@
 .container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background-color: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #f9fafb;
+    min-width: 1200px; 
 }
 
 .navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-  height: 60px;
-  background-color: #ffffff;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    height: 60px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .navLeft {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
 }
 
 .appName {
-  font-weight: 800;
-  font-size: 1.2rem;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: #4f46e5;
 }
 
 .navCenter {
-  display: flex;
-  gap: 24px;
+    display: flex;
+    gap: 24px;
 }
 
 .navTab {
-  cursor: pointer;
-  font-weight: 500;
-  color: #374151;
+    cursor: pointer;
+    font-weight: 500;
+    color: #374151;
+    transition: color 0.2s;
+}
+
+.navTab:hover {
+    color: #4f46e5;
 }
 
 .activeTab {
-  font-weight: 700;
-  color: #3b82f6;
-  border-bottom: 2px solid #3b82f6;
+    font-weight: 700;
+    color: #3b82f6;
+    border-bottom: 2px solid #3b82f6;
 }
 
 .navRight {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .logoutBtn {
-  padding: 4px 12px;
-  border: none;
-  background-color: #ef4444;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
+    padding: 4px 12px;
+    border: none;
+    background-color: #ef4444;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
 }
 
 .logoutBtn:hover {
-  background-color: #dc2626;
+    background-color: #dc2626;
 }
 
 .content {
-  flex: 1;
-  padding: 20px;
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
 }
+
+.boardSection {
+    flex: 3;
+    text-align: center;
+    position: relative;
+    background-color: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.boardTitle {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 16px;
+}
+
+.boardSubtitle {
+  font-size: 18px;
+  color: #555;
+  margin-bottom: 32px;
+}
+
+.sortBar {
+    display: grid;
+    grid-template-columns: 8% 55% 13% 8% 8% 8%;
+    font-weight: bold;
+    padding: 8px 16px;
+    border-bottom: 2px solid #ccc;
+    background-color: #f9fafb;
+    border-radius: 12px;
+    margin-bottom: 10px; 
+}
+
+.writeButton {
+    position: absolute;
+    bottom: 12px;
+    right: 16px;
+    padding: 10px 20px;
+    background-color: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.boardContainer {
+    width: 100%;
+}
+
+.postItem {
+    margin-bottom: 16px;
+}
+
+.postSummary {
+    display: grid;
+    grid-template-columns: 8% 55% 13% 8% 8% 8%;
+    border-bottom: 1px solid #eee;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.postTitle {
+    text-align: left;
+}
+
+.postContentContainer {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 8px 16px 0 16px;
+    background-color: #fff;
+    text-align: left;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.editSection {
+    margin-bottom: 16px;
+}
+
+.editTextArea {
+    width: 97.5%;
+    min-height: 200px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.imagePreview {
+    position: relative;
+    margin-top: 12px;
+    display: inline-block;
+}
+
+.postImage {
+    max-width: 100%;
+    border-radius: 8px;
+    display: block;
+}
+
+.deleteImageBtn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-weight: bold;
+    line-height: 24px;
+    text-align: center;
+}
+
+.editButtons {
+    margin-top: 8px;
+    text-align: right;
+}
+
+.saveBtn {
+    padding: 6px 12px;
+    margin-right: 8px;
+    background-color: #4f46e5;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.cancelBtn {
+    padding: 6px 12px;
+    background-color: #ccc;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.postBody {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    background-color: #fafafa;
+    min-height: 300px;
+}
+
+.postText {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.actionButtons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.likeButtonContainer {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.likeBtn {
+    padding: 6px 12px;
+    background-color: #fff;
+    color: #000;
+    border: 1px solid #000;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.likeBtn.liked {
+    background-color: #4f46e5;
+    color: #fff;
+}
+
+.editDeleteButtons {
+    display: flex;
+    gap: 8px;
+}
+
+.editBtn {
+    padding: 6px 12px;
+    background-color: #4f46e5;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.deleteBtn {
+    padding: 6px 12px;
+    background-color: #f43f5e;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.commentsList {
+    margin-top: 8px;
+}
+
+.commentItem {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.commentHeader {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+}
+
+.commentAuthor {
+    font-weight: bold;
+}
+
+.commentDate {
+    color: #888;
+    font-size: 12px;
+}
+
+.commentContent {
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.commentDeleteBtn {
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.commentInputContainer {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+}
+
+.commentInput {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.commentSubmitBtn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    background-color: #4f46e5;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+.writeFormContainer {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 500px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.titleInput {
+    width: 95%;
+    margin-bottom: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 18px;
+    border: 1px solid #ccc;
+}
+
+.formatTools {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.fontSizeSelect {
+    margin-left: 4px;
+}
+
+.formatBtn {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    margin-left: 4px;
+}
+
+.activeFormatBtn {
+    background-color: #4f46e5;
+    color: #fff;
+}
+
+.imageUpload {
+    margin-left: 4px;
+}
+
+.contentTextArea {
+    width: 95%;
+    min-height: 450px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    resize: vertical;
+}
+
+.imagePreviewContainer {
+    margin-top: 12px;
+    position: relative;
+    display: inline-block;
+}
+
+.previewImage {
+    max-width: 100%;
+    border-radius: 8px;
+}
+
+.removeImageBtn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.submitButtonContainer {
+    margin-top: 16px;
+    text-align: right;
+}
+
+.submitButton {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background-color: #4f46e5;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+.adBanner {
+    flex-shrink: 0;
+    width: 200px;
+    background-color: #e0e7ff;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #4f46e5;
+}
+
+.mainContentContainer {
+    flex-grow: 1;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+}
+
+.informationSection {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 16px;
+}
+
+.infoCard {
+    flex: 1;
+    background-color: #f9fafb;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 285px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.infoTitle {
+    font-weight: bold;
+    margin-bottom: 16px;
+}
+
+.restaurantCardContainer {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.restaurantCard {
+  width: 200px;
+  height: 250px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #999;
+}
+
+
