@@ -102,17 +102,6 @@
   margin-bottom: 32px;
 }
 
-.sortBar {
-    display: grid;
-    grid-template-columns: 8% 55% 13% 8% 8% 8%;
-    font-weight: bold;
-    padding: 8px 16px;
-    border-bottom: 2px solid #ccc;
-    background-color: #f9fafb;
-    border-radius: 12px;
-    margin-bottom: 10px; 
-}
-
 .writeButton {
     position: absolute;
     bottom: 12px;
@@ -508,5 +497,32 @@
   font-weight: bold;
   color: #999;
 }
+
+.postTitle {
+  white-space: nowrap;       /* 줄바꿈 방지 */
+  overflow: hidden;          /* 넘치는 텍스트 숨김 */
+  text-overflow: ellipsis;   /* 말줄임표 표시 */
+  max-width: 70%;            /* 제목 최대 폭 조정 (필요에 따라 %) */
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.commentCount {
+  color: red;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+
+.sortBar {
+    display: grid;
+    grid-template-columns: 8% 55% 13% 8% 8% 8%;
+    font-weight: bold;
+    padding: 8px 16px;
+    border-bottom: 2px solid #ccc;
+    background-color: #f9fafb;
+    border-radius: 12px;
+    margin-bottom: 10px; 
+}
+
 
 

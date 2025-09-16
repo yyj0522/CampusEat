@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db, storage } from "../../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -10,7 +10,6 @@ import Image from "next/image";
 import styles from "../../home/HomePage.module.css";
 import Modal from "../../../components/Modal";
 
-// ------------------------ 광고 배너 ------------------------
 function AdBanner({ width = "90%", height = "600px", marginLeft = 0, marginRight = 0 }) {
   return (
     <div className={styles.adBanner} style={{ width: "200px", height, marginLeft, marginRight }}>
@@ -26,19 +25,16 @@ export default function WritePage() {
   const [university, setUniversity] = useState("");
 
   const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [fontSize, setFontSize] = useState(16);
-  const [bold, setBold] = useState(false);
-  const [italic, setItalic] = useState(false);
-  const [underline, setUnderline] = useState(false);
-  const [align, setAlign] = useState("left");
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [isSuccessModal, setIsSuccessModal] = useState(false);
+  const [imageFiles, setImageFiles] = useState([]); 
+  const [imagePreviews, setImagePreviews] = useState([]);
   const currentPath = "/chat/write";
+
+  const editorRef = useRef(null);
+  const [isEditorEmpty, setIsEditorEmpty] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -56,22 +52,66 @@ export default function WritePage() {
     return () => unsubscribe();
   }, [router]);
 
-  // ---------------- 이미지 선택 ----------------
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files);
+    if (imageFiles.length + files.length > 5) {
+      setModalMessage("첨부파일은 최대 5개까지 가능합니다.");
+      setIsSuccessModal(false);
+      setShowModal(true);
+      return;
+    }
+
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
+    setImageFiles([...imageFiles, ...files]);
+    setImagePreviews([...imagePreviews, ...newPreviews]);
   };
 
-  // 이미지 삭제
-  const handleImageRemove = () => {
-    setImageFile(null);
-    setImagePreview(null);
+  const handleImageRemove = (index) => {
+    const newFiles = [...imageFiles];
+    const newPreviews = [...imagePreviews];
+    newFiles.splice(index, 1);
+    newPreviews.splice(index, 1);
+    setImageFiles(newFiles);
+    setImagePreviews(newPreviews);
   };
 
-  // ---------------- 글 작성 ----------------
+  const insertImageAtCursor = (src) => {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+
+    const range = sel.getRangeAt(0);
+    const img = document.createElement("img");
+    img.src = src;
+    img.style.maxWidth = "100%";
+    img.style.display = "block";
+    range.insertNode(img);
+
+    range.setStartAfter(img);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    editorRef.current.focus();
+  };
+
+  const applyStyle = (command, value = null) => {
+    document.execCommand("styleWithCSS", false, true);
+    document.execCommand(command, false, value);
+    editorRef.current.focus();
+  };
+
+  const applyFontSize = (size) => {
+    document.execCommand("styleWithCSS", false, true);
+    document.execCommand("fontSize", false, 7); 
+    editorRef.current.querySelectorAll('font[size="7"]').forEach((el) => {
+      el.style.fontSize = `${size}px`;
+      el.removeAttribute("size");
+    });
+    editorRef.current.focus();
+  };
+
   const handleSubmit = async () => {
+    const content = editorRef.current.innerHTML;
     if (!title.trim() || !content.trim()) {
       setModalMessage("제목과 내용을 입력해주세요.");
       setIsSuccessModal(false);
@@ -82,27 +122,25 @@ export default function WritePage() {
     setSubmitting(true);
 
     try {
-      let imageURL = "";
-      if (imageFile) {
-        const storageRef = ref(storage, `posts/${Date.now()}_${imageFile.name}`);
-        await uploadBytes(storageRef, imageFile);
-        imageURL = await getDownloadURL(storageRef);
+      let uploadedImageURLs = [];
+      for (const file of imageFiles) {
+        const storageRef = ref(storage, `posts/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        uploadedImageURLs.push(url);
       }
 
       await addDoc(collection(db, "posts"), {
         title,
         content,
-        authorNickname: nickname,
+        authorUID: user.uid,       
+        authorNickname: nickname,  
         authorUniversity: university,
         createdAt: serverTimestamp(),
         likeCount: 0,
         views: 0,
-        fontSize,
-        bold,
-        italic,
-        underline,
-        align,
-        imageURL,
+        commentCount: 0,
+        imageURLs: uploadedImageURLs,
       });
 
       setModalMessage("글이 성공적으로 작성되었습니다.");
@@ -118,13 +156,6 @@ export default function WritePage() {
     }
   };
 
-  // ---------------- 서식도구 버튼 스타일 ----------------
-  const formatButtonStyle = (active) => ({
-    backgroundColor: active ? "#4f46e5" : "#fff",
-    color: active ? "#fff" : "#000",
-  });
-
-  // ---------------- 상단바 탭 ----------------
   const tabs = [
     { label: "맛집추천", path: "/restaurant" },
     { label: "번개모임", path: "/meeting" },
@@ -134,7 +165,6 @@ export default function WritePage() {
 
   return (
     <div className={styles.container}>
-      {/* 상단바 */}
       <div className={styles.navbar}>
         <div className={styles.navLeft} onClick={() => router.push("/home")} style={{ cursor: "pointer" }}>
           <Image src="/icon.png" alt="캠퍼스잇 로고" width={40} height={40} />
@@ -143,7 +173,11 @@ export default function WritePage() {
 
         <div className={styles.navCenter}>
           {tabs.map((tab) => (
-            <span key={tab.path} className={`${styles.navTab} ${currentPath === tab.path ? styles.activeTab : ''}`} onClick={() => router.push(tab.path)}>
+            <span
+              key={tab.path}
+              className={`${styles.navTab} ${currentPath === tab.path ? styles.activeTab : ''}`}
+              onClick={() => router.push(tab.path)}
+            >
               {tab.label}
             </span>
           ))}
@@ -157,7 +191,6 @@ export default function WritePage() {
         </div>
       </div>
 
-      {/* 중앙 컨텐츠 */}
       <div className={styles.content}>
         <AdBanner />
         <div className={styles.mainContentContainer}>
@@ -171,38 +204,71 @@ export default function WritePage() {
                 onChange={(e) => setTitle(e.target.value)}
                 className={styles.titleInput}
               />
-              {/* 서식도구 + 이미지첨부 */}
+
               <div className={styles.formatTools}>
-                <select value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} className={styles.fontSizeSelect}>
-                  {[14, 16, 18, 20, 22, 24, 28, 32].map((size) => <option key={size} value={size}>{size}px</option>)}
+                <select onChange={(e) => applyFontSize(Number(e.target.value))} defaultValue={16} className={styles.fontSizeSelect}>
+                  {[14, 16, 18, 20, 22, 24, 28, 32].map((size) => (
+                    <option key={size} value={size}>{size}px</option>
+                  ))}
                 </select>
-                <button onClick={() => setBold(!bold)} className={`${styles.formatBtn} ${bold ? styles.activeFormatBtn : ''}`}>B</button>
-                <button onClick={() => setItalic(!italic)} className={`${styles.formatBtn} ${italic ? styles.activeFormatBtn : ''}`}>I</button>
-                <button onClick={() => setUnderline(!underline)} className={`${styles.formatBtn} ${underline ? styles.activeFormatBtn : ''}`}>U</button>
-                <button onClick={() => setAlign("left")} className={`${styles.formatBtn} ${align==="left" ? styles.activeFormatBtn : ''}`}>왼쪽</button>
-                <button onClick={() => setAlign("center")} className={`${styles.formatBtn} ${align==="center" ? styles.activeFormatBtn : ''}`}>가운데</button>
-                <button onClick={() => setAlign("right")} className={`${styles.formatBtn} ${align==="right" ? styles.activeFormatBtn : ''}`}>오른쪽</button>
-                <input type="file" accept="image/*" onChange={handleImageChange} className={styles.imageUpload} />
+                <button onClick={() => applyStyle("bold")} className={styles.formatBtn}>B</button>
+                <button onClick={() => applyStyle("italic")} className={styles.formatBtn}>I</button>
+                <button onClick={() => applyStyle("underline")} className={styles.formatBtn}>U</button>
+                <button onClick={() => applyStyle("justifyLeft")} className={styles.formatBtn}>왼쪽</button>
+                <button onClick={() => applyStyle("justifyCenter")} className={styles.formatBtn}>가운데</button>
+                <button onClick={() => applyStyle("justifyRight")} className={styles.formatBtn}>오른쪽</button>
+                <input type="file" accept="image/*" onChange={handleImageChange} multiple className={styles.imageUpload} />
               </div>
-              <textarea
-                placeholder="내용"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
+
+              <div
+                ref={editorRef}
                 className={styles.contentTextArea}
+                contentEditable
+                suppressContentEditableWarning
                 style={{
-                  fontSize,
-                  fontWeight: bold ? "bold" : "normal",
-                  fontStyle: italic ? "italic" : "normal",
-                  textDecoration: underline ? "underline" : "none",
-                  textAlign: align,
+                  minHeight: "400px", 
+                  border: "1px solid #ccc",
+                  padding: "10px",
+                  overflowY: "auto",
+                  textAlign: "left", 
+                  fontSize: "16px",
                 }}
-              />
-              {imagePreview && (
-                <div className={styles.imagePreviewContainer}>
-                  <img src={imagePreview} alt="preview" className={styles.previewImage} />
-                  <button onClick={handleImageRemove} className={styles.removeImageBtn}>×</button>
-                </div>
-              )}
+                onInput={() => setIsEditorEmpty(editorRef.current.innerHTML === "" || editorRef.current.innerHTML === "<br>")}
+                data-placeholder="글 내용을 입력해주세요."
+              >
+                {isEditorEmpty && <span style={{ color: "#999" }}>글 내용을 입력해주세요.</span>}
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "10px", overflowX: "auto" }}>
+                {imagePreviews.map((src, index) => (
+                  <div key={index} style={{ position: "relative" }}>
+                    <img
+                      src={src}
+                      alt={`preview-${index}`}
+                      style={{ width: "80px", height: "80px", objectFit: "cover", cursor: "pointer", border: "1px solid #ccc" }}
+                      onClick={() => insertImageAtCursor(src)}
+                    />
+                    <button
+                      onClick={() => handleImageRemove(index)}
+                      style={{
+                        position: "absolute",
+                        top: "-5px",
+                        right: "-5px",
+                        background: "red",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: "20px",
+                        height: "20px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+
               <div className={styles.submitButtonContainer}>
                 <button onClick={handleSubmit} disabled={submitting} className={styles.submitButton}>
                   {submitting ? "작성 중..." : "완료"}
@@ -213,6 +279,7 @@ export default function WritePage() {
         </div>
         <AdBanner />
       </div>
+
       {showModal && (
         <Modal
           message={modalMessage}

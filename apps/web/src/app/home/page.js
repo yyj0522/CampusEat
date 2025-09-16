@@ -4,25 +4,21 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, onSnapshot, Timestamp, doc, getDoc } from "firebase/firestore";
 import Image from "next/image";
 import { FiArrowRight, FiHeart, FiUsers, FiBook, FiMessageSquare } from "react-icons/fi";
 
 import sharedStyles from "./HomePage.module.css";
 import homeStyles from "./Home.module.css";
 
-function AdBanner() {
-  return (
-    <div className={homeStyles.adBannerSection}>
-      메인 페이지 광고
-    </div>
-  );
+function AdBanner({ style }) {
+  return <div className={homeStyles.adBannerSection} style={style}>메인페이지 광고</div>;
 }
 
 export default function HomePage() {
   const router = useRouter();
   const [nickname, setNickname] = useState("");
-  const currentPath = "/home";
+  const [popularPosts, setPopularPosts] = useState([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -36,6 +32,29 @@ export default function HomePage() {
     });
     return () => unsubscribe();
   }, [router]);
+
+  useEffect(() => {
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000); 
+    const postsRef = collection(db, "posts");
+
+    const q = query(
+      postsRef,
+      where("createdAt", ">=", Timestamp.fromDate(yesterday)),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const posts = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => (b.views || 0) - (a.views || 0)) // 조회수 내림차순
+        .slice(0, 6); // 최대 6개
+
+      setPopularPosts(posts);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const tabs = [
     { label: "맛집추천", path: "/restaurant" },
@@ -71,24 +90,14 @@ export default function HomePage() {
     },
   ];
 
-  const recentPosts = [
-    { id: 1, title: "오늘 학식 메뉴가 궁금하다면?", path: "/information" },
-    { id: 2, title: "새내기들을 위한 동아리 추천!", path: "/chat" },
-    { id: 3, title: "같이 코딩 스터디할 분 구해요!", path: "/meeting" },
-    { id: 4, title: "최신 맛집 리스트를 공개합니다!", path: "/restaurant" },
-  ];
-
-  const popularPosts = [
-    { id: 5, title: "졸업생이 알려주는 꿀팁 대방출!", path: "/chat" },
-    { id: 6, title: "시험 기간 밤샘 공부 맛집 추천", path: "/restaurant" },
-    { id: 7, title: "학교 근처 가성비 좋은 카페", path: "/restaurant" },
-    { id: 8, title: "토익 스터디 같이 하실 분!", path: "/meeting" },
-  ];
-
   return (
     <div className={sharedStyles.container}>
       <div className={sharedStyles.navbar}>
-        <div className={sharedStyles.navLeft} onClick={() => router.push("/home")} style={{ cursor: "pointer" }}>
+        <div
+          className={sharedStyles.navLeft}
+          onClick={() => router.push("/home")}
+          style={{ cursor: "pointer" }}
+        >
           <Image src="/icon.png" alt="캠퍼스잇 로고" width={40} height={40} />
           <span className={sharedStyles.appName}>캠퍼스잇</span>
         </div>
@@ -117,9 +126,7 @@ export default function HomePage() {
                 className={homeStyles.contentCard}
                 onClick={() => router.push(card.path)}
               >
-                <div className={homeStyles.cardIcon}>
-                  {card.icon}
-                </div>
+                <div className={homeStyles.cardIcon}>{card.icon}</div>
                 <h3 className={homeStyles.cardTitle}>{card.title}</h3>
                 <p className={homeStyles.cardDesc}>{card.desc}</p>
                 <div className={homeStyles.cardLink}>
@@ -131,38 +138,32 @@ export default function HomePage() {
         </div>
 
         <div className={homeStyles.rightColumn}>
-          <div className={homeStyles.infoCard}>
+          <div
+            className={homeStyles.infoCard}
+            style={{ height: "50%", overflowY: "auto", marginBottom: "1rem" }}
+          >
             <h2 className={homeStyles.sectionTitle}>
-              최근 소식
-              <span className={homeStyles.viewAllLink} onClick={() => router.push("/chat")}>
-                전체보기
-              </span>
-            </h2>
-            <ul className={homeStyles.postList}>
-              {recentPosts.map((post) => (
-                <li key={post.id} className={homeStyles.postItem} onClick={() => router.push(post.path)}>
-                  <span className={homeStyles.postTitlePreview}>{post.title}</span>
-                  <span className={homeStyles.postDate}>2025-09-12</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className={homeStyles.infoCard}>
-            <h2 className={homeStyles.sectionTitle}>
-              인기 게시물
+              실시간 인기 게시물
               <span className={homeStyles.viewAllLink} onClick={() => router.push("/chat")}>
                 전체보기
               </span>
             </h2>
             <ul className={homeStyles.postList}>
               {popularPosts.map((post) => (
-                <li key={post.id} className={homeStyles.postItem} onClick={() => router.push(post.path)}>
+                <li
+                  key={post.id}
+                  className={homeStyles.postItem}
+                  onClick={() => router.push(`/chat/${post.id}`)}
+                >
                   <span className={homeStyles.postTitlePreview}>{post.title}</span>
-                  <span className={homeStyles.postDate}>2025-09-13</span>
+                  <span className={homeStyles.postDate}>
+                    {post.createdAt?.toDate().toLocaleDateString()}
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
+          <AdBanner style={{ height: "50%" }} />
         </div>
       </div>
     </div>

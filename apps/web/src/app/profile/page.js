@@ -86,13 +86,13 @@ export default function ProfilePage() {
         <section className={styles.section}>
           <h2>내 정보</h2>
           <ul className={styles.list}>
-            <li onClick={() => handleClick("내 정보", "이름")}>
+            <li>
               이름: {userData.nickname}
             </li>
-            <li onClick={() => handleClick("내 정보", "이메일")}>
+            <li>
               이메일: {userData.email}
             </li>
-            <li onClick={() => handleClick("내 정보", "학교")}>
+            <li>
               학교: {userData.university} ({userData.universityEmail})
             </li>
           </ul>
@@ -128,13 +128,13 @@ export default function ProfilePage() {
         <section className={styles.section}>
           <h2>커뮤니티</h2>
           <ul className={styles.list}>
-            <li onClick={() => handleClick("커뮤니티", "닉네임 변경")}>
+            <li onClick={() => router.push("/profile/nickname")}>
               닉네임 변경
             </li>
-            <li onClick={() => handleClick("커뮤니티", "내가 작성한 글")}>
+            <li onClick={() => router.push("/profile/myposts")}>
               내가 작성한 글
             </li>
-            <li onClick={() => handleClick("커뮤니티", "내가 작성한 댓글")}>
+            <li onClick={() => router.push("/profile/mycomments")}>
               내가 작성한 댓글
             </li>
           </ul>
