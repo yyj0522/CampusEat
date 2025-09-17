@@ -8,7 +8,6 @@ import { doc, getDoc, collection, getDocs, query, where, orderBy } from "firebas
 import Image from "next/image";
 import styles from "../../home/HomePage.module.css";
 
-// ------------------------ 내 댓글 단 글 리스트 ------------------------
 function CommentedPosts({ currentUserUID, router }) {
   const [posts, setPosts] = useState([]);
   const [refresh, setRefresh] = useState(0);

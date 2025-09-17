@@ -47,6 +47,8 @@ export default function ProfilePage() {
 
   if (!userData) return <p className={styles.loading}>로딩 중...</p>;
 
+  const currentPath = "/profile"; 
+
   return (
     <div className={styles.container}>
       <div className={styles.navbar}>
@@ -63,7 +65,9 @@ export default function ProfilePage() {
           {tabs.map((tab) => (
             <span
               key={tab.path}
-              className={styles.navTab}
+              className={`${styles.navTab} ${
+                currentPath === tab.path ? styles.activeTab : ""
+              }`}
               onClick={() => router.push(tab.path)}
             >
               {tab.label}
@@ -72,7 +76,7 @@ export default function ProfilePage() {
         </div>
 
         <div className={styles.navRight}>
-          {userData.nickname && <span>{userData.nickname}님 환영합니다!</span>}
+          {userData?.nickname && <span>{userData.nickname}님 환영합니다!</span>}
           <button
             className={styles.logoutBtn}
             onClick={() => router.push("/profile")}
@@ -86,12 +90,8 @@ export default function ProfilePage() {
         <section className={styles.section}>
           <h2>내 정보</h2>
           <ul className={styles.list}>
-            <li>
-              이름: {userData.nickname}
-            </li>
-            <li>
-              이메일: {userData.email}
-            </li>
+            <li>이름: {userData.nickname}</li>
+            <li>이메일: {userData.email}</li>
             <li>
               학교: {userData.university} ({userData.universityEmail})
             </li>
@@ -139,9 +139,9 @@ export default function ProfilePage() {
             </li>
           </ul>
         </section>
+
         <div
           style={{
-            marginTop: "32px",
             padding: "16px",
             borderRadius: "8px",
             backgroundColor: "#fee2e2",

@@ -8,8 +8,6 @@ import styles from "./LoginPage.module.css";
 export default function SignUpStep2({ formData, setFormData, next }) {
   const [universities, setUniversities] = useState([]);
   const [emailStatus, setEmailStatus] = useState("");
-
-  // 대학 이메일 도메인 매핑
   const universityDomains = {
     "서울대학교(본교)": "@snu.ac.kr",
     "연세대학교(본교)": "@yonsei.ac.kr",
@@ -19,7 +17,6 @@ export default function SignUpStep2({ formData, setFormData, next }) {
     "백석문화대학교(본교)": "@bscu.ac.kr",
   };
 
-  // 대학 리스트 불러오기
   useEffect(() => {
     const fetchUniversities = async () => {
       try {
@@ -37,12 +34,10 @@ export default function SignUpStep2({ formData, setFormData, next }) {
     fetchUniversities();
   }, []);
 
-  // 자동완성 필터링
   const filteredUniversities = universities.filter((u) =>
     u.toLowerCase().includes(formData.university?.toLowerCase() || "")
   );
 
-  // 이메일 입력 시 실시간 검증
   const handleEmailChange = (value) => {
     setFormData((prev) => ({ ...prev, universityEmail: value }));
 
@@ -60,7 +55,6 @@ export default function SignUpStep2({ formData, setFormData, next }) {
     }
   };
 
-  // 인증번호 발송 전 중복 이메일 확인
   const handleNext = async () => {
     const email = formData.universityEmail;
     const selectedUniversity = formData.university;
@@ -76,7 +70,6 @@ export default function SignUpStep2({ formData, setFormData, next }) {
       return;
     }
 
-    // 중복 이메일 체크
     try {
       const q = query(collection(db, "users"), where("universityEmail", "==", email));
       const querySnapshot = await getDocs(q);
@@ -90,7 +83,6 @@ export default function SignUpStep2({ formData, setFormData, next }) {
       return;
     }
 
-    // 이메일 중복이 아니면 인증번호 발송
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     try {
       const res = await fetch("/api/sendVerification", {
@@ -116,7 +108,6 @@ export default function SignUpStep2({ formData, setFormData, next }) {
 
   return (
     <div style={{ maxWidth: 400, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
-      {/* 대학 입력 + 자동완성 */}
       <input
         type="text"
         placeholder="대학교 입력"
@@ -137,7 +128,6 @@ export default function SignUpStep2({ formData, setFormData, next }) {
         ))}
       </div>
 
-      {/* 이메일 입력 */}
       <input
         type="email"
         placeholder="대학교 이메일"

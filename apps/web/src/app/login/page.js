@@ -9,7 +9,7 @@ import PwFind from "./PwFind";
 import styles from "./LoginPage.module.css";
 
 export default function LoginPage() {
-  const [mode, setMode] = useState("login"); // login, signup, findID, findPW
+  const [mode, setMode] = useState("login"); 
 
   return (
     <div className={styles.container}>
@@ -19,13 +19,11 @@ export default function LoginPage() {
       </div>
       <p className={styles.subtitle}>캠퍼스 생활을 더 즐겁게 만드는 당신의 친구!</p>
 
-      {/* 모드에 따라 화면 전환 */}
       {mode === "login" && <LoginForm />}
       {mode === "signup" && <SignUpForm onComplete={() => setMode("login")} />}
       {mode === "findID" && <IdFind onComplete={() => setMode("login")} />}
       {mode === "findPW" && <PwFind onComplete={() => setMode("login")} />}
 
-      {/* 하단 버튼: 로그인 모드에서만 표시 */}
       {mode === "login" && (
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 12 }}>
           <span

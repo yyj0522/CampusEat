@@ -14,14 +14,12 @@ export default function SignUpStep3({ formData, onComplete }) {
   const [canResend, setCanResend] = useState(true);
   const [emailError, setEmailError] = useState("");
 
-  // 타이머 포맷 함수
   const formatTime = (seconds) => {
     const m = String(Math.floor(seconds / 60)).padStart(2, "0");
     const s = String(seconds % 60).padStart(2, "0");
     return `${m}:${s}`;
   };
 
-  // 타이머
   useEffect(() => {
     if (timeLeft <= 0) return;
     const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
@@ -61,11 +59,9 @@ export default function SignUpStep3({ formData, onComplete }) {
       if (diff > 180) return setEmailError("인증번호 유효시간이 만료되었습니다.");
       if (data.code !== codeInput) return setEmailError("인증번호가 올바르지 않습니다.");
 
-      // 이메일 중복 체크
       const userSnap = await getDoc(doc(db, "users", formData.email));
       if (userSnap.exists()) return setEmailError("이미 가입된 이메일입니다.");
 
-      // 회원가입
       const userCred = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       await setDoc(doc(db, "users", userCred.user.uid), {
         nickname: formData.nickname,
@@ -85,12 +81,10 @@ export default function SignUpStep3({ formData, onComplete }) {
 
   return (
     <div style={{ maxWidth: 400, margin: "0 auto", display: "flex", flexDirection: "column", gap: 8 }}>
-      {/* 타이머 */}
       <span style={{ color: "blue", fontSize: 12, textAlign: "left" }}>
         남은 시간: {formatTime(timeLeft)}
       </span>
 
-      {/* 인증번호 입력 + 재전송 버튼 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <input
           type="text"
@@ -101,22 +95,18 @@ export default function SignUpStep3({ formData, onComplete }) {
           style={{ flex: 1 }}
         />
         <button
-  onClick={handleResend}
-  disabled={!canResend}
-  className={styles.button}
-  style={{ width: 90, height: "48px", fontSize: "16px" }}
->
-  재전송
-</button>
-
-      </div>
-
-      {emailError && <span style={{ color: "red", fontSize: 12 }}>{emailError}</span>}
-
-      {/* 완료 버튼 */}
-      <button className={styles.button} style={{ height: "48px" }} onClick={handleVerify}>
-        완료
-      </button>
-    </div>
-  );
-}
+        onClick={handleResend}
+        disabled={!canResend}
+        className={styles.button}
+        style={{ width: 90, height: "48px", fontSize: "16px" }}
+        >
+          재전송
+          </button>
+          </div>
+          {emailError && <span style={{ color: "red", fontSize: 12 }}>{emailError}</span>}
+          <button className={styles.button} style={{ height: "48px" }} onClick={handleVerify}>
+            완료
+            </button>
+            </div>
+            );
+          }

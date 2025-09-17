@@ -53,7 +53,6 @@ export default function NicknameChangePage() {
       return;
     }
 
-    // 1. 현재 닉네임과 동일 체크
     if (nickname === currentNickname) {
       setModalMsg("현재 닉네임과 동일한 닉네임입니다.");
       setShowModal(true);
@@ -64,17 +63,14 @@ export default function NicknameChangePage() {
       const userDocRef = doc(db, "users", currentUser.uid);
       const userDocSnap = await getDoc(userDocRef);
       const data = userDocSnap.data();
-
-      // 2. 24시간 제한 체크
       const lastChange = data?.lastNicknameChange?.toDate?.() || new Date(0);
-      const ONE_DAY = 24 * 60 * 60 * 1000; // 24시간
+      const ONE_DAY = 24 * 60 * 60 * 1000; 
       if (new Date() - lastChange < ONE_DAY) {
         setModalMsg("닉네임 변경은 24시간에 한 번만 가능합니다.");
         setShowModal(true);
         return;
       }
 
-      // 3. 중복 체크
       const querySnapshot = await getDocs(collection(db, "users"));
       const isDuplicate = querySnapshot.docs.some(
         (doc) => doc.data().nickname === nickname && doc.id !== currentUser.uid
@@ -86,7 +82,6 @@ export default function NicknameChangePage() {
         return;
       }
 
-      // 4. 정상 변경
       await updateDoc(userDocRef, {
         nickname,
         lastNicknameChange: new Date(),
@@ -106,7 +101,6 @@ export default function NicknameChangePage() {
 
   return (
     <div className={styles.container}>
-      {/* 상단 네비게이션바 */}
       <div className={styles.navbar}>
         <div
           className={styles.navLeft}
@@ -143,7 +137,6 @@ export default function NicknameChangePage() {
         </div>
       </div>
 
-      {/* 닉네임 변경 기능 영역 */}
       <div className={styles.content} style={{ padding: "24px" }}>
         <h2>닉네임 변경</h2>
         <input
@@ -175,7 +168,6 @@ export default function NicknameChangePage() {
         </button>
       </div>
 
-      {/* 모달 */}
       {showModal && (
         <Modal
           message={modalMsg}

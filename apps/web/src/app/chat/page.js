@@ -19,7 +19,6 @@ import Image from "next/image";
 import styles from "../home/HomePage.module.css";
 import Modal from "../../components/Modal";
 
-// ------------------------ 광고 배너 ------------------------
 function AdBanner({ width = "90%", height = "600px", marginLeft = 0, marginRight = 0 }) {
   return (
     <div className={styles.adBanner} style={{ width: "200px", height, marginLeft, marginRight }}>
@@ -28,7 +27,6 @@ function AdBanner({ width = "90%", height = "600px", marginLeft = 0, marginRight
   );
 }
 
-// ------------------------ 자유게시판 ------------------------
 function FreeBoard({ nickname, university, router }) {
   const [posts, setPosts] = useState([]);
   const [refresh, setRefresh] = useState(0);
@@ -44,7 +42,7 @@ function FreeBoard({ nickname, university, router }) {
         return {
           id: docSnap.id,
           number: snap.docs.length - idx,
-          commentCount: docData.commentCount || 0, // commentCount 활용
+          commentCount: docData.commentCount || 0, 
           ...docData,
         };
       });
@@ -74,12 +72,10 @@ function FreeBoard({ nickname, university, router }) {
           .padStart(2, "0")}`;
   };
 
-  // ------------------------ 댓글 작성 ------------------------
   const addComment = async (postId, commentData) => {
     const commentsRef = collection(db, "posts", postId, "comments");
     await addDoc(commentsRef, commentData);
 
-    // commentCount 증가
     const postRef = doc(db, "posts", postId);
     await updateDoc(postRef, {
       commentCount: (posts.find(p => p.id === postId)?.commentCount || 0) + 1,
@@ -88,7 +84,6 @@ function FreeBoard({ nickname, university, router }) {
     setRefresh(prev => prev + 1);
   };
 
-  // ------------------------ 댓글 삭제 ------------------------
   const deleteComment = async (postId, commentId) => {
     const commentRef = doc(db, "posts", postId, "comments", commentId);
     await deleteDoc(commentRef);
@@ -137,7 +132,6 @@ function FreeBoard({ nickname, university, router }) {
   );
 }
 
-// ------------------------ ChatPage ------------------------
 export default function ChatPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);

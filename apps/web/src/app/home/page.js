@@ -47,8 +47,8 @@ export default function HomePage() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const posts = snapshot.docs
         .map((doc) => ({ id: doc.id, ...doc.data() }))
-        .sort((a, b) => (b.views || 0) - (a.views || 0)) // 조회수 내림차순
-        .slice(0, 6); // 최대 6개
+        .sort((a, b) => (b.views || 0) - (a.views || 0)) 
+        .slice(0, 6); 
 
       setPopularPosts(posts);
     });
