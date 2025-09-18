@@ -11,6 +11,7 @@ export default function Editor({ initialData, onSave, submitting }) {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [existingImageURLs, setExistingImageURLs] = useState([]);
   const [deletedImageURLs, setDeletedImageURLs] = useState([]);
+  const [localSubmitting, setLocalSubmitting] = useState(false); // 추가: 로컬 제출 상태
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function Editor({ initialData, onSave, submitting }) {
       setDeletedImageURLs((prev) => [...prev, previewURL]);
       setExistingImageURLs((prev) => prev.filter((url) => url !== previewURL));
 
-      // Storage에서 삭제
+      // Storage에서 삭제 시도 (원본 코드 유지)
       try {
         const storageRef = ref(storage, previewURL);
         await deleteObject(storageRef);
@@ -79,6 +80,9 @@ export default function Editor({ initialData, onSave, submitting }) {
   };
 
   const insertImageAtCursor = (src) => {
+    // 제출중이면 삽입 금지
+    if (submitting || localSubmitting) return;
+
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
 
@@ -98,40 +102,57 @@ export default function Editor({ initialData, onSave, submitting }) {
   };
 
   const handleSubmit = async () => {
-    let content = editorRef.current.innerHTML;
+    // 중복 제출 방지
+    if (submitting || localSubmitting) return;
 
-    // 글 내용에 실제 삽입된 이미지만 필터링
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(content, "text/html");
-    const imgTags = Array.from(doc.querySelectorAll("img"));
-    const contentImageURLs = imgTags.map((img) => img.src);
+    setLocalSubmitting(true); // 즉시 비활성화(버튼 문구 변경)
+    try {
+      let content = editorRef.current.innerHTML;
 
-    // 이미지 업로드 처리 (새로 추가된 파일만 업로드)
-    const uploadedURLs = [];
-    for (const file of imageFiles) {
-      // 기존 URL이면 스킵
-      if (existingImageURLs.includes(file)) continue;
-      const storageRef = ref(storage, `posts/${file.name}-${Date.now()}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      uploadedURLs.push(downloadURL);
+      // 글 내용에 실제 삽입된 이미지만 필터링
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, "text/html");
+      const imgTags = Array.from(doc.querySelectorAll("img"));
+      const contentImageURLs = imgTags.map((img) => img.src);
+
+      // 이미지 업로드 처리 (새로 추가된 파일만 업로드)
+      const uploadedURLs = [];
+      for (const file of imageFiles) {
+        // 기존 URL이면 스킵
+        if (existingImageURLs.includes(file)) continue;
+        const storageRef = ref(storage, `posts/${file.name}-${Date.now()}`);
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+        uploadedURLs.push(downloadURL);
+      }
+
+      // 최종 이미지 URL: content에 실제 삽입된 URL만 포함
+      const finalImageURLs = contentImageURLs.map((url) => {
+        if (existingImageURLs.includes(url)) return url;
+        const match = uploadedURLs.find((u) => u === url);
+        return match || url;
+      });
+
+      // 부모 함수(onSave)가 async이면 await 해서 부모 처리 끝날 때까지 로컬 제출 상태 유지
+      if (onSave) {
+        await onSave({
+          title,
+          content,
+          imageFiles,
+          deletedImageURLs,
+          imageURLs: finalImageURLs, // PostContent.js에서 사용
+        });
+      }
+    } catch (error) {
+      console.error("에디터 제출 오류:", error);
+      alert("제출 중 오류가 발생했습니다.");
+    } finally {
+      setLocalSubmitting(false);
     }
-
-    // 최종 이미지 URL: content에 실제 삽입된 URL만 포함
-    const finalImageURLs = contentImageURLs.map((url) => {
-      if (existingImageURLs.includes(url)) return url;
-      const match = uploadedURLs.find((u) => u === url);
-      return match || url;
-    });
-
-    onSave({
-      title,
-      content,
-      imageFiles,
-      deletedImageURLs,
-      imageURLs: finalImageURLs, // PostContent.js에서 사용
-    });
   };
+
+  // 제출 중인지 판단 (부모 또는 로컬 둘 중 하나라도 true면 제출 중)
+  const isSubmitting = submitting || localSubmitting;
 
   return (
     <div className={styles.writeFormContainer}>
@@ -141,6 +162,7 @@ export default function Editor({ initialData, onSave, submitting }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         className={styles.titleInput}
+        disabled={isSubmitting}
       />
 
       <div className={styles.formatTools}>
@@ -148,24 +170,32 @@ export default function Editor({ initialData, onSave, submitting }) {
           onChange={(e) => applyFontSize(Number(e.target.value))}
           defaultValue={16}
           className={styles.fontSizeSelect}
+          disabled={isSubmitting}
         >
           {[14, 16, 18, 20, 22, 24, 28, 32].map((size) => (
             <option key={size} value={size}>{size}px</option>
           ))}
         </select>
-        <button onClick={() => applyStyle("bold")} className={styles.formatBtn}>B</button>
-        <button onClick={() => applyStyle("italic")} className={styles.formatBtn}>I</button>
-        <button onClick={() => applyStyle("underline")} className={styles.formatBtn}>U</button>
-        <button onClick={() => applyStyle("justifyLeft")} className={styles.formatBtn}>왼쪽</button>
-        <button onClick={() => applyStyle("justifyCenter")} className={styles.formatBtn}>가운데</button>
-        <button onClick={() => applyStyle("justifyRight")} className={styles.formatBtn}>오른쪽</button>
-        <input type="file" accept="image/*" onChange={handleImageChange} multiple className={styles.imageUpload} />
+        <button onClick={() => applyStyle("bold")} className={styles.formatBtn} disabled={isSubmitting}>B</button>
+        <button onClick={() => applyStyle("italic")} className={styles.formatBtn} disabled={isSubmitting}>I</button>
+        <button onClick={() => applyStyle("underline")} className={styles.formatBtn} disabled={isSubmitting}>U</button>
+        <button onClick={() => applyStyle("justifyLeft")} className={styles.formatBtn} disabled={isSubmitting}>왼쪽</button>
+        <button onClick={() => applyStyle("justifyCenter")} className={styles.formatBtn} disabled={isSubmitting}>가운데</button>
+        <button onClick={() => applyStyle("justifyRight")} className={styles.formatBtn} disabled={isSubmitting}>오른쪽</button>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
+          multiple
+          className={styles.imageUpload}
+          disabled={isSubmitting}
+        />
       </div>
 
       <div
         ref={editorRef}
         className={styles.contentTextArea}
-        contentEditable
+        contentEditable={!isSubmitting}
         suppressContentEditableWarning
         style={{
           minHeight: "400px",
@@ -174,6 +204,8 @@ export default function Editor({ initialData, onSave, submitting }) {
           overflowY: "auto",
           textAlign: "left",
           fontSize: "16px",
+          opacity: isSubmitting ? 0.8 : 1,
+          pointerEvents: isSubmitting ? "none" : "auto",
         }}
       />
 
@@ -183,11 +215,12 @@ export default function Editor({ initialData, onSave, submitting }) {
             <img
               src={src}
               alt={`preview-${index}`}
-              style={{ width: "80px", height: "80px", objectFit: "cover", cursor: "pointer", border: "1px solid #ccc" }}
+              style={{ width: "80px", height: "80px", objectFit: "cover", cursor: isSubmitting ? "not-allowed" : "pointer", border: "1px solid #ccc" }}
               onClick={() => insertImageAtCursor(src)}
             />
             <button
               onClick={() => handleImageRemove(index)}
+              disabled={isSubmitting}
               style={{
                 position: "absolute",
                 top: "-5px",
@@ -198,7 +231,7 @@ export default function Editor({ initialData, onSave, submitting }) {
                 borderRadius: "50%",
                 width: "20px",
                 height: "20px",
-                cursor: "pointer",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
               }}
             >
               ×
@@ -208,8 +241,8 @@ export default function Editor({ initialData, onSave, submitting }) {
       </div>
 
       <div className={styles.submitButtonContainer}>
-        <button onClick={handleSubmit} disabled={submitting} className={styles.submitButton}>
-          {submitting ? "작성 중..." : "완료"}
+        <button onClick={handleSubmit} disabled={isSubmitting} className={styles.submitButton}>
+          {isSubmitting ? (initialData ? "수정중..." : "작성중...") : "완료"}
         </button>
       </div>
     </div>

@@ -1,7 +1,7 @@
 .container {
     display: flex;
     flex-direction: column;
-    height: 120vh;
+    height: 110vh;
     background-color: #f9fafb;
     min-width: 1200px; 
 }
@@ -450,6 +450,7 @@
 .mainContentContainer {
     flex-grow: 1;
     max-width: 800px;
+    max-height: 850px;
     display: flex;
     flex-direction: column;
 }
@@ -499,10 +500,10 @@
 }
 
 .postTitle {
-  white-space: nowrap;       /* 줄바꿈 방지 */
-  overflow: hidden;          /* 넘치는 텍스트 숨김 */
-  text-overflow: ellipsis;   /* 말줄임표 표시 */
-  max-width: 70%;            /* 제목 최대 폭 조정 (필요에 따라 %) */
+  white-space: nowrap;     
+  overflow: hidden;       
+  text-overflow: ellipsis;  
+  max-width: 70%;          
   display: inline-block;
   vertical-align: middle;
 }
@@ -524,5 +525,36 @@
     margin-bottom: 10px; 
 }
 
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  gap: 4px;
+}
+
+.pageButton {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pageButton:hover {
+  background: #f1f5f9;
+}
+
+.pageButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.activePage {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+  font-weight: bold;
+}
 
 

@@ -30,6 +30,8 @@ function AdBanner({ width = "90%", height = "600px", marginLeft = 0, marginRight
 function FreeBoard({ nickname, university, router }) {
   const [posts, setPosts] = useState([]);
   const [refresh, setRefresh] = useState(0);
+  const [page, setPage] = useState(1); // ✅ 현재 페이지
+  const postsPerPage = 10;
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -42,7 +44,7 @@ function FreeBoard({ nickname, university, router }) {
         return {
           id: docSnap.id,
           number: snap.docs.length - idx,
-          commentCount: docData.commentCount || 0, 
+          commentCount: docData.commentCount || 0,
           ...docData,
         };
       });
@@ -51,6 +53,13 @@ function FreeBoard({ nickname, university, router }) {
     };
     fetchPosts();
   }, [refresh]);
+
+  const totalPages = Math.ceil(posts.length / postsPerPage);
+
+  const paginatedPosts = posts.slice(
+    (page - 1) * postsPerPage,
+    page * postsPerPage
+  );
 
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
@@ -78,10 +87,10 @@ function FreeBoard({ nickname, university, router }) {
 
     const postRef = doc(db, "posts", postId);
     await updateDoc(postRef, {
-      commentCount: (posts.find(p => p.id === postId)?.commentCount || 0) + 1,
+      commentCount: (posts.find((p) => p.id === postId)?.commentCount || 0) + 1,
     });
 
-    setRefresh(prev => prev + 1);
+    setRefresh((prev) => prev + 1);
   };
 
   const deleteComment = async (postId, commentId) => {
@@ -90,13 +99,11 @@ function FreeBoard({ nickname, university, router }) {
 
     const postRef = doc(db, "posts", postId);
     await updateDoc(postRef, {
-      commentCount: Math.max((posts.find(p => p.id === postId)?.commentCount || 1) - 1, 0),
+      commentCount: Math.max((posts.find((p) => p.id === postId)?.commentCount || 1) - 1, 0),
     });
 
-    setRefresh(prev => prev + 1);
+    setRefresh((prev) => prev + 1);
   };
-
-  const paginatedPosts = posts.slice(0, 10);
 
   return (
     <div className={styles.boardContainer}>
@@ -114,10 +121,19 @@ function FreeBoard({ nickname, university, router }) {
               }}
             >
               <div>{post.number}</div>
-              <div style={{ display: "flex", alignItems: "center", overflow: "hidden", whiteSpace: "nowrap" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 <span className={styles.postTitle}>{post.title}</span>
                 {post.commentCount > 0 && (
-                  <span className={styles.commentCount}>[{post.commentCount}]</span>
+                  <span className={styles.commentCount}>
+                    [{post.commentCount}]
+                  </span>
                 )}
               </div>
               <div>{post.authorNickname}</div>
@@ -128,6 +144,51 @@ function FreeBoard({ nickname, university, router }) {
           </div>
         ))}
       </div>
+
+      {/* ✅ 페이지네이션 */}
+      {totalPages > 1 && (
+        <div className={styles.pagination}>
+  <button
+    onClick={() => setPage(1)}
+    disabled={page === 1}
+    className={styles.pageButton}
+  >
+    {"<<"}
+  </button>
+  <button
+    onClick={() => setPage((p) => Math.max(p - 1, 1))}
+    disabled={page === 1}
+    className={styles.pageButton}
+  >
+    {"<"}
+  </button>
+
+  {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+    <button
+      key={num}
+      onClick={() => setPage(num)}
+      className={`${styles.pageButton} ${page === num ? styles.activePage : ""}`}
+    >
+      {num}
+    </button>
+  ))}
+
+  <button
+    onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+    disabled={page === totalPages}
+    className={styles.pageButton}
+  >
+    {">"}
+  </button>
+  <button
+    onClick={() => setPage(totalPages)}
+    disabled={page === totalPages}
+    className={styles.pageButton}
+  >
+    {">>"}
+  </button>
+</div>
+      )}
     </div>
   );
 }
@@ -166,7 +227,11 @@ export default function ChatPage() {
   return (
     <div className={styles.container}>
       <div className={styles.navbar}>
-        <div className={styles.navLeft} onClick={() => router.push("/home")} style={{ cursor: "pointer" }}>
+        <div
+          className={styles.navLeft}
+          onClick={() => router.push("/home")}
+          style={{ cursor: "pointer" }}
+        >
           <Image src="/icon.png" alt="캠퍼스잇 로고" width={40} height={40} />
           <span className={styles.appName}>캠퍼스잇</span>
         </div>

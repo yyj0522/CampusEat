@@ -140,7 +140,7 @@ export default function HomePage() {
         <div className={homeStyles.rightColumn}>
           <div
             className={homeStyles.infoCard}
-            style={{ height: "50%", overflowY: "auto", marginBottom: "1rem" }}
+            style={{ height: "45%", overflowY: "auto", marginBottom: "1rem" }}
           >
             <h2 className={homeStyles.sectionTitle}>
               실시간 인기 게시물

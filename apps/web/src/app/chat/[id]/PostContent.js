@@ -93,6 +93,8 @@ export default function PostContent({ post }) {
   const [editorInitialData, setEditorInitialData] = useState(null);
   const [submitting, setSubmitting] = useState(false); 
 
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -127,7 +129,7 @@ export default function PostContent({ post }) {
 
   const handleComment = async () => {
     if (!commentInput) {
-      alert("댓글을 입력해주세요.");
+      setAlertModalOpen(true);
       return;
     }
     const postRef = doc(db, "posts", localPost.id);
@@ -164,7 +166,7 @@ export default function PostContent({ post }) {
 
   const handleSaveEdit = async ({ title, content, imageFiles, deletedImageURLs }) => {
     if (!title.trim() || !content.trim()) {
-      alert("제목과 내용을 입력해주세요.");
+      setAlertModalOpen(true); 
       return;
     }
 
@@ -209,7 +211,7 @@ export default function PostContent({ post }) {
       setEditorInitialData(null);
     } catch (error) {
       console.error("글 수정 오류:", error);
-      alert("글 수정 중 오류가 발생했습니다.");
+      setAlertModalOpen(true);
     } finally {
       setSubmitting(false);
     }
@@ -232,7 +234,7 @@ export default function PostContent({ post }) {
       }
     } catch (error) {
       console.error("추천 오류:", error);
-      alert("추천 기능 중 오류가 발생했습니다.");
+      setAlertModalOpen(true);
     }
   };
 
@@ -252,7 +254,7 @@ export default function PostContent({ post }) {
       });
     } catch (error) {
       console.error("댓글 삭제 오류:", error);
-      alert("댓글 삭제 중 오류가 발생했습니다.");
+      setAlertModalOpen(true);
     } finally {
       setModalOpen(false);
       setCommentToDelete(null);
@@ -271,7 +273,7 @@ export default function PostContent({ post }) {
       router.push("/chat");
     } catch (error) {
       console.error("게시글 삭제 오류:", error);
-      alert("게시글 삭제 중 오류가 발생했습니다.");
+      setAlertModalOpen(true);
     } finally {
       setPostDeleteConfirm(false);
     }
@@ -419,6 +421,14 @@ export default function PostContent({ post }) {
           message="게시글을 삭제하시겠습니까?"
           onConfirm={handleConfirmDeletePost}
           onCancel={() => setPostDeleteConfirm(false)}
+        />
+      )}
+
+      {alertModalOpen && (
+        <Modal
+          message="댓글을 입력해주세요."
+          onConfirm={() => setAlertModalOpen(false)}
+          onCancel={() => setAlertModalOpen(false)}
         />
       )}
     </div>
