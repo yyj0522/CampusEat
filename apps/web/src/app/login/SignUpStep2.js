@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
 export default function SignUpStep2({ formData, setFormData, next, setVerificationCode }) {
@@ -40,7 +40,7 @@ export default function SignUpStep2({ formData, setFormData, next, setVerificati
 
   const handleEmailChange = (value) => {
     setFormData((prev) => ({ ...prev, universityEmail: value }));
-    setEmailStatus(""); // 이메일 변경 시 상태 초기화
+    setEmailStatus("");
   };
 
   const handleNext = async (e) => {
@@ -63,8 +63,6 @@ export default function SignUpStep2({ formData, setFormData, next, setVerificati
 
     setIsSubmitting(true);
     
-    // 이메일 중복 확인 로직은 완전히 제거되었습니다.
-
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     try {
       const res = await fetch("/api/sendVerification", {
@@ -73,21 +71,19 @@ export default function SignUpStep2({ formData, setFormData, next, setVerificati
         body: JSON.stringify({ email, code }),
       });
       
-      const resData = await res.json();
+      const data = await res.json(); // 서버 응답을 JSON으로 파싱
 
       if (!res.ok) {
-        throw new Error(resData.error || "인증번호 전송에 실패했습니다.");
+        // 서버가 에러 응답을 보냈을 때 (4xx, 5xx 상태 코드)
+        throw new Error(data.error || "알 수 없는 서버 오류");
       }
 
-      if (resData.success) {
-        setVerificationCode(code); // 부모 컴포넌트로 인증번호 전달
-        next();
-      } else {
-        setEmailStatus("인증번호 전송 실패: " + (resData.error || "알 수 없는 오류"));
-      }
+      setVerificationCode(code);
+      next();
+
     } catch (err) {
       console.error(err);
-      setEmailStatus("인증번호 전송 중 오류가 발생했습니다: " + err.message);
+      setEmailStatus(`인증번호 전송 중 오류가 발생했습니다: ${err.message}`);
     } finally {
         setIsSubmitting(false);
     }
