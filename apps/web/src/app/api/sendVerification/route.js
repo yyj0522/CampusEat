@@ -1,49 +1,61 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import { initializeApp, getApps } from "firebase/app";
-import { getFirestore, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import admin from "@/lib/firebaseAdmin"; 
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+const db = admin.firestore();
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-const db = getFirestore(app);
+export async function POST(request) {
+  const { email, code } = await request.json();
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_ID,        
-    pass: process.env.GMAIL_APP_PASSWORD, 
-  },
-});
+  const user = process.env.GMAIL_ID;
+  const pass = process.env.GMAIL_APP_PASSWORD;
 
-export async function POST(req) {
+  if (!user || !pass) {
+    console.error("Gmail 환경 변수가 설정되지 않았습니다.");
+    return NextResponse.json({ success: false, error: "서버 설정 오류입니다." }, { status: 500 });
+  }
+  if (!email || !code) {
+    return NextResponse.json({ success: false, error: "이메일 또는 코드가 누락되었습니다." }, { status: 400 });
+  }
+
   try {
-    const { email, code } = await req.json();
-    if (!email || !code) return NextResponse.json({ success: false, error: "이메일 또는 코드 누락" });
-
-    await transporter.sendMail({
-      from: process.env.GMAIL_ID,
-      to: email,
-      subject: "캠퍼스잇 대학 이메일 인증",
-      text: `인증번호: ${code} (3분 내 입력)`,
-      html: `<p>인증번호: <strong>${code}</strong></p><p>3분 내 입력해주세요.</p>`,
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user, pass },
     });
 
-    await setDoc(doc(db, "emailVerifications", email), {
+    const mailOptions = {
+      from: `캠퍼스잇 <${user}>`,
+      to: email,
+      subject: "[캠퍼스잇] 이메일 인증번호 안내",
+      html: `
+        <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 12px; max-width: 600px; margin: auto;">
+          <h2 style="color: #4A90E2;">캠퍼스잇 인증번호 안내</h2>
+          <p>안녕하세요! 캠퍼스잇에 가입해 주셔서 감사합니다.</p>
+          <p>요청하신 인증번호는 아래와 같으며, 3분 내에 입력해주세요.</p>
+          <div style="background-color: #f2f2f2; padding: 20px; margin: 20px 0; border-radius: 8px;">
+            <strong style="font-size: 24px; color: #333; letter-spacing: 5px;">${code}</strong>
+          </div>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    // Firestore에 인증번호와 만료 시간 저장
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 3 * 60 * 1000); // 3분 후 만료
+
+    await db.collection("emailVerifications").doc(email).set({
       code,
-      createdAt: serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
     });
 
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ success: false, error: err.message });
+
+  } catch (error) {
+    console.error("API Route 오류:", error);
+    return NextResponse.json({ success: false, error: "서버 내부 오류가 발생했습니다." }, { status: 500 });
   }
 }
