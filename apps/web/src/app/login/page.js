@@ -1,5 +1,3 @@
-// 파일 경로: apps/web/src/app/login/page.js
-
 "use client";
 
 import Image from "next/image";

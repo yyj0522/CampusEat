@@ -4,130 +4,167 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "../../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, getDoc, Timestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
-export default function SignUpStep3({ formData, setMode }) {
+// 추가: 이 파일 내에서만 사용할 성공 모달 컴포넌트
+function SuccessModal({ message, onClose }) {
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Enter') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="modal-content bg-white rounded-xl shadow-lg p-8 text-center w-full max-w-[500px]">
+        <p className="text-lg font-medium text-gray-800 mb-6">{message}</p>
+        <button
+          onClick={onClose}
+          className="bg-purple-600 text-white px-8 py-2 rounded-lg hover:bg-purple-700 transition w-full"
+        >
+          확인
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+export default function SignUpStep3({ formData, prev, verificationCode }) {
   const router = useRouter();
   const [codeInput, setCodeInput] = useState("");
-  const [timeLeft, setTimeLeft] = useState(180);
-  const [canResend, setCanResend] = useState(true);
-  const [emailError, setEmailError] = useState("");
-
-  const formatTime = (seconds) => {
-    const m = String(Math.floor(seconds / 60)).padStart(2, "0");
-    const s = String(seconds % 60).padStart(2, "0");
-    return `${m}:${s}`;
-  };
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timer, setTimer] = useState(180);
+  
+  // 추가: 성공 모달의 표시 여부를 관리하는 상태
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
-    if (timeLeft <= 0) {
-      setCanResend(true);
+    if (timer === 0) {
+      setError("인증 시간이 만료되었습니다. 이전 단계로 돌아가 다시 시도해주세요.");
       return;
     }
-    const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft]);
+    const interval = setInterval(() => {
+      setTimer((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timer]);
 
-  const sendVerification = async () => {
-    try {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const res = await fetch("/api/sendVerification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.universityEmail, code }),
-      });
-      if (!res.ok) throw new Error("인증번호 전송 실패");
-      setTimeLeft(180);
-      setCanResend(false);
-      setEmailError("");
-    } catch (err) {
-      console.error(err);
-      setEmailError("인증번호 전송 중 오류가 발생했습니다.");
-    }
-  };
-
-  const handleResend = async () => {
-    if (canResend) {
-      await sendVerification();
-    }
-  };
-
-  const handleVerify = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting || timer === 0) return;
+
+    if (codeInput !== verificationCode) {
+      setError("인증번호가 일치하지 않습니다.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError("");
 
     try {
-      const snap = await getDoc(doc(db, "emailVerifications", formData.universityEmail));
-      if (!snap.exists()) {
-        setEmailError("인증번호가 존재하지 않습니다.");
-        return;
-      }
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+      const user = userCredential.user;
 
-      const data = snap.data();
-      const now = Timestamp.now();
-      const diff = now.seconds - data.createdAt.seconds;
-
-      if (diff > 180) {
-        setEmailError("인증번호 유효시간이 만료되었습니다.");
-        return;
-      }
-      if (data.code !== codeInput) {
-        setEmailError("인증번호가 올바르지 않습니다.");
-        return;
-      }
-
-      // 회원가입 프로세스
-      const userCred = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      await setDoc(doc(db, "users", userCred.user.uid), {
-        nickname: formData.nickname,
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
         email: formData.email,
+        nickname: formData.nickname,
         university: formData.university,
         universityEmail: formData.universityEmail,
+        createdAt: serverTimestamp(),
       });
 
-      alert("회원가입 완료!");
-      router.push("/home");
-      setMode("login");
-    } catch (err) {
-      console.error(err);
-      setEmailError(err.message || "회원가입 중 오류가 발생했습니다.");
+      // 수정: alert 대신 성공 모달을 띄우도록 변경
+      setShowSuccessModal(true);
+
+    } catch (error) {
+      console.error("회원가입 최종 오류:", error);
+      if (error.code === 'auth/email-already-in-use') {
+        setError("이미 가입된 계정(이메일)입니다.");
+      } else {
+        setError("회원가입 처리 중 오류가 발생했습니다.");
+      }
+    } finally {
+        setIsSubmitting(false);
     }
+  };
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+
+  // 추가: 성공 모달을 닫을 때 홈으로 이동하는 함수
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    router.push("/home");
   };
 
   return (
-    <form onSubmit={handleVerify} className="space-y-4">
-      <div className="text-left">
-        <p className="text-blue-600 text-xs">남은 시간: {formatTime(timeLeft)}</p>
-      </div>
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="text-center">
+          <p className="text-sm text-gray-600">{formData.universityEmail}으로 전송된 인증번호를 입력해주세요.</p>
+        </div>
+        <div>
+          <label htmlFor="codeInput" className="sr-only">인증번호</label>
+          <div className="relative">
+              <input
+                  type="text"
+                  id="codeInput"
+                  placeholder="인증번호 6자리"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center tracking-[.5em] focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  required
+                  maxLength={6}
+                  autoFocus
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 font-medium">
+                  {formatTime(timer)}
+              </span>
+          </div>
+        </div>
 
-      <div className="flex space-x-2">
-        <label htmlFor="codeInput" className="sr-only">인증번호</label>
-        <input
-          type="text"
-          id="codeInput"
-          placeholder="인증번호 입력"
-          value={codeInput}
-          onChange={(e) => setCodeInput(e.target.value)}
-          className="flex-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-          required
-        />
+        {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={isSubmitting || timer === 0}
+          className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? "가입 처리 중..." : "가입 완료"}
+        </button>
+
         <button
           type="button"
-          onClick={handleResend}
-          disabled={!canResend || timeLeft > 0}
-          className="w-24 h-12 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={prev}
+          className="w-full text-center text-gray-600 hover:underline text-sm"
         >
-          재전송
+          이전 단계로
         </button>
-      </div>
+      </form>
 
-      {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
-
-      <button
-        type="submit"
-        className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition duration-200 font-medium"
-      >
-        완료
-      </button>
-    </form>
+      {/* 추가: 성공 모달 렌더링 */}
+      {showSuccessModal && (
+        <SuccessModal
+          message="회원가입이 완료되었습니다!"
+          onClose={handleSuccessModalClose}
+        />
+      )}
+    </>
   );
 }

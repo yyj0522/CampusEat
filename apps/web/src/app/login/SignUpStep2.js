@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
 
 export default function SignUpStep2({ formData, setFormData, next, setVerificationCode }) {
@@ -63,6 +63,25 @@ export default function SignUpStep2({ formData, setFormData, next, setVerificati
 
     setIsSubmitting(true);
     
+    // --- ▼▼▼ 이메일 중복 확인 로직 다시 추가 ▼▼▼ ---
+    try {
+      setEmailStatus("이메일 중복 여부를 확인 중입니다...");
+      const q = query(collection(db, "users"), where("universityEmail", "==", email));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        setEmailStatus("이미 가입된 이메일입니다.");
+        setIsSubmitting(false); // 버튼 활성화
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      setEmailStatus("이메일 확인 중 오류가 발생했습니다. 다시 시도해주세요.");
+      setIsSubmitting(false); // 버튼 활성화
+      return;
+    }
+    // --- ▲▲▲ 이메일 중복 확인 로직 다시 추가 ▲▲▲ ---
+    
+    setEmailStatus("인증번호를 전송 중입니다...");
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     try {
       const res = await fetch("/api/sendVerification", {
@@ -71,10 +90,9 @@ export default function SignUpStep2({ formData, setFormData, next, setVerificati
         body: JSON.stringify({ email, code }),
       });
       
-      const data = await res.json(); // 서버 응답을 JSON으로 파싱
+      const data = await res.json();
 
       if (!res.ok) {
-        // 서버가 에러 응답을 보냈을 때 (4xx, 5xx 상태 코드)
         throw new Error(data.error || "알 수 없는 서버 오류");
       }
 
@@ -140,7 +158,7 @@ export default function SignUpStep2({ formData, setFormData, next, setVerificati
         disabled={isSubmitting}
         className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isSubmitting ? "전송 중..." : "인증번호 받기"}
+        {isSubmitting ? "확인 중..." : "인증번호 받기"}
       </button>
     </form>
   );
