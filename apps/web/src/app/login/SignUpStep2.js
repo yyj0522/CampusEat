@@ -14,7 +14,6 @@ export default function SignUpStep2({ formData, setFormData, next }) {
     "신구대학교(본교)": "@shingu.ac.kr",
     "백석대학교(본교)": "@bu.ac.kr",
     "백석문화대학교(본교)": "@bscu.ac.kr",
-    // 다른 대학 도메인 추가...
   };
 
   useEffect(() => {
@@ -72,6 +71,8 @@ export default function SignUpStep2({ formData, setFormData, next }) {
       return;
     }
 
+    /* --- ▼▼▼ 이메일 중복 확인 로직 주석 처리 ▼▼▼ --- */
+    /*
     try {
       const q = query(collection(db, "users"), where("universityEmail", "==", email));
       const querySnapshot = await getDocs(q);
@@ -84,6 +85,8 @@ export default function SignUpStep2({ formData, setFormData, next }) {
       setEmailStatus("이메일 확인 중 오류가 발생했습니다.");
       return;
     }
+    */
+    /* --- ▲▲▲ 이메일 중복 확인 로직 주석 처리 ▲▲▲ --- */
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     try {
