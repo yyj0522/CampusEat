@@ -53,7 +53,7 @@ export default function HomePage() {
               {currentUser.university || "우리 대학"} 학생들을 위한 종합 플랫폼
             </p>
             <div className="text-lg opacity-80">
-              오늘도 캠퍼스잇과 함께 즐거운 대학생활을 시작해보세요!
+              오늘도 캠퍼스잇과 함께 즐거운 대학생활을 시작해보세요!!
             </div>
           </div>
         </section>
