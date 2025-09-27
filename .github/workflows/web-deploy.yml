@@ -33,15 +33,14 @@ jobs:
         working-directory: apps/web
         run: npm ci --legacy-peer-deps
 
-      - name: Install Netlify CLI (local in apps/web)
-        working-directory: apps/web
-        run: npm install -D netlify-cli --legacy-peer-deps
+      - name: Install Netlify CLI (global)
+        run: npm install -g netlify-cli
 
       - name: Deploy to Netlify
         working-directory: apps/web
         run: |
           echo "=== Deploy Start ==="
-          DEPLOY_OUTPUT=$(npx netlify deploy --build --prod \
+          DEPLOY_OUTPUT=$(netlify deploy --build --prod \
                           --auth="$NETLIFY_AUTH_TOKEN" \
                           --site="$NETLIFY_SITE_ID" \
                           --message "GitHub Actions Production Deploy" \
