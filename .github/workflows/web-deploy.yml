@@ -35,7 +35,7 @@ jobs:
 
       - name: Install Netlify CLI (local in apps/web)
         working-directory: apps/web
-        run: npm install -D netlify-cli
+        run: npm install -D netlify-cli --legacy-peer-deps
 
       - name: Deploy to Netlify
         working-directory: apps/web
