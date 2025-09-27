@@ -2,20 +2,36 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "../../../firebase";
+import { auth, db, functions } from "../../../firebase";
+import { httpsCallable } from "firebase/functions";
 import { useChat } from "../../context/ChatProvider";
 import { onAuthStateChanged } from "firebase/auth";
 import {
-    doc, getDoc, collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot,
-    runTransaction, arrayUnion, arrayRemove, Timestamp, deleteDoc
+    doc, getDoc, collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot, Timestamp, deleteDoc, writeBatch, getDocs
 } from "firebase/firestore";
 import Image from "next/image";
 import '../../styles/style.css';
 import UserDisplay from '../../components/UserDisplay';
 
-// --- 컴포넌트 및 헬퍼 함수 ---
+const AlertModal = ({ message, onClose }) => {
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Enter') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
-// 삭제 확인 모달 컴포넌트
+    return (
+        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60]">
+            <div className="modal-content bg-white rounded-xl shadow-lg p-8 text-center w-full max-w-sm">
+                <p className="text-lg mb-6">{message}</p>
+                <button onClick={onClose} className="bg-blue-600 text-white px-8 py-2 rounded-lg w-full">확인</button>
+            </div>
+        </div>
+    );
+};
+
 const ConfirmModal = ({ message, onConfirm, onCancel }) => {
     return (
       <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -40,7 +56,6 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
     );
 };
 
-// 모임 생성 모달 (기존)
 const CreateMeetingModal = ({ show, onClose, user, university, nickname }) => {
     const [title, setTitle] = useState("");
     const [date, setDate] = useState("");
@@ -81,7 +96,12 @@ const CreateMeetingModal = ({ show, onClose, user, university, nickname }) => {
                 type: 'meeting',
                 university, status: 'active',
                 creatorId: user.uid, creatorNickname: nickname,
-                participantIds: [user.uid], participantCount: 1,
+                participantIds: [user.uid],
+                participantCount: 1,
+                participantInfo: {
+                    [user.uid]: { joinedAt: serverTimestamp() }
+                },
+                kickedUserIds: [],
                 createdAt: serverTimestamp(),
             });
             onClose(true);
@@ -153,7 +173,6 @@ const CreateMeetingModal = ({ show, onClose, user, university, nickname }) => {
     );
 };
 
-// 택시/카풀 생성 모달
 const CreateCarpoolModal = ({ show, onClose, user, university, nickname }) => {
     const [title, setTitle] = useState("");
     const [time, setTime] = useState("");
@@ -195,6 +214,10 @@ const CreateCarpoolModal = ({ show, onClose, user, university, nickname }) => {
                 creatorNickname: nickname,
                 participantIds: [user.uid],
                 participantCount: 1,
+                participantInfo: {
+                    [user.uid]: { joinedAt: serverTimestamp() }
+                },
+                kickedUserIds: [],
                 createdAt: serverTimestamp(),
             });
             onClose(true);
@@ -270,6 +293,9 @@ export default function MeetingPage() {
     const [showCarpoolModal, setShowCarpoolModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [meetingToDelete, setMeetingToDelete] = useState(null);
+    const [alertModal, setAlertModal] = useState({ show: false, message: "" });
+
+    const showAlert = (message) => setAlertModal({ show: true, message: message });
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -331,34 +357,27 @@ export default function MeetingPage() {
     };
 
     const handleJoinLeave = async (meeting, isParticipant) => {
+        if (!user) return;
+        
         if (!isParticipant) {
             if (meeting.type === 'meeting' && isInMeeting) {
-                alert("이미 다른 '취미&약속' 모임에 참여 중입니다. 하나의 모임만 참여할 수 있습니다.");
+                showAlert("이미 다른 '취미&약속' 모임에 참여 중입니다.");
                 return;
             }
             if (meeting.type === 'carpool' && isInCarpool) {
-                alert("이미 다른 '택시&카풀'에 참여 중입니다. 하나의 모임만 참여할 수 있습니다.");
+                showAlert("이미 다른 '택시&카풀'에 참여 중입니다.");
                 return;
             }
         }
         
-        const meetingRef = doc(db, "meetings", meeting.id);
+        // ❗️수정: functionName을 try 블록 밖으로 이동
+        const functionName = isParticipant ? 'leaveMeeting' : 'joinMeeting';
         try {
-            await runTransaction(db, async (transaction) => {
-                const meetingDoc = await transaction.get(meetingRef);
-                if (!meetingDoc.exists()) throw "모임이 존재하지 않습니다.";
-                const currentCount = meetingDoc.data().participantCount;
-                if (!isParticipant && currentCount >= meeting.maxParticipants) {
-                    throw "모집 인원이 가득 찼습니다.";
-                }
-                transaction.update(meetingRef, {
-                    participantIds: isParticipant ? arrayRemove(user.uid) : arrayUnion(user.uid),
-                    participantCount: isParticipant ? currentCount - 1 : currentCount + 1
-                });
-            });
+            const actionFunction = httpsCallable(functions, functionName);
+            await actionFunction({ meetingId: meeting.id });
         } catch (error) {
-            console.error("참여/나가기 오류:", error);
-            alert(String(error));
+            console.error(`${functionName} 오류:`, error);
+            showAlert(error.message || "작업 중 오류가 발생했습니다.");
         }
     };
     
@@ -386,6 +405,7 @@ export default function MeetingPage() {
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-gray-800">번개모임</h1>
                     <p className="text-xl text-gray-600 mt-4">함께할 친구들을 찾아보세요!</p>
+
                     <div className="mt-8 flex justify-center border-b">
                         <button onClick={() => setMeetingType('meeting')} className={`px-6 py-3 font-semibold transition ${meetingType === 'meeting' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}>
                             취미&약속
@@ -442,6 +462,7 @@ export default function MeetingPage() {
                             const isFull = m.participantCount >= m.maxParticipants;
                             const isExpired = m.datetime.toDate() < new Date();
                             const status = isExpired || m.status !== 'active' ? '종료' : '모집중';
+                            const isKicked = m.kickedUserIds?.includes(user?.uid);
 
                             return (
                                 <div key={m.id} className="meeting-card bg-white p-6 rounded-xl shadow-sm">
@@ -481,10 +502,16 @@ export default function MeetingPage() {
                                         </UserDisplay>
                                         <div className="flex space-x-2">
                                             {status === '모집중' && !isCreator &&
-                                                <button onClick={() => handleJoinLeave(m, isParticipant)} disabled={isFull && !isParticipant}
-                                                    className={`px-4 py-2 rounded-lg text-sm font-semibold text-white transition ${isParticipant ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700'} ${isFull && !isParticipant ? 'btn-disabled' : ''}`}>
+                                                <button 
+                                                    onClick={() => handleJoinLeave(m, isParticipant)} 
+                                                    disabled={(isFull && !isParticipant) || isKicked}
+                                                    className={`px-4 py-2 rounded-lg text-sm font-semibold text-white transition ${
+                                                        isKicked ? 'bg-gray-400' :
+                                                        isParticipant ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700'
+                                                    } ${(isFull && !isParticipant) || isKicked ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                >
                                                     <i className={`fas ${isParticipant ? 'fa-minus' : 'fa-plus'} mr-1`}></i>
-                                                    {isParticipant ? '나가기' : isFull ? '모집완료' : '참여하기'}
+                                                    {isKicked ? '참여불가' : isParticipant ? '나가기' : isFull ? '모집완료' : '참여하기'}
                                                 </button>
                                             }
                                             {isParticipant && <button onClick={() => setOpenChatId(m.id)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"><i className="fas fa-comments mr-1"></i>채팅방</button>}
@@ -512,6 +539,13 @@ export default function MeetingPage() {
                     message="정말로 이 모임을 삭제하시겠습니까?"
                     onConfirm={executeDelete}
                     onCancel={() => setMeetingToDelete(null)}
+                />
+            )}
+
+            {alertModal.show && (
+                <AlertModal 
+                    message={alertModal.message}
+                    onClose={() => setAlertModal({ show: false, message: ""})}
                 />
             )}
         </div>

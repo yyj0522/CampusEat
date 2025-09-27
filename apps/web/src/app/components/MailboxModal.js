@@ -6,7 +6,6 @@ import { useAuth } from "../context/AuthProvider";
 import { db } from "../../firebase";
 import { collection, query, where, orderBy, getDocs, writeBatch, doc } from "firebase/firestore";
 
-// 이 파일 내에서만 사용할 모달들을 정의
 const AlertModal = ({ message, onClose }) => {
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -89,7 +88,7 @@ export default function MailboxModal() {
 
     const executeClearMailbox = async () => {
         if (!user || messages.length === 0) return;
-        setShowConfirm(false); // 확인 모달 닫기
+        setShowConfirm(false);
         
         try {
             const batch = writeBatch(db);
@@ -126,7 +125,7 @@ export default function MailboxModal() {
                         </nav>
                     </div>
                     <div className="flex-1 overflow-y-auto mt-4">
-                        {isLoading ? <p>로딩 중...</p> : messages.length === 0 ? <p className="text-center text-gray-500 pt-10">쪽지가 없습니다.</p> : (
+                        {isLoading ? <p className="text-center pt-10">로딩 중...</p> : messages.length === 0 ? <p className="text-center text-gray-500 pt-10">쪽지가 없습니다.</p> : (
                             <ul className="divide-y divide-gray-200">
                                 {messages.map(msg => (
                                     <li key={msg.id} className="p-3 group">
@@ -137,7 +136,8 @@ export default function MailboxModal() {
                                             <p className="text-xs text-gray-500">{formatDate(msg.createdAt)}</p>
                                         </div>
                                         <p className="mt-1 text-sm text-gray-600">{msg.content}</p>
-                                        {activeTab === 'inbox' && (
+                                        
+                                        {activeTab === 'inbox' && msg.senderId !== 'system' && (
                                             <div className="text-right mt-2 opacity-0 group-hover:opacity-100 transition">
                                                 <button onClick={() => handleReply(msg)} className="text-xs text-blue-500 font-semibold hover:underline">답장하기</button>
                                             </div>

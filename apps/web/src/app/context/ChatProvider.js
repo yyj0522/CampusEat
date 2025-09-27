@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useMemo } from 'react'; // useMemo 추가
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { onSnapshot, collection, query, where, Timestamp } from 'firebase/firestore';
 import { useAuth } from './AuthProvider';
 import { db } from '../../firebase';
@@ -15,24 +15,35 @@ export const ChatProvider = ({ children }) => {
     useEffect(() => {
         if (!user) {
             setActiveMeetings([]);
+            setOpenChatId(null);
             return;
         }
 
         const q = query(
             collection(db, "meetings"),
-            where("participantIds", "array-contains", user.uid),
-            where("datetime", ">", Timestamp.now())
+            where("participantIds", "array-contains", user.uid)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const meetings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const now = new Date();
+            const meetings = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(meeting => meeting.datetime.toDate() > now);
+            
             setActiveMeetings(meetings);
+
+            if (openChatId && !meetings.some(m => m.id === openChatId)) {
+                setOpenChatId(null);
+            }
+        }, (error) => {
+            console.error("Active meetings 구독 오류:", error);
+            setActiveMeetings([]);
+            setOpenChatId(null);
         });
 
         return () => unsubscribe();
     }, [user]);
 
-    // useMemo를 사용해 activeMeetings가 바뀔 때만 재계산
     const participationStatus = useMemo(() => {
         return {
             isInMeeting: activeMeetings.some(m => m.type === 'meeting'),
@@ -44,7 +55,6 @@ export const ChatProvider = ({ children }) => {
         activeMeetings,
         openChatId,
         setOpenChatId,
-        // 수정: 참여 상태를 value에 추가
         isInMeeting: participationStatus.isInMeeting,
         isInCarpool: participationStatus.isInCarpool,
     };

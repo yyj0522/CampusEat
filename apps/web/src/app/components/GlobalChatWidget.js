@@ -3,15 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useChat } from '../context/ChatProvider';
 import { useAuth } from '../context/AuthProvider';
-import { db } from '../../firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, runTransaction, arrayRemove, increment, getDoc } from 'firebase/firestore';
+import { db, functions } from '../../firebase';
+import { httpsCallable } from "firebase/functions";
+import { collection, query, orderBy, onSnapshot, doc, getDoc, addDoc, serverTimestamp, where } from 'firebase/firestore';
 import '../styles/style.css';
 
-// 채팅 모달 내부에서만 사용할 작은 우클릭 메뉴
 const ChatContextMenu = ({ x, y, targetUser, onKick, onClose }) => {
     return (
         <div 
-            className="fixed inset-0 z-[100]" // 채팅 모달(z-50)보다 높게 설정
+            className="fixed inset-0 z-[100]"
             onClick={onClose}
             onContextMenu={(e) => { e.preventDefault(); onClose(); }}
         >
@@ -30,7 +30,6 @@ const ChatContextMenu = ({ x, y, targetUser, onKick, onClose }) => {
     );
 };
 
-
 const ChatModal = ({ meeting, onClose }) => {
     const { user } = useAuth();
     const [messages, setMessages] = useState([]);
@@ -39,30 +38,42 @@ const ChatModal = ({ meeting, onClose }) => {
     const messagesEndRef = useRef(null);
     const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, targetUser: null });
 
-    // 현재 사용자의 닉네임 가져오기
     useEffect(() => {
         const fetchNickname = async () => {
             if (user) {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    setNickname(userDoc.data().nickname);
-                }
+                if (userDoc.exists()) setNickname(userDoc.data().nickname);
             }
         };
         fetchNickname();
     }, [user]);
     
-    // 메시지 실시간 불러오기
     useEffect(() => {
-        const q = query(collection(db, `meetings/${meeting.id}/messages`), orderBy("createdAt", "asc"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const msgs = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-            setMessages(msgs);
-        });
-        return () => unsubscribe();
-    }, [meeting.id]);
+        if (!meeting?.id || !user?.uid) return;
 
-    // 새 메시지가 올 때마다 스크롤 맨 아래로 이동
+        const joinTimestamp = meeting.participantInfo?.[user.uid]?.joinedAt;
+        let q = query(collection(db, `meetings/${meeting.id}/messages`), orderBy("createdAt", "asc"));
+
+        if (joinTimestamp) {
+            q = query(q, where("createdAt", ">=", joinTimestamp));
+        }
+
+        const unsubscribe = onSnapshot(q, 
+            (snapshot) => {
+                const msgs = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                setMessages(msgs);
+            },
+            (error) => {
+                if (error.code === 'permission-denied') {
+                    onClose();
+                } else {
+                    console.error("채팅 메시지 구독 오류:", error);
+                }
+            }
+        );
+        return () => unsubscribe();
+    }, [meeting, user, onClose]);
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
@@ -70,60 +81,32 @@ const ChatModal = ({ meeting, onClose }) => {
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (newMessage.trim() === "" || !nickname) return;
-
         await addDoc(collection(db, `meetings/${meeting.id}/messages`), {
             text: newMessage,
             senderId: user.uid,
-            senderNickname: nickname, // 메시지에 닉네임 함께 저장
+            senderNickname: nickname,
             createdAt: serverTimestamp(),
         });
         setNewMessage("");
     };
-
-    // 강퇴당한 유저에게 시스템 쪽지 보내기
-    const sendKickSystemMessage = async (kickedUser) => {
-        try {
-            await addDoc(collection(db, "messages"), {
-                senderId: "system",
-                senderNickname: "캠퍼스잇 관리자",
-                recipientId: kickedUser.id,
-                recipientNickname: kickedUser.nickname,
-                content: `[${meeting.title}] 모임에서 강퇴당하셨습니다.`,
-                createdAt: serverTimestamp(),
-                isRead: false,
-            });
-        } catch (error) {
-            console.error("강퇴 쪽지 발송 오류:", error);
-        }
-    };
     
-    // 방장이 유저를 강퇴하는 함수
     const handleKickUser = async (targetUser) => {
-        if (user?.uid !== meeting.creatorId) return; // 방장만 강퇴 가능
-        if (user?.uid === targetUser.id) return; // 자기 자신은 강퇴 불가
-
-        const meetingRef = doc(db, "meetings", meeting.id);
+        if (user?.uid !== meeting.creatorId || user?.uid === targetUser.id) return;
+        
         try {
-            await runTransaction(db, async (transaction) => {
-                const meetingDoc = await transaction.get(meetingRef);
-                if (!meetingDoc.exists()) throw "모임이 존재하지 않습니다.";
-                
-                transaction.update(meetingRef, {
-                    participantIds: arrayRemove(targetUser.id),
-                    participantCount: increment(-1)
-                });
+            const kickUserFunction = httpsCallable(functions, 'kickUserFromMeeting');
+            await kickUserFunction({ 
+                meetingId: meeting.id, 
+                targetUserId: targetUser.id,
             });
-            // 강퇴 성공 후 시스템 쪽지 발송
-            await sendKickSystemMessage(targetUser);
         } catch (error) {
             console.error("강퇴 처리 오류:", error);
-            alert("사용자를 강퇴하는 중 오류가 발생했습니다.");
+            alert(`사용자를 강퇴하는 중 오류가 발생했습니다: ${error.message}`);
         }
     };
 
     const openChatContextMenu = (e, senderId, senderNickname) => {
         e.preventDefault();
-        // 방장만, 그리고 다른 사람의 닉네임에만 메뉴가 열리도록
         if (user?.uid === meeting.creatorId && user?.uid !== senderId) {
             setContextMenu({ show: true, x: e.clientX, y: e.clientY, targetUser: { id: senderId, nickname: senderNickname } });
         }
@@ -143,25 +126,28 @@ const ChatModal = ({ meeting, onClose }) => {
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
                 {messages.map(msg => (
                     <div key={msg.id} className={`flex items-end gap-2 ${msg.senderId === user.uid ? 'justify-end' : 'justify-start'}`}>
-                        {msg.senderId !== user.uid && (
+                        {msg.senderId !== user.uid && msg.senderId !== 'system' && (
                             <div className="w-8 h-8 bg-gray-200 rounded-full flex-shrink-0"></div>
                         )}
-                        <div className={`flex flex-col ${msg.senderId === user.uid ? 'items-end' : 'items-start'}`}>
-                            {msg.senderId !== user.uid && (
-                                <span 
-                                    className="text-xs text-gray-600 mb-1 cursor-pointer"
-                                    onContextMenu={(e) => openChatContextMenu(e, msg.senderId, msg.senderNickname)}
-                                >
+                        <div className={`flex flex-col w-full ${msg.senderId === user.uid ? 'items-end' : 'items-start'}`}>
+                            {msg.senderId !== user.uid && msg.senderId !== 'system' && (
+                                <span className="text-xs text-gray-600 mb-1 cursor-pointer" onContextMenu={(e) => openChatContextMenu(e, msg.senderId, msg.senderNickname)}>
                                     {msg.senderNickname}
                                 </span>
                             )}
-                            <div className="flex items-end gap-2">
-                                {msg.senderId === user.uid && <span className="text-xs text-gray-400">{formatTime(msg.createdAt)}</span>}
-                                <p className={`px-4 py-2 rounded-lg max-w-xs break-words ${msg.senderId === user.uid ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'}`}>
-                                    {msg.text}
-                                </p>
-                                {msg.senderId !== user.uid && <span className="text-xs text-gray-400">{formatTime(msg.createdAt)}</span>}
-                            </div>
+                            {msg.senderId === 'system' ? (
+                                <div className="text-center w-full my-2">
+                                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">{msg.text}</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-end gap-2">
+                                    {msg.senderId === user.uid && <span className="text-xs text-gray-400">{formatTime(msg.createdAt)}</span>}
+                                    <p className={`px-4 py-2 rounded-lg max-w-xs break-words ${msg.senderId === user.uid ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                                        {msg.text}
+                                    </p>
+                                    {msg.senderId !== user.uid && <span className="text-xs text-gray-400">{formatTime(msg.createdAt)}</span>}
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -178,9 +164,7 @@ const ChatModal = ({ meeting, onClose }) => {
 
 export default function GlobalChatWidget() {
     const { activeMeetings, openChatId, setOpenChatId } = useChat();
-
-    if (activeMeetings.length === 0) return null;
-
+    if (!activeMeetings || activeMeetings.length === 0) return null;
     const openMeeting = activeMeetings.find(m => m.id === openChatId);
 
     return (

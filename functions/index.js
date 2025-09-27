@@ -1,110 +1,129 @@
-const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {onDocumentCreated, onDocumentDeleted} = require("firebase-functions/v2/firestore");
-const {logger} = require("firebase-functions");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onDocumentCreated, onDocumentDeleted, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { logger } = require("firebase-functions");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
 const db = admin.firestore();
-const {increment} = admin.firestore.FieldValue;
+const { increment, FieldValue } = admin.firestore;
 
 /**
  * 10분마다 실행되어 만료된 번개모임과 관련 채팅 데이터를 삭제합니다.
  */
 exports.cleanupExpiredMeetings = onSchedule("every 10 minutes", async (event) => {
-  const now = admin.firestore.Timestamp.now();
-
-  const expiredMeetingsQuery = db.collection("meetings")
-      .where("datetime", "<=", now);
-  const snapshot = await expiredMeetingsQuery.get();
-
-  if (snapshot.empty) {
-    logger.info("삭제할 만료된 모임이 없습니다.");
-    return null;
-  }
-
-  const batch = db.batch();
-  const deletePromises = [];
-
-  snapshot.forEach((doc) => {
-    logger.info(`만료된 모임 삭제 중: ${doc.id}`);
-    batch.delete(doc.ref);
-
-    const messagesRef = doc.ref.collection("messages");
-    deletePromises.push(deleteSubcollection(messagesRef));
-  });
-
-  await batch.commit();
-  await Promise.all(deletePromises);
-
-  logger.info(`총 ${snapshot.size}개의 만료된 모임 및 채팅 데이터 삭제 완료.`);
-  return null;
+    const now = admin.firestore.Timestamp.now();
+    const expiredMeetingsQuery = db.collection("meetings").where("datetime", "<=", now);
+    const snapshot = await expiredMeetingsQuery.get();
+    if (snapshot.empty) {
+        return null;
+    }
+    const batch = db.batch();
+    snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    return batch.commit();
 });
 
 /**
- * 'reviews' 컬렉션에 새 문서가 생성될 때마다 실행되어
- * 해당 음식점의 'reviewCount'를 1 증가시킵니다.
+ * 'reviews' 컬렉션의 문서 생성/삭제를 감지하여 'reviewCount'를 업데이트합니다.
  */
 exports.onReviewCreated = onDocumentCreated("reviews/{reviewId}", (event) => {
-  const snapshot = event.data;
-  if (!snapshot) {
-    logger.log("리뷰 생성 이벤트 데이터 없음");
-    return;
-  }
-  const reviewData = snapshot.data();
-  const restaurantId = reviewData.restaurantId;
-  const university = reviewData.university;
+    const reviewData = event.data.data();
+    const restaurantRef = db.collection("newUniversities").doc(reviewData.university).collection("newRestaurants").doc(reviewData.restaurantId);
+    return restaurantRef.update({ reviewCount: increment(1) });
+});
 
-  if (!restaurantId || !university) {
-    logger.error("리뷰에 restaurantId 또는 university 필드가 없습니다.", reviewData);
-    return;
-  }
-
-  const restaurantRef = db.collection("newUniversities").doc(university)
-      .collection("newRestaurants").doc(restaurantId);
-
-  return restaurantRef.update({reviewCount: increment(1)});
+exports.onReviewDeleted = onDocumentDeleted("reviews/{reviewId}", (event) => {
+    const deletedData = event.data.data();
+    const restaurantRef = db.collection("newUniversities").doc(deletedData.university).collection("newRestaurants").doc(deletedData.restaurantId);
+    return restaurantRef.update({ reviewCount: increment(-1) });
 });
 
 /**
- * 'reviews' 컬렉션에서 문서가 삭제될 때마다 실행되어
- * 해당 음식점의 'reviewCount'를 1 감소시킵니다.
+ * 'meetings' 문서가 삭제될 때 트리거되어 하위 'messages' 컬렉션을 모두 삭제합니다.
  */
-exports.onReviewDeleted = onDocumentDeleted("reviews/{reviewId}", (event) => {
-  const snapshot = event.data;
-  if (!snapshot) {
-    logger.log("리뷰 삭제 이벤트 데이터 없음");
-    return;
-  }
-  const deletedData = snapshot.data();
-  const restaurantId = deletedData.restaurantId;
-  const university = deletedData.university;
+exports.onMeetingDeleted = onDocumentDeleted("meetings/{meetingId}", (event) => {
+    const messagesRef = db.collection("meetings").doc(event.params.meetingId).collection("messages");
+    return deleteSubcollection(messagesRef);
+});
 
-  if (!restaurantId || !university) {
-    logger.error("삭제된 리뷰에 restaurantId 또는 university 필드가 없습니다.", deletedData);
-    return;
-  }
 
-  const restaurantRef = db.collection("newUniversities").doc(university)
-      .collection("newRestaurants").doc(restaurantId);
+/**
+ * 'meetings' 문서의 참가자 변경을 감지하여 입장/퇴장/강퇴 메시지와 쪽지를 보냅니다.
+ */
+exports.onParticipantChanged = onDocumentUpdated("meetings/{meetingId}", async (event) => {
+    const dataAfter = event.data.after.data();
+    const dataBefore = event.data.before.data();
+    const meetingId = event.params.meetingId;
+    
+    const participantsBefore = dataBefore.participantIds || [];
+    const participantsAfter = dataAfter.participantIds || [];
 
-  return restaurantRef.update({reviewCount: increment(-1)});
+    const joinedUids = participantsAfter.filter(uid => !participantsBefore.includes(uid));
+    const leftUids = participantsBefore.filter(uid => !participantsAfter.includes(uid));
+
+    // --- 1. Handle User Joins ---
+    if (joinedUids.length > 0) {
+        const joinedUid = joinedUids[0];
+        const userDoc = await db.collection("users").doc(joinedUid).get();
+        if (userDoc.exists) {
+            await db.collection("meetings").doc(meetingId).collection("messages").add({
+                text: `${userDoc.data().nickname}님이 입장하셨습니다.`,
+                senderId: "system",
+                createdAt: FieldValue.serverTimestamp(),
+            });
+        }
+    }
+
+    // --- 2. Handle User Leaves/Kicks ---
+    if (leftUids.length > 0) {
+        const leftUid = leftUids[0];
+        const userDoc = await db.collection("users").doc(leftUid).get();
+        if (userDoc.exists) {
+            const nickname = userDoc.data().nickname;
+            const kickedUserIds = dataAfter.kickedUserIds || [];
+
+            // Check if this was a kick event
+            if (kickedUserIds.includes(leftUid)) {
+                await db.collection("meetings").doc(meetingId).collection("messages").add({
+                    text: `${nickname}님이 모임에서 제외되었습니다.`,
+                    senderId: "system",
+                    createdAt: FieldValue.serverTimestamp(),
+                });
+                await db.collection("messages").add({
+                    senderId: "system",
+                    senderNickname: "캠퍼스잇 관리자",
+                    recipientId: leftUid,
+                    recipientNickname: nickname,
+                    content: `[${dataAfter.title}] 모임에서 강퇴당하셨습니다.`,
+                    createdAt: FieldValue.serverTimestamp(),
+                    isRead: false,
+                });
+            } else {
+                // It's a voluntary leave
+                await db.collection("meetings").doc(meetingId).collection("messages").add({
+                    text: `${nickname}님이 퇴장하셨습니다.`,
+                    senderId: "system",
+                    createdAt: FieldValue.serverTimestamp(),
+                });
+            }
+        }
+    }
+    return null;
 });
 
 
 /**
  * 주어진 컬렉션의 모든 문서를 삭제하는 헬퍼 함수입니다.
- * @param {FirebaseFirestore.CollectionReference} collectionRef 삭제할 컬렉션.
- * @return {Promise<void>} 삭제 작업이 완료되면 resolve되는 Promise.
  */
 async function deleteSubcollection(collectionRef) {
-  const snapshot = await collectionRef.limit(500).get();
-  if (snapshot.size === 0) {
-    return;
-  }
-
-  const batch = db.batch();
-  snapshot.docs.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
-  await batch.commit();
+    const snapshot = await collectionRef.limit(500).get();
+    if (snapshot.size === 0) return;
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    if (snapshot.size >= 500) {
+        return deleteSubcollection(collectionRef);
+    }
 }
