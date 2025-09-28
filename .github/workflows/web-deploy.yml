@@ -9,7 +9,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      # Netlify 배포에 필요한 환경변수만 남깁니다. (빌드에 필요한 변수는 빌드 단계에 명시)
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -22,16 +21,14 @@ jobs:
         with:
           node-version: 20
 
-      # 1. 의존성 설치 단계
       - name: Install Dependencies
         working-directory: ./apps/web
         run: npm install --legacy-peer-deps
 
-      # 2. 프로젝트 빌드 단계
       - name: Build Project
         working-directory: ./apps/web
         run: npm run build
-        env: # 빌드 시점에 필요한 환경변수들을 여기에 명시합니다.
+        env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
           NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
@@ -41,25 +38,23 @@ jobs:
           GMAIL_ID: ${{ secrets.GMAIL_ID }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
 
-      # 3. [수정됨] Netlify 배포 전용 Action을 사용하여 배포합니다.
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v2.0
         with:
           publish-dir: './apps/web/.next'
+          functions-dir: './apps/web/netlify/functions'
           production-branch: main
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: "Deploy from GitHub Actions"
           enable-pull-request-comment: false
           enable-commit-comment: false
-          overwrites: false
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         timeout-minutes: 1
 
-      # 4. Discord 알림 단계 (배포 성공 시에만 실행되도록 수정)
       - name: Send Discord Notification on Success
-        if: success() # 이전 단계가 성공했을 때만 실행됩니다.
+        if: success()
         run: |
           MESSAGE="✅ 웹 빌드 & 배포 성공!\n사이트: https://campuseat.netlify.app"
           echo "{\"content\": \"$MESSAGE\"}" > discord_payload.json
