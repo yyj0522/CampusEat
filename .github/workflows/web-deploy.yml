@@ -34,7 +34,6 @@ jobs:
           cd apps/web
           npm install --legacy-peer-deps
 
-      # [수정됨] 최신 버전 대신, 버그가 없는 특정 안정 버전(예: 17.22.1)으로 고정합니다.
       - name: Install Netlify CLI
         run: npm install -g netlify-cli@17.22.1
 
@@ -42,7 +41,9 @@ jobs:
         run: |
           cd apps/web
           echo "=== Deploy Start ==="
+          # [수정됨] --dir=.next 옵션을 추가하여 배포할 폴더를 명시합니다.
           DEPLOY_OUTPUT=$(netlify deploy --build --prod \
+                          --dir=.next \
                           --auth="$NETLIFY_AUTH_TOKEN" \
                           --site="$NETLIFY_SITE_ID" \
                           --message "GitHub Actions Production Deploy" \
