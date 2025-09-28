@@ -40,8 +40,9 @@ jobs:
           npm install --legacy-peer-deps
 
       - name: Deploy to Netlify
+        # [수정됨] working-directory를 사용하여 cd 명령어를 제거하고 안정성을 높였습니다.
+        working-directory: ./apps/web
         run: |
-          cd apps/web
           echo "=== Deploy Start ==="
           DEPLOY_OUTPUT=$(netlify deploy --build --prod \
                           --auth="$NETLIFY_AUTH_TOKEN" \
@@ -50,7 +51,7 @@ jobs:
                           --json)
           echo "$DEPLOY_OUTPUT"
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // .url // empty')
-          echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
+          echo "DEPLOY_URL=$GITHUB_ENV" >> $GITHUB_ENV
           echo "=== Deploy End ==="
 
       - name: Send Discord Notification
