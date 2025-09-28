@@ -30,15 +30,16 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        working-directory: apps/web
-        run: npm ci --legacy-peer-deps
+        run: |
+          cd apps/web
+          npm install --legacy-peer-deps
 
-      - name: Install Netlify CLI (global)
+      - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
       - name: Deploy to Netlify
-        working-directory: apps/web
         run: |
+          cd apps/web
           echo "=== Deploy Start ==="
           DEPLOY_OUTPUT=$(netlify deploy --build --prod \
                           --auth="$NETLIFY_AUTH_TOKEN" \

@@ -21,7 +21,7 @@ function AlertModal({ message, onClose }) {
   }, [onClose]);
 
   return (
-    <div className="modal-overlay fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60]">
+    <div className="modal-overlay fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[70]">
       <div className="modal-content bg-white rounded-xl shadow-lg p-8 text-center w-full max-w-sm">
         <p className="text-lg mb-6">{message}</p>
         <button
@@ -97,7 +97,7 @@ export default function DirectMessageModal() {
 
     return (
         <>
-            <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
                 <div className="modal-content bg-white rounded-xl shadow-lg p-6 w-full max-w-lg">
                     <h3 className="text-xl font-bold mb-4">쪽지 보내기</h3>
                     <p className="text-sm text-gray-600 mb-4">
