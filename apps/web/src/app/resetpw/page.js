@@ -1,5 +1,3 @@
-// 파일 경로: src/app/resetpw/page.js
-
 "use client";
 
 import { Suspense } from 'react';
