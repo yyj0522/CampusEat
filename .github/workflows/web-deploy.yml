@@ -8,6 +8,11 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./apps/web
+
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -29,32 +34,24 @@ jobs:
         with:
           node-version: 20
 
-      # [수정됨] CLI 설치와 의존성 설치 단계를 하나로 통합하고 오류를 수정했습니다.
-      - name: Install Dependencies & Update Netlify CLI
-        run: |
-          # 1. Netlify CLI를 항상 최신 버전으로 강제 업데이트하여 bootstrap 오류를 해결합니다.
-          npm install -g netlify-cli@latest
-          # 2. 웹 프로젝트 폴더로 이동합니다.
-          cd apps/web
-          # 3. 버전 충돌을 무시하고 프로젝트 의존성을 설치합니다. (react-quill 오류 해결)
-          npm install --legacy-peer-deps
-
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
+        
       - name: Deploy to Netlify
-        # [수정됨] working-directory를 사용하여 cd 명령어를 제거하고 안정성을 높였습니다.
-        working-directory: ./apps/web
         run: |
           echo "=== Deploy Start ==="
-          DEPLOY_OUTPUT=$(netlify deploy --build --prod \
+          DEPLOY_OUTPUT=$(npx netlify deploy --build --prod \
                           --auth="$NETLIFY_AUTH_TOKEN" \
                           --site="$NETLIFY_SITE_ID" \
                           --message "GitHub Actions Production Deploy" \
                           --json)
           echo "$DEPLOY_OUTPUT"
           DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | jq -r '.deploy.ssl_url // .url // empty')
-          echo "DEPLOY_URL=$GITHUB_ENV" >> $GITHUB_ENV
-          echo "=== Deploy End ==="
+          # Discord 스텝은 프로젝트 루트에서 실행되어야 할 수 있으므로 경로를 조정합니다.
+          echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
 
       - name: Send Discord Notification
+        working-directory: '' 
         run: |
           DEPLOY_URL="${DEPLOY_URL:-}"
           if [ -n "$DEPLOY_URL" ]; then
