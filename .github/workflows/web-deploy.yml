@@ -34,8 +34,9 @@ jobs:
           cd apps/web
           npm install --legacy-peer-deps
 
+      # [수정됨] 최신 버전 대신, 버그가 없는 특정 안정 버전(예: 17.22.1)으로 고정합니다.
       - name: Install Netlify CLI
-        run: npm install -g netlify-cli
+        run: npm install -g netlify-cli@17.22.1
 
       - name: Deploy to Netlify
         run: |
