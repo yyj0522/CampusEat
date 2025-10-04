@@ -7,13 +7,12 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import '../../styles/style.css';
 
-// [추가] 클립보드 복사 성공 알림을 위한 간단한 토스트 컴포넌트
 const Toast = ({ message, show, onClose }) => {
     useEffect(() => {
         if (show) {
             const timer = setTimeout(() => {
                 onClose();
-            }, 2000); // 2초 후에 사라짐
+            }, 2000);
             return () => clearTimeout(timer);
         }
     }, [show, onClose]);
@@ -41,7 +40,6 @@ export default function InformationPage() {
     const [showHelp, setShowHelp] = useState(false);
     const helpRef = useRef(null);
 
-    // [추가] 복사 성공 알림 상태
     const [showCopyToast, setShowCopyToast] = useState(false);
 
     useEffect(() => {
@@ -125,7 +123,6 @@ export default function InformationPage() {
         setFilteredShuttles(filtered);
     }, [shuttleData, dayType]);
 
-    // [추가] 이메일 복사 핸들러
     const handleCopyEmail = () => {
         const email = "projectc029@gmail.com";
         navigator.clipboard.writeText(email).then(() => {
@@ -242,7 +239,6 @@ export default function InformationPage() {
                                 <p className="text-sm text-gray-600">
                                     아래 이메일로 정확한 정보를 보내주시면, 사실 여부 확인 후 신속하게 반영하겠습니다.
                                 </p>
-                                {/* [수정] 이메일 복사 버튼 추가 */}
                                 <div className="mt-3 text-sm font-semibold text-blue-600 bg-blue-50 p-2 rounded-md flex items-center justify-between">
                                     <span>projectc029@gmail.com</span>
                                     <button onClick={handleCopyEmail} className="text-blue-600 hover:bg-blue-100 p-1.5 rounded-md">

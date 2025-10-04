@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db, functions } from "../../../firebase";
 import { onAuthStateChanged, signOut, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "firebase/auth";
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, collectionGroup, orderBy } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, collectionGroup, orderBy, Timestamp } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import Image from "next/image";
 import '../../styles/style.css'; 
 
-// --- 모달 컴포넌트들 ---
 const AlertModal = ({ message, onClose }) => {
     useEffect(() => {
         const handleKeyDown = (event) => { if (event.key === 'Enter') onClose(); };
@@ -137,7 +135,8 @@ const DeleteAccountModal = ({ isOpen, onClose, onDelete }) => {
                     <li>작성한 모든 맛집 리뷰</li>
                     <li>기타 모든 활동 내역</li>
                 </ul>
-                <p className="text-gray-600 mb-2">탈퇴를 원하시면, 아래 입력창에 <strong className="text-red-600">"{requiredText}"</strong>를 정확히 입력해주세요.</p>
+                {/* [수정] 따옴표 오류 해결 */}
+                <p className="text-gray-600 mb-2">탈퇴를 원하시면, 아래 입력창에 <strong className="text-red-600">&quot;{requiredText}&quot;</strong>를 정확히 입력해주세요.</p>
                 <input type="text" value={confirmationText} onChange={(e) => setConfirmationText(e.target.value)} className="w-full border p-2 rounded-lg" />
                 <div className="flex justify-end gap-2 mt-4">
                     <button onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-100">취소</button>
@@ -246,7 +245,6 @@ export default function ProfilePage() {
                     const querySnapshot = await getDocs(q);
                     setActivityData(querySnapshot.docs.map(d => ({ id: d.id, ...d.data() })));
                 } else if (activityFilter === 'my-comments') {
-                    // [최종 수정] orderBy를 다시 추가합니다.
                     const q = query(collectionGroup(db, 'comments'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
                     const querySnapshot = await getDocs(q);
                     const commentsData = await Promise.all(querySnapshot.docs.map(async (d) => {
