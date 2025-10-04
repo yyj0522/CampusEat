@@ -668,3 +668,34 @@ input:checked + .slider:before {
         transform: translateY(0);
     }
 }
+
+
+/* profile/page.js 스타일 */
+.profile-list-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    font-weight: 500;
+    color: #374151; 
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.profile-list-item:hover {
+    background-color: #f3f4f6; 
+}
+
+.profile-list-item > i:last-child {
+    margin-left: auto;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease-in-out;
+}

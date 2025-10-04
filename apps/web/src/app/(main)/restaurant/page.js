@@ -12,9 +12,8 @@ import {
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Image from "next/image";
 import '../../styles/style.css';
-import UserDisplay from '../../components/UserDisplay'; // UserDisplay import 추가
+import UserDisplay from '../../components/UserDisplay';
 
-// 헬퍼 함수: 위도/경도로 거리 계산
 const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // km
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -27,7 +26,6 @@ const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
     return R * c;
 };
 
-// 리뷰 모달 컴포넌트
 const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, onReviewSubmitted, onShowAlert }) => {
     const [rating, setRating] = useState(5);
     const [hoverRating, setHoverRating] = useState(0);
@@ -163,7 +161,6 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
     );
 };
 
-// 맛집 제보 모달 컴포넌트
 const SubmissionModal = ({ isOpen, onClose, user, university, nickname, onShowAlert }) => {
     const [name, setName] = useState("");
     const [location, setLocation] = useState("");
@@ -296,15 +293,15 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
     }, [onConfirm]);
 
     return (
-      <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="modal-content bg-white rounded-xl shadow-lg p-8 text-center w-full max-w-[500px]">
-          <p className="text-lg font-medium text-gray-800 mb-8">{message}</p>
-          <div className="flex justify-center gap-4">
-            <button onClick={onCancel} className="bg-gray-200 text-gray-800 px-8 py-2 rounded-lg hover:bg-gray-300 transition w-1/2">취소</button>
-            <button onClick={onConfirm} className="bg-red-500 text-white px-8 py-2 rounded-lg hover:bg-red-600 transition w-1/2">삭제</button>
-          </div>
+        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="modal-content bg-white rounded-xl shadow-lg p-8 text-center w-full max-w-[500px]">
+                <p className="text-lg font-medium text-gray-800 mb-8">{message}</p>
+                <div className="flex justify-center gap-4">
+                    <button onClick={onCancel} className="bg-gray-200 text-gray-800 px-8 py-2 rounded-lg hover:bg-gray-300 transition w-1/2">취소</button>
+                    <button onClick={onConfirm} className="bg-red-500 text-white px-8 py-2 rounded-lg hover:bg-red-600 transition w-1/2">삭제</button>
+                </div>
+            </div>
         </div>
-      </div>
     );
 };
 
@@ -350,10 +347,26 @@ export default function RestaurantPage() {
     const [alertModal, setAlertModal] = useState({ show: false, message: "" });
     const [showSubmissionModal, setShowSubmissionModal] = useState(false);
     const [showReviewImage, setShowReviewImage] = useState({}); 
-
+    const [showHelp, setShowHelp] = useState(false);
+    
     const recommendationsRef = useRef(null);
+    const helpRef = useRef(null);
     
     const showAlert = (message) => setAlertModal({ show: true, message });
+    
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (helpRef.current && !helpRef.current.contains(event.target)) {
+                setShowHelp(false);
+            }
+        }
+        if (showHelp) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [showHelp]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -510,10 +523,6 @@ export default function RestaurantPage() {
                     <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
                         <span className="text-gray-500 font-semibold">이미지 준비중</span>
                     </div>
-                    <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-sm font-medium">
-                        <i className="fas fa-star text-yellow-400"></i>
-                        <span> {restaurant.rating || 'N/A'}</span>
-                    </div>
                 </div>
                 <div className="p-4">
                     <h3 className="text-lg font-semibold mb-2">{restaurant.name}</h3>
@@ -533,7 +542,6 @@ export default function RestaurantPage() {
                                 {reviewCount}
                             </span>
                         </div>
-                        <span className={`price-badge`}>{"₩".repeat(restaurant.priceRange || 1)}</span>
                     </div>
                     <div className="flex space-x-2">
                         <button onClick={() => handleToggleReviews(restaurant.id)} className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition text-sm">리뷰보기</button>
@@ -601,7 +609,30 @@ export default function RestaurantPage() {
         <div className="min-h-screen bg-gray-50">
             <main className="py-8 max-w-7xl mx-auto px-4">
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold text-gray-800 mb-4">맛집 추천</h1>
+                    <div ref={helpRef} className="relative flex justify-center items-center gap-2 mb-4">
+                        <h1 className="text-4xl font-bold text-gray-800">맛집 추천</h1>
+                        <button onClick={() => setShowHelp(!showHelp)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                            <i className="fa-solid fa-circle-question fa-lg"></i>
+                        </button>
+                        
+                        {showHelp && (
+                            <div className="absolute top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-left z-20 animate-fadeIn">
+                                <h4 className="font-bold text-md mb-2 text-gray-800">맛집 추천 사용 유의사항</h4>
+                                <ul className="space-y-2 text-sm text-gray-600 list-disc list-inside">
+                                    <li>
+                                        <strong className="font-semibold">맛집 제보:</strong> '맛집 제보하기' 버튼으로 리스트에 없는 나만의 맛집을 추가 요청할 수 있습니다.
+                                    </li>
+                                    <li>
+                                        <strong className="font-semibold">리뷰 작성:</strong> 악의적인 비방이나 허위 사실이 포함된 리뷰 작성 시, 관련 법령에 따라 불이익을 받을 수 있습니다.
+                                    </li>
+                                </ul>
+                                <button onClick={() => setShowHelp(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                                    <i className="fa-solid fa-times"></i>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     <p className="text-xl text-gray-600 mb-8">학우들의 생생한 리뷰를 확인하고 맛집을 찾아보세요</p>
                     <div className="flex justify-center items-center gap-4">
                         <button onClick={handleGetRecommendations} className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition-all duration-300 hover:scale-105">

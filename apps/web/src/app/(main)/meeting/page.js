@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db, functions } from "../../../firebase";
 import { httpsCallable } from "firebase/functions";
@@ -10,7 +10,7 @@ import {
     doc, getDoc, collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot, Timestamp, deleteDoc
 } from "firebase/firestore";
 import Image from "next/image";
-import '../../styles/style.css';
+import '../../styles/style.css'; 
 import UserDisplay from '../../components/UserDisplay';
 
 const AlertModal = ({ message, onClose }) => {
@@ -28,19 +28,121 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
 
 const CreateMeetingModal = ({ show, onClose, user, university, nickname }) => {
     const [title, setTitle] = useState(""); const [date, setDate] = useState(""); const [time, setTime] = useState(""); const [maxParticipants, setMaxParticipants] = useState(4); const [location, setLocation] = useState(""); const [purpose, setPurpose] = useState(""); const [description, setDescription] = useState(""); const [tags, setTags] = useState([]);
-    useEffect(() => { if (show) { const today = new Date().toISOString().split('T')[0]; setDate(today); } }, [show]);
+    
+    useEffect(() => {
+        if (show) {
+            const today = new Date();
+            today.setMinutes(today.getMinutes() + 10); 
+            const defaultTime = today.toTimeString().slice(0, 5);
+            
+            setTitle("");
+            setDate(new Date().toISOString().split('T')[0]);
+            setTime(defaultTime);
+            setMaxParticipants(4);
+            setLocation("");
+            setPurpose("");
+            setDescription("");
+            setTags([]);
+        }
+    }, [show]);
+
     const handleTagToggle = (tag) => { setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]); };
+    
     const handleSubmit = async (e) => {
         e.preventDefault(); if (!title || !date || !time || !location) { alert("필수 항목(*)을 모두 입력해주세요."); return; }
         const meetingDateTime = Timestamp.fromDate(new Date(`${date}T${time}`)); if (meetingDateTime.toDate() < new Date()) { alert("현재 시간보다 이전의 시간으로는 모임을 생성할 수 없습니다."); return; }
         try { await addDoc(collection(db, "meetings"), { title, datetime: meetingDateTime, maxParticipants: Number(maxParticipants), location, purpose, description, tags, type: 'meeting', university, status: 'active', creatorId: user.uid, creatorNickname: nickname, participantIds: [user.uid], participantCount: 1, participantInfo: { [user.uid]: { joinedAt: serverTimestamp() } }, kickedUserIds: [], createdAt: serverTimestamp(), }); onClose(true); } catch (error) { console.error("모임 생성 오류:", error); alert("모임 생성 중 오류가 발생했습니다."); }
     };
+
     if (!show) return null;
-    return ( <div className="modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50"> <div className="modal-content bg-white rounded-xl max-w-2xl w-full p-6 relative"> <div className="flex justify-between items-center mb-6"> <h3 className="text-xl font-bold">새 모임 만들기</h3> <button onClick={() => onClose(false)} className="text-gray-400 hover:text-gray-600"> <i className="fas fa-times text-xl"></i> </button> </div> <form onSubmit={handleSubmit} className="space-y-4"> <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> <div className="md:col-span-2"> <label className="block text-sm font-medium text-gray-700 mb-1">제목 *</label> <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full border p-2 rounded-lg" placeholder="모임 제목을 입력하세요" /> </div> <div> <label className="block text-sm font-medium text-gray-700 mb-1">날짜 *</label> <input type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} required className="w-full border p-2 rounded-lg" /> </div> <div> <label className="block text-sm font-medium text-gray-700 mb-1">시간 *</label> <input type="time" value={time} onChange={e => setTime(e.target.value)} required className="w-full border p-2 rounded-lg" /> </div> <div> <label className="block text-sm font-medium text-gray-700 mb-1">최대 인원 *</label> <input type="number" min={2} max={20} value={maxParticipants} onChange={e => setMaxParticipants(e.target.value)} required className="w-full border p-2 rounded-lg" /> </div> <div> <label className="block text-sm font-medium text-gray-700 mb-1">장소 *</label> <input type="text" value={location} onChange={e => setLocation(e.target.value)} required className="w-full border p-2 rounded-lg" placeholder="만날 장소를 입력하세요" /> </div> <div className="md:col-span-2"> <label className="block text-sm font-medium text-gray-700 mb-1">목적</label> <input type="text" value={purpose} onChange={e => setPurpose(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="모임의 목적을 간단히 설명해주세요" /> </div> <div className="md:col-span-2"> <label className="block text-sm font-medium text-gray-700 mb-2">태그</label> <div className="flex flex-wrap gap-2"> {["점심", "술", "취미", "스터디", "운동", "게임"].map(tag => ( <button key={tag} type="button" onClick={() => handleTagToggle(tag)} className={`tag-btn tag tag-${tag.toLowerCase()} ${tags.includes(tag) ? "selected" : ""}`}> {tag} </button> ))} </div> </div> <div className="md:col-span-2"> <label className="block text-sm font-medium text-gray-700 mb-1">상세 설명</label> <textarea value={description} onChange={e => setDescription(e.target.value)} rows="3" className="w-full border p-2 rounded-lg" placeholder="모임에 대한 자세한 설명을 적어주세요"></textarea> </div> </div> <div className="flex justify-end space-x-3 pt-4"> <button type="button" onClick={() => onClose(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition">취소</button> <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">모임 만들기</button> </div> </form> </div> </div> );
+
+    return (
+        <div className="modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <form onSubmit={handleSubmit} className="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+                <div className="flex justify-between items-center p-5 border-b flex-shrink-0">
+                    <h3 className="text-xl font-semibold text-gray-800">새 모임 만들기</h3>
+                    <button type="button" onClick={() => onClose(false)} className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-6 overflow-y-auto">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">제목 <span className="text-red-500">*</span></label>
+                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="모임 제목을 입력하세요" />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">날짜 <span className="text-red-500">*</span></label>
+                            <input type="date" value={date} onChange={e => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">시간 <span className="text-red-500">*</span></label>
+                            <input type="time" value={time} onChange={e => setTime(e.target.value)} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">최대 인원 <span className="text-red-500">*</span></label>
+                            <input type="number" min={2} max={20} value={maxParticipants} onChange={e => setMaxParticipants(e.target.value)} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">장소 <span className="text-red-500">*</span></label>
+                            <input type="text" value={location} onChange={e => setLocation(e.target.value)} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="만날 장소를 입력하세요" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">목적</label>
+                        <input type="text" value={purpose} onChange={e => setPurpose(e.target.value)} className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="모임의 목적을 간단히 설명해주세요 (예: 같이 저녁 먹기)" />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">태그</label>
+                        <div className="flex flex-wrap gap-2">
+                            {["점심", "술", "취미", "스터디", "운동", "게임"].map(tag => (
+                                <button key={tag} type="button" onClick={() => handleTagToggle(tag)} className={`px-4 py-2 text-sm rounded-full font-semibold transition-colors ${tags.includes(tag) ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                                    {tag}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">상세 설명</label>
+                        <textarea value={description} onChange={e => setDescription(e.target.value)} rows="4" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="모임에 대한 자세한 설명을 적어주세요. (오픈채팅방 링크 등)"></textarea>
+                    </div>
+                </div>
+
+                <div className="flex justify-end items-center p-5 border-t bg-gray-50 rounded-b-lg flex-shrink-0">
+                    <button type="button" onClick={() => onClose(false)} className="px-6 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 transition mr-3">취소</button>
+                    <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">모임 만들기</button>
+                </div>
+            </form>
+        </div>
+    );
 };
 
 const CreateCarpoolModal = ({ show, onClose, user, university, nickname }) => {
     const [title, setTitle] = useState(""); const [time, setTime] = useState(""); const [maxParticipants, setMaxParticipants] = useState(4); const [departure, setDeparture] = useState(""); const [arrival, setArrival] = useState(""); const [description, setDescription] = useState("");
+    
+    useEffect(() => {
+        if (show) {
+            const today = new Date();
+            today.setMinutes(today.getMinutes() + 10);
+            const defaultTime = today.toTimeString().slice(0, 5);
+
+            setTitle("");
+            setTime(defaultTime);
+            setMaxParticipants(4);
+            setDeparture("");
+            setArrival("");
+            setDescription("");
+        }
+    }, [show]);
+
     const handleSubmit = async (e) => {
         e.preventDefault(); const today = new Date(); const [hour, minute] = time.split(':'); today.setHours(hour, minute, 0, 0);
         if (!title || !time || !departure || !arrival) { alert("필수 항목(*)을 모두 입력해주세요."); return; }
@@ -49,7 +151,58 @@ const CreateCarpoolModal = ({ show, onClose, user, university, nickname }) => {
         try { await addDoc(collection(db, "meetings"), { title, datetime: meetingDateTime, maxParticipants: Number(maxParticipants), departure, arrival, description, tags: ["카풀/택시"], type: 'carpool', university, status: 'active', creatorId: user.uid, creatorNickname: nickname, participantIds: [user.uid], participantCount: 1, participantInfo: { [user.uid]: { joinedAt: serverTimestamp() } }, kickedUserIds: [], createdAt: serverTimestamp(), }); onClose(true); } catch (error) { console.error("카풀 모임 생성 오류:", error); alert("모임 생성 중 오류가 발생했습니다."); }
     };
     if (!show) return null;
-    return ( <div className="modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50"> <div className="modal-content bg-white rounded-xl max-w-2xl w-full p-6 relative"> <div className="flex justify-between items-center mb-6"> <h3 className="text-xl font-bold">택시/카풀 동승자 구하기</h3> <button onClick={() => onClose(false)} className="text-gray-400 hover:text-gray-600">&times;</button> </div> <form onSubmit={handleSubmit} className="space-y-4"> <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> <div className="md:col-span-2"> <label className="block text-sm font-medium text-gray-700 mb-1">제목 *</label> <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full border p-2 rounded-lg" placeholder="예: 천안역 갈 사람 2명 구해요" /> </div> <div> <label className="block text-sm font-medium text-gray-700 mb-1">출발 시간 * (오늘)</label> <input type="time" value={time} onChange={e => setTime(e.target.value)} required className="w-full border p-2 rounded-lg" /> </div> <div> <label className="block text-sm font-medium text-gray-700 mb-1">최대 인원 * (본인 포함)</label> <input type="number" min={2} max={10} value={maxParticipants} onChange={e => setMaxParticipants(e.target.value)} required className="w-full border p-2 rounded-lg" /> </div> <div> <label className="block text-sm font-medium text-gray-700 mb-1">출발지 *</label> <input type="text" value={departure} onChange={e => setDeparture(e.target.value)} required className="w-full border p-2 rounded-lg" placeholder="예: 백석대학교 정문" /> </div> <div> <label className="block text-sm font-medium text-gray-700 mb-1">도착지 *</label> <input type="text" value={arrival} onChange={e => setArrival(e.target.value)} required className="w-full border p-2 rounded-lg" placeholder="예: 천안역" /> </div> <div className="md:col-span-2"> <label className="block text-sm font-medium text-gray-700 mb-1">상세 설명</label> <textarea value={description} onChange={e => setDescription(e.target.value)} rows="3" className="w-full border p-2 rounded-lg" placeholder="탑승 관련 추가 정보를 입력해주세요."></textarea> </div> </div> <div className="flex justify-end space-x-3 pt-4"> <button type="button" onClick={() => onClose(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition">취소</button> <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">구하기</button> </div> </form> </div> </div> );
+
+    return (
+        <div className="modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <form onSubmit={handleSubmit} className="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+                <div className="flex justify-between items-center p-5 border-b flex-shrink-0">
+                    <h3 className="text-xl font-semibold text-gray-800">택시/카풀 동승자 구하기</h3>
+                    <button type="button" onClick={() => onClose(false)} className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div className="p-6 space-y-6 overflow-y-auto">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">제목 <span className="text-red-500">*</span></label>
+                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="예: 천안역 갈 사람 2명 구해요" />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">출발 시간 (오늘) <span className="text-red-500">*</span></label>
+                            <input type="time" value={time} onChange={e => setTime(e.target.value)} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">최대 인원 (본인 포함) <span className="text-red-500">*</span></label>
+                            <input type="number" min={2} max={10} value={maxParticipants} onChange={e => setMaxParticipants(e.target.value)} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                    </div>
+
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">출발지 <span className="text-red-500">*</span></label>
+                            <input type="text" value={departure} onChange={e => setDeparture(e.target.value)} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="예: 백석대학교 정문" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">도착지 <span className="text-red-500">*</span></label>
+                            <input type="text" value={arrival} onChange={e => setArrival(e.target.value)} required className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="예: 천안역" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">상세 설명</label>
+                        <textarea value={description} onChange={e => setDescription(e.target.value)} rows="4" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="탑승 관련 추가 정보를 입력해주세요."></textarea>
+                    </div>
+                </div>
+
+                <div className="flex justify-end items-center p-5 border-t bg-gray-50 rounded-b-lg flex-shrink-0">
+                    <button type="button" onClick={() => onClose(false)} className="px-6 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 transition mr-3">취소</button>
+                    <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">동승자 구하기</button>
+                </div>
+            </form>
+        </div>
+    );
 };
 
 export default function MeetingPage() {
@@ -61,16 +214,37 @@ export default function MeetingPage() {
     const [meetings, setMeetings] = useState([]);
     const [filteredMeetings, setFilteredMeetings] = useState([]);
     const [activeTag, setActiveTag] = useState("전체");
-    const [statusFilter, setStatusFilter] = useState("active");
     const [isLoading, setIsLoading] = useState(true);
     const [meetingType, setMeetingType] = useState('meeting');
+    const [searchQuery, setSearchQuery] = useState(""); 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showCarpoolModal, setShowCarpoolModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [meetingToDelete, setMeetingToDelete] = useState(null);
     const [alertModal, setAlertModal] = useState({ show: false, message: "" });
+    const [expandedCardId, setExpandedCardId] = useState(null);
+    const [showHelp, setShowHelp] = useState(false);
+    const helpRef = useRef(null);
 
     const showAlert = (message) => setAlertModal({ show: true, message: message });
+
+    const handleToggleDetails = (cardId) => {
+        setExpandedCardId(prevId => (prevId === cardId ? null : cardId));
+    };
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (helpRef.current && !helpRef.current.contains(event.target)) {
+                setShowHelp(false);
+            }
+        }
+        if (showHelp) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [showHelp]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -105,18 +279,17 @@ export default function MeetingPage() {
     
     useEffect(() => {
         let tempMeetings = [...meetings];
-        if (statusFilter !== "all") {
-            if (statusFilter === "active") {
-                tempMeetings = tempMeetings.filter(m => m.status === 'active' && m.datetime.toDate() > new Date());
-            } else {
-                tempMeetings = tempMeetings.filter(m => m.status !== 'active' || m.datetime.toDate() <= new Date());
-            }
-        }
+        tempMeetings = tempMeetings.filter(m => m.status === 'active' && m.datetime.toDate() > new Date());
         if (meetingType === 'meeting' && activeTag !== "전체") {
             tempMeetings = tempMeetings.filter(m => m.tags.includes(activeTag));
         }
+        if (searchQuery.trim() !== "") {
+            tempMeetings = tempMeetings.filter(m => 
+                m.title.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
         setFilteredMeetings(tempMeetings);
-    }, [meetings, activeTag, statusFilter, meetingType]);
+    }, [meetings, activeTag, meetingType, searchQuery]); 
     
     const handleCreateModalClose = (isSuccess) => {
         setShowCreateModal(false); setShowCarpoolModal(false);
@@ -125,24 +298,19 @@ export default function MeetingPage() {
 
     const handleJoinLeave = async (meeting, isParticipant) => {
         if (!user) return;
-        
         if (!isParticipant) {
             if (meeting.type === 'meeting' && isInMeeting) { showAlert("이미 다른 '취미&약속' 모임에 참여 중입니다."); return; }
             if (meeting.type === 'carpool' && isInCarpool) { showAlert("이미 다른 '택시&카풀'에 참여 중입니다."); return; }
         }
-        
         const originalMeetings = meetings;
         const newMeetings = meetings.map(m => {
             if (m.id === meeting.id) {
-                const newParticipantIds = isParticipant 
-                    ? m.participantIds.filter(id => id !== user.uid)
-                    : [...m.participantIds, user.uid];
+                const newParticipantIds = isParticipant ? m.participantIds.filter(id => id !== user.uid) : [...m.participantIds, user.uid];
                 return { ...m, participantIds: newParticipantIds, participantCount: newParticipantIds.length };
             }
             return m;
         });
         setMeetings(newMeetings);
-
         const functionName = isParticipant ? 'leaveMeeting' : 'joinMeeting';
         try {
             const actionFunction = httpsCallable(functions, functionName);
@@ -161,20 +329,54 @@ export default function MeetingPage() {
         try { await deleteDoc(doc(db, "meetings", meetingToDelete)); } catch (error) { console.error("모임 삭제 오류:", error); alert("모임 삭제 중 오류가 발생했습니다."); } finally { setMeetingToDelete(null); }
     };
     
-    const getTagText = (tag) => ({ "점심": "lunch", "술": "alcohol", "취미": "hobby", "스터디": "study", "운동": "exercise", "게임": "game" }[tag] || "default");
+    const calculateTimeRemaining = (deadline) => {
+        if (!deadline) return null;
+        const now = new Date();
+        const deadlineDate = deadline.toDate();
+        const diff = deadlineDate - now;
+    
+        if (diff <= 0) return <span className="text-red-600">모집 마감</span>;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / 1000 / 60) % 60);
+    
+        if (days > 0) return `${days}일 ${hours}시간 뒤 마감`;
+        if (hours > 0) return `${hours}시간 ${minutes}분 뒤 마감`;
+        if (minutes > 0) return `${minutes}분 뒤 마감`;
+        return <span className="text-orange-500">마감 임박</span>;
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <main className="py-8 max-w-7xl mx-auto px-4">
+            <main className="py-8 max-w-6xl mx-auto px-4">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-gray-800">번개모임</h1>
-                    <p className="text-xl text-gray-600 mt-4">함께할 친구들을 찾아보세요!</p>
-                    <div className="mt-8 flex justify-center border-b">
+                    <div ref={helpRef} className="relative flex justify-center items-center gap-2">
+                        <h1 className="text-4xl font-bold text-gray-800">번개모임</h1>
+                        <button onClick={() => setShowHelp(!showHelp)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                            <i className="fa-solid fa-circle-question fa-lg"></i>
+                        </button>
+
+                        {showHelp && (
+                            <div className="absolute top-full mt-3 w-80 bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-left z-20 animate-fadeIn">
+                                <h4 className="font-bold text-md mb-2 text-gray-800"> 번개모임 사용 유의사항</h4>
+                                <ul className="space-y-1.5 text-sm text-gray-600 list-disc list-inside">
+                                    <li>안전한 만남을 위해 가급적 교내 또는 공공장소에서 만나세요.</li>
+                                    <li>개인정보(연락처, 주소 등) 공유에 주의하세요.</li>
+                                    <li>불쾌감을 주는 언행이나 행동은 삼가주세요.</li>
+                                </ul>
+                                <button onClick={() => setShowHelp(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                                    <i className="fa-solid fa-times"></i>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    <p className="text-xl text-gray-600 mt-4">다양한 취미, 식사를 함께할 친구들을 찾아보세요!</p>
+                    <div className="mt-8 flex justify-center">
                         <button onClick={() => setMeetingType('meeting')} className={`px-6 py-3 font-semibold transition ${meetingType === 'meeting' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}>취미&약속</button>
                         <button onClick={() => setMeetingType('carpool')} className={`px-6 py-3 font-semibold transition ${meetingType === 'carpool' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}>택시&카풀</button>
                     </div>
                 </div>
-
+                
                 <div className="text-center mb-8">
                     <button onClick={() => meetingType === 'meeting' ? setShowCreateModal(true) : setShowCarpoolModal(true)} disabled={(meetingType === 'meeting' && isInMeeting) || (meetingType === 'carpool' && isInCarpool)} className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" title={(meetingType === 'meeting' && isInMeeting) ? "이미 참여 중인 '취미&약속' 모임이 있습니다." : (meetingType === 'carpool' && isInCarpool) ? "이미 참여 중인 '택시&카풀'이 있습니다." : "" }>
                         {meetingType === 'meeting' ? '모임 만들기' : '택시/카풀 구하기'}
@@ -182,66 +384,110 @@ export default function MeetingPage() {
                 </div>
                 
                 {meetingType === 'meeting' && (
-                    <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-                        <div className="flex flex-wrap items-center gap-4">
-                            <div className="flex items-center space-x-2 flex-wrap gap-y-2">
-                                <span className="font-medium">태그 필터:</span>
-                                {["전체", "점심", "술", "취미", "스터디", "운동", "게임"].map(tag => ( <button key={tag} onClick={() => setActiveTag(tag)} className={`tag-filter-btn tag tag-${getTagText(tag)} ${activeTag === tag ? 'active' : ''}`}> {tag} </button> ))}
-                            </div>
-                            <div className="flex items-center space-x-3">
-                                <span className="font-medium">상태:</span>
-                                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg"> <option value="active">모집중</option> <option value="completed">완료</option> <option value="all">전체</option> </select>
-                            </div>
+                    <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-gray-800 mr-2">태그:</span>
+                            {["전체", "점심", "술", "취미", "스터디", "운동", "게임"].map(tag => (
+                                <button key={tag} onClick={() => setActiveTag(tag)} className={`category-filter-btn ${activeTag === tag ? 'active' : ''}`}>
+                                    {tag}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 )}
                 
-                <div className="space-y-4">
-                    {isLoading ? <div className="text-center py-8"><div className="loading mx-auto mb-4"></div><p className="text-gray-500">모임을 불러오는 중...</p></div>
+                <div className="mb-8">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="제목으로 검색해보세요"
+                            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        />
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i className="fa-solid fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {isLoading ? <div className="col-span-full text-center py-8"><div className="loading mx-auto mb-4"></div><p className="text-gray-500">모임을 불러오는 중...</p></div>
                      : filteredMeetings.length > 0 ? (
                         filteredMeetings.map(m => {
                             const isParticipant = m.participantIds.includes(user?.uid);
                             const isCreator = m.creatorId === user?.uid;
                             const isFull = m.participantCount >= m.maxParticipants;
-                            const isExpired = m.datetime.toDate() < new Date();
-                            const status = isExpired || m.status !== 'active' ? '종료' : '모집중';
+                            const status = m.status !== 'active' || m.datetime.toDate() < new Date() ? '종료' : '모집중';
                             const isKicked = m.kickedUserIds?.includes(user?.uid);
 
                             return (
-                                <div key={m.id} className="meeting-card bg-white p-6 rounded-xl shadow-sm">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <h3 className="text-lg font-semibold text-gray-800 flex-1">{m.title}</h3>
-                                        <div className="flex items-center space-x-2 ml-4">
-                                            {isCreator && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">방장</span>}
-                                            <span className={`status-badge ${status === '종료' ? 'expired' : 'active'}`}>{status}</span>
+                                <div key={m.id} className="bg-white rounded-lg shadow-lg flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                                    <div className="p-4 border-b">
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                {m.tags && m.tags.map(tag => (
+                                                    <span key={tag} className="text-xs font-semibold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">{tag}</span>
+                                                ))}
+                                            </div>
+                                            <span className="text-xs font-mono text-gray-500 shrink-0">{calculateTimeRemaining(m.datetime)}</span>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm text-gray-600">
-                                        {m.type === 'carpool' ? ( <> <span><i className="fas fa-clock mr-2 text-green-500"></i>{m.datetime.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span> <span><i className="fas fa-users mr-2 text-purple-500"></i>{m.participantCount}/{m.maxParticipants}명</span> <span><i className="fas fa-map-marker-alt mr-2 text-blue-500"></i>{m.departure}</span> <span><i className="fas fa-flag-checkered mr-2 text-red-500"></i>{m.arrival}</span> </>
-                                        ) : ( <> <span><i className="fas fa-calendar-alt mr-2 text-blue-500"></i>{m.datetime.toDate().toLocaleDateString()}</span> <span><i className="fas fa-clock mr-2 text-green-500"></i>{m.datetime.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span> <span><i className="fas fa-users mr-2 text-purple-500"></i>{m.participantCount}/{m.maxParticipants}명</span> <span><i className="fas fa-map-marker-alt mr-2 text-red-500"></i>{m.location}</span> </> )}
-                                    </div>
-                                    {m.tags && m.tags.length > 0 && <div className="mb-3 flex flex-wrap gap-2">{m.tags.map(tag => <span key={tag} className={`tag tag-${getTagText(tag)}`}>{tag}</span>)}</div>}
-                                    {m.purpose && <div className="mb-3 text-sm text-gray-600"><strong>목적:</strong> {m.purpose}</div>}
-                                    {m.description && <p className="text-gray-700 mb-4 text-sm">{m.description}</p>}
-                                    <div className="flex justify-between items-center pt-4 border-t">
-                                        <UserDisplay userTarget={{ id: m.creatorId, nickname: m.creatorNickname }} context={{ type: 'meeting', id: m.id }} >
-                                            <span className="text-sm text-gray-500 cursor-pointer"><i className="fas fa-user-circle mr-1"></i>방장: {m.creatorNickname}</span>
-                                        </UserDisplay>
-                                        <div className="flex space-x-2">
-                                            {status === '모집중' && !isCreator &&
-                                                <button onClick={() => handleJoinLeave(m, isParticipant)} disabled={(isFull && !isParticipant) || isKicked} className={`px-4 py-2 rounded-lg text-sm font-semibold text-white transition ${ isKicked ? 'bg-gray-400' : isParticipant ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700' } ${(isFull && !isParticipant) || isKicked ? 'cursor-not-allowed opacity-60' : ''}`}>
-                                                    <i className={`fas ${isParticipant ? 'fa-minus' : 'fa-plus'} mr-1`}></i>
-                                                    {isKicked ? '참여불가' : isParticipant ? '나가기' : isFull ? '모집완료' : '참여하기'}
-                                                </button>
-                                            }
-                                            {isParticipant && <button onClick={() => setOpenChatId(m.id)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm"><i className="fas fa-comments mr-1"></i>채팅방</button>}
-                                            {isCreator && <button onClick={() => handleDelete(m.id)} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"><i className="fas fa-trash mr-1"></i>삭제</button>}
+
+                                    <div className="p-5 flex flex-col flex-grow">
+                                        <h3 className="text-xl font-bold text-gray-800 mb-4 line-clamp-2">{m.title}</h3>
+                                        
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm mb-4">
+                                            {m.type === 'carpool' ? (
+                                                <>
+                                                    <div><i className="fa-solid fa-clock w-5 mr-1 text-gray-400"></i><span className="font-semibold">{m.datetime.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
+                                                    <div><i className="fa-solid fa-users w-5 mr-1 text-gray-400"></i><span className={`${isFull ? 'font-bold text-red-500' : 'font-bold'}`}>{m.participantCount} / {m.maxParticipants}</span></div>
+                                                    <div className="col-span-2"><i className="fa-solid fa-location-dot w-5 mr-1 text-gray-400"></i><span className="font-semibold">{m.departure} → {m.arrival}</span></div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div><i className="fa-solid fa-calendar-day w-5 mr-1 text-gray-400"></i><span className="font-semibold">{m.datetime.toDate().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</span></div>
+                                                    <div><i className="fa-solid fa-clock w-5 mr-1 text-gray-400"></i><span className="font-semibold">{m.datetime.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
+                                                    <div className="col-span-2"><i className="fa-solid fa-location-dot w-5 mr-1 text-gray-400"></i><span className="font-semibold">{m.location}</span></div>
+                                                    <div><i className="fa-solid fa-users w-5 mr-1 text-gray-400"></i><span className={`${isFull ? 'font-bold text-red-500' : 'font-bold'}`}>{m.participantCount} / {m.maxParticipants}</span></div>
+                                                </>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="flex-grow"></div>
+
+                                        <div className="mt-auto pt-4 border-t">
+                                            {expandedCardId === m.id && (m.purpose || m.description) && (
+                                                <div className="text-sm text-gray-600 mb-4 p-3 bg-gray-50 rounded-md animate-fadeIn">
+                                                    {m.purpose && <p className="font-semibold mb-1 text-gray-800">{m.purpose}</p>}
+                                                    {m.description && <p className="whitespace-pre-wrap">{m.description}</p>}
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center">
+                                                <UserDisplay userTarget={{ id: m.creatorId, nickname: m.creatorNickname }} context={{ type: 'meeting', id: m.id }} >
+                                                    <span className="text-sm font-medium text-gray-500 cursor-pointer"><i className="fa-regular fa-user mr-1.5"></i>{m.creatorNickname}</span>
+                                                </UserDisplay>
+                                                <div className="flex items-center space-x-2">
+                                                    {(m.purpose || m.description) && (
+                                                        <button onClick={() => handleToggleDetails(m.id)} className="text-xs font-semibold text-gray-500 hover:text-black p-1">
+                                                            {expandedCardId === m.id ? '간략히' : '자세히'}
+                                                        </button>
+                                                    )}
+                                                    {status === '모집중' && !isCreator &&
+                                                        <button onClick={() => handleJoinLeave(m, isParticipant)} disabled={(isFull && !isParticipant) || isKicked} className={`px-3 py-1.5 rounded-md text-xs font-bold text-white transition ${ isKicked ? 'bg-gray-400' : isParticipant ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600' } ${ (isFull && !isParticipant) || isKicked ? 'cursor-not-allowed opacity-70' : ''}`}>
+                                                            {isParticipant ? '나가기' : '참여'}
+                                                        </button>
+                                                    }
+                                                    {isParticipant && <button onClick={() => setOpenChatId(m.id)} className="px-3 py-1.5 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition">채팅</button>}
+                                                    {isCreator && <button onClick={() => handleDelete(m.id)} className="px-3 py-1.5 rounded-md bg-gray-600 hover:bg-gray-700 text-white text-xs font-bold transition">삭제</button>}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             );
                         })
-                     ) : <div className="text-center py-16"><i className="fas fa-users text-6xl text-gray-300 mb-4"></i><h3 className="text-xl font-semibold text-gray-600 mb-2">모임이 없습니다</h3><p className="text-gray-500">새로운 모임을 만들어보세요!</p></div>
+                       ) : <div className="col-span-full text-center py-16"><i className="fas fa-users text-6xl text-gray-300 mb-4"></i><h3 className="text-xl font-semibold text-gray-600 mb-2">모임이 없습니다</h3><p className="text-gray-500">새로운 모임을 만들어보세요!</p></div>
                     }
                 </div>
             </main>

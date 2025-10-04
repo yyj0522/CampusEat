@@ -6,7 +6,6 @@ import { useAuth } from "../context/AuthProvider";
 import { db } from "../../firebase";
 import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/firestore";
 
-// 이 파일 내에서만 사용할 알림 모달
 function AlertModal({ message, onClose }) {
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -86,7 +85,6 @@ export default function DirectMessageModal() {
     };
 
     const handleAlertClose = () => {
-        // 성공 메시지 확인 후에는 쪽지창을 닫음
         if (alert.message.includes("성공")) {
             handleClose();
         }
