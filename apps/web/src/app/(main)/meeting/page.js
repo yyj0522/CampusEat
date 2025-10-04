@@ -9,7 +9,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import {
     doc, getDoc, collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot, Timestamp, deleteDoc
 } from "firebase/firestore";
-import Image from "next/image";
 import '../../styles/style.css'; 
 import UserDisplay from '../../components/UserDisplay';
 

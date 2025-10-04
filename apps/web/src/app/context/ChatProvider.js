@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { onSnapshot, collection, query, where, Timestamp } from 'firebase/firestore';
+import { onSnapshot, collection, query, where } from 'firebase/firestore';
 import { useAuth } from './AuthProvider';
 import { db } from '../../firebase';
 
@@ -42,7 +42,7 @@ export const ChatProvider = ({ children }) => {
         });
 
         return () => unsubscribe();
-    }, [user]);
+    }, [user, openChatId]);
 
     const participationStatus = useMemo(() => {
         return {

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import { auth, db } from "../../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -156,7 +155,7 @@ export default function CommunityPage() {
                 setSelectedPost(updatedPost);
             }
         }
-    }, [posts]);
+    }, [posts, selectedPost]); 
 
     useEffect(() => {
         if (!selectedPost) return;
@@ -173,7 +172,7 @@ export default function CommunityPage() {
             }));
         });
         return () => unsubscribe();
-    }, [selectedPost?.id]);
+    }, [selectedPost]); 
 
     useEffect(() => {
         const postIdFromUrl = searchParams.get('postId');
@@ -275,7 +274,6 @@ export default function CommunityPage() {
 
     const closePost = () => {
         setSelectedPost(null);
-        // 모달을 닫을 때 URL에서 postId 파라미터 제거
         router.replace('/community', { scroll: false });
     };
 

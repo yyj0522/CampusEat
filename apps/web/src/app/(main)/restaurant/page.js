@@ -465,7 +465,11 @@ export default function RestaurantPage() {
         batch.update(userRef, { likedRestaurants: isLiked ? arrayRemove(restaurantId) : arrayUnion(restaurantId) });
         
         const newLikes = new Set(userLikes);
-        isLiked ? newLikes.delete(restaurantId) : newLikes.add(restaurantId);
+        if (isLiked) {
+            newLikes.delete(restaurantId);
+        } else {
+            newLikes.add(restaurantId);
+        }
         setUserLikes(newLikes);
 
         await batch.commit();
@@ -617,10 +621,10 @@ export default function RestaurantPage() {
                         
                         {showHelp && (
                             <div className="absolute top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-left z-20 animate-fadeIn">
-                                <h4 className="font-bold text-md mb-2 text-gray-800">맛집 추천 사용 유의사항</h4>
+                                <h4 className="font-bold text-md mb-2 text-gray-800">💡 맛집 추천 이용 안내</h4>
                                 <ul className="space-y-2 text-sm text-gray-600 list-disc list-inside">
                                     <li>
-                                        <strong className="font-semibold">맛집 제보:</strong> '맛집 제보하기' 버튼으로 리스트에 없는 나만의 맛집을 추가 요청할 수 있습니다.
+                                        <strong className="font-semibold">맛집 제보:</strong> &apos;맛집 제보하기&apos; 버튼으로 리스트에 없는 나만의 맛집을 추가 요청할 수 있습니다.
                                     </li>
                                     <li>
                                         <strong className="font-semibold">리뷰 작성:</strong> 악의적인 비방이나 허위 사실이 포함된 리뷰 작성 시, 관련 법령에 따라 불이익을 받을 수 있습니다.

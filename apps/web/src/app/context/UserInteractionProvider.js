@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthProvider';
 import { db } from '../../firebase';
-import { collection, query, where, onSnapshot, updateDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, writeBatch } from 'firebase/firestore';
 
 const UserInteractionContext = createContext();
 

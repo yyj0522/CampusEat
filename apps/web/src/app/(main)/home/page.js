@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "../../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import Image from "next/image";
 
 export default function HomePage() {
     const router = useRouter();
-    const [currentUser, setCurrentUser] = useState({ nickname: "", university: "" });
+    const [, setCurrentUser] = useState({ nickname: "", university: "" });
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const slides = [
@@ -36,14 +35,14 @@ export default function HomePage() {
         },
     ];
 
-    const nextSlide = () => {
+    const nextSlide = useCallback(() => {
         setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-    };
+    }, [slides.length]);
 
     useEffect(() => {
-        const slideInterval = setInterval(nextSlide, 5000); // 5초마다 슬라이드 변경
+        const slideInterval = setInterval(nextSlide, 5000);
         return () => clearInterval(slideInterval);
-    }, []);
+    }, [nextSlide]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -112,7 +111,6 @@ export default function HomePage() {
                     </div>
                 </section>
 
-                {/* --- 주요 서비스 바로가기 섹션 --- */}
                 <section className="max-w-6xl mx-auto px-6">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">주요 서비스</h2>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db, functions } from "../../../firebase";
 import { onAuthStateChanged, signOut, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "firebase/auth";
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, collectionGroup, orderBy, Timestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, collectionGroup, orderBy } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import '../../styles/style.css'; 
 
@@ -135,7 +135,6 @@ const DeleteAccountModal = ({ isOpen, onClose, onDelete }) => {
                     <li>작성한 모든 맛집 리뷰</li>
                     <li>기타 모든 활동 내역</li>
                 </ul>
-                {/* [수정] 따옴표 오류 해결 */}
                 <p className="text-gray-600 mb-2">탈퇴를 원하시면, 아래 입력창에 <strong className="text-red-600">&quot;{requiredText}&quot;</strong>를 정확히 입력해주세요.</p>
                 <input type="text" value={confirmationText} onChange={(e) => setConfirmationText(e.target.value)} className="w-full border p-2 rounded-lg" />
                 <div className="flex justify-end gap-2 mt-4">
@@ -148,7 +147,6 @@ const DeleteAccountModal = ({ isOpen, onClose, onDelete }) => {
         </div>
     );
 };
-
 
 const ActivityFeed = ({ filter, data, isLoading, router }) => {
     if (isLoading) {
@@ -170,7 +168,7 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
             case 'my-comments':
                 return (
                     <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/community?postId=${item.postId}`)}>
-                        <p className="text-sm text-gray-700">"{item.content}"</p>
+                        <p className="text-sm text-gray-700">&quot;{item.content}&quot;</p>
                         <p className="text-xs text-gray-400 mt-1">원문: {item.postTitle || "게시글"}</p>
                     </div>
                 );
@@ -178,7 +176,7 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
                 return (
                      <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => router.push('/restaurant')}>
                         <p className="font-semibold">{item.restaurantName} <span className="text-yellow-500">{'★'.repeat(item.rating)}</span></p>
-                        <p className="text-sm text-gray-700 mt-1">"{item.content}"</p>
+                        <p className="text-sm text-gray-700 mt-1">&quot;{item.content}&quot;</p>
                     </div>
                 );
             case 'liked-restaurants':

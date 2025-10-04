@@ -29,8 +29,8 @@ const Toast = ({ message, show, onClose }) => {
 
 export default function InformationPage() {
     const router = useRouter();
-    const [user, setUser] = useState(null);
-    const [nickname, setNickname] = useState("");
+    const [, setUser] = useState(null);
+    const [, setNickname] = useState("");
     const [university, setUniversity] = useState("");
     const [activeTab, setActiveTab] = useState("meal");
     const [shuttleData, setShuttleData] = useState([]);
