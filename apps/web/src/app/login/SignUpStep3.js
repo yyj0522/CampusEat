@@ -6,7 +6,6 @@ import { auth, db } from "../../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
-// 추가: 이 파일 내에서만 사용할 성공 모달 컴포넌트
 function SuccessModal({ message, onClose }) {
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -43,7 +42,6 @@ export default function SignUpStep3({ formData, prev, verificationCode }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timer, setTimer] = useState(180);
   
-  // 추가: 성공 모달의 표시 여부를 관리하는 상태
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
@@ -84,9 +82,10 @@ export default function SignUpStep3({ formData, prev, verificationCode }) {
         university: formData.university,
         universityEmail: formData.universityEmail,
         createdAt: serverTimestamp(),
+        role: "user",
+        status: "활성",
       });
 
-      // 수정: alert 대신 성공 모달을 띄우도록 변경
       setShowSuccessModal(true);
 
     } catch (error) {
@@ -107,7 +106,6 @@ export default function SignUpStep3({ formData, prev, verificationCode }) {
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
 
-  // 추가: 성공 모달을 닫을 때 홈으로 이동하는 함수
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     router.push("/home");
@@ -123,18 +121,18 @@ export default function SignUpStep3({ formData, prev, verificationCode }) {
           <label htmlFor="codeInput" className="sr-only">인증번호</label>
           <div className="relative">
               <input
-                  type="text"
-                  id="codeInput"
-                  placeholder="인증번호 6자리"
-                  value={codeInput}
-                  onChange={(e) => setCodeInput(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center tracking-[.5em] focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  required
-                  maxLength={6}
-                  autoFocus
+                type="text"
+                id="codeInput"
+                placeholder="인증번호 6자리"
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center tracking-[.5em] focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                required
+                maxLength={6}
+                autoFocus
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 font-medium">
-                  {formatTime(timer)}
+                {formatTime(timer)}
               </span>
           </div>
         </div>
@@ -158,7 +156,6 @@ export default function SignUpStep3({ formData, prev, verificationCode }) {
         </button>
       </form>
 
-      {/* 추가: 성공 모달 렌더링 */}
       {showSuccessModal && (
         <SuccessModal
           message="회원가입이 완료되었습니다!"

@@ -14,7 +14,6 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
         <div className="text-center mb-8">
-          {/* 아이콘 이미지 */}
           <div className="flex items-center justify-center mx-auto mb-4">
             <Image
               src="/icon.png"
