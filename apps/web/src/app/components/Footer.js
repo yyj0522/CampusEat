@@ -1,5 +1,7 @@
 "use client";
 
+import Link from 'next/link';
+
 export default function Footer() {
     const companyInfo = {
         name: "캠퍼스잇 주식회사",
@@ -11,9 +13,8 @@ export default function Footer() {
     const links = [
         { name: "이용약관", path: "/terms" },
         { name: "개인정보처리방침", path: "/privacy" },
-        { name: "청소년보호정책", path: "/youth-policy" },
         { name: "커뮤니티이용규칙", path: "/community-rules" },
-        { name: "공지사항", path: "/notice" },
+        { name: "공지사항", path: "/community?category=notice" },
         { name: "문의하기", path: "/contact" },
     ];
 
@@ -26,9 +27,9 @@ export default function Footer() {
                 </div>
                 <div className="flex items-center space-x-4">
                     {links.map((link, index) => (
-                        <a key={index} href={link.path} className="hover:text-gray-800">
+                        <Link key={index} href={link.path} className="hover:text-gray-800">
                             {link.name}
-                        </a>
+                        </Link>
                     ))}
                     <span>|</span>
                     <span>© 캠퍼스잇</span>

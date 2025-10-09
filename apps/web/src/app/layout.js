@@ -4,7 +4,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
-// 수정: './(main)/...'이 아닌 './...' 경로에서 가져옵니다.
 import { AuthProvider } from "./context/AuthProvider";
 import { RestaurantProvider } from "./context/RestaurantProvider";
 import { ChatProvider } from "./context/ChatProvider";

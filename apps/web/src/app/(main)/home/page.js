@@ -10,27 +10,9 @@ export default function HomePage() {
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const slides = [
-        {
-            bgColor: "bg-gradient-to-r from-green-400 to-blue-500",
-            title: "🎉 신학기 특별 이벤트",
-            subtitle: "맛집 리뷰 작성하고 배달비 쿠폰 받아가세요!",
-            buttonText: "자세히 보기",
-            link: "/restaurant"
-        },
-        {
-            bgColor: "bg-gradient-to-r from-purple-500 to-pink-500",
-            title: "📢 전체 공지사항",
-            subtitle: "캠퍼스잇 v1.2 업데이트 안내",
-            buttonText: "공지 확인",
-            link: "/community?category=notice"
-        },
-        {
-            bgColor: "bg-gradient-to-r from-yellow-400 to-orange-500",
-            title: "🔥 지금 가장 인기있는 번개모임",
-            subtitle: "함께 저녁 식사 할 분들을 찾고 있어요!",
-            buttonText: "모임 참여하기",
-            link: "/meeting"
-        },
+        { bgColor: "bg-gradient-to-r from-green-400 to-blue-500", title: "🎉 신학기 특별 이벤트", subtitle: "맛집 리뷰 작성하고 배달비 쿠폰 받아가세요!", buttonText: "자세히 보기", link: "/restaurant" },
+        { bgColor: "bg-gradient-to-r from-purple-500 to-pink-500", title: "📢 전체 공지사항", subtitle: "캠퍼스잇 v1.2 업데이트 안내", buttonText: "공지 확인", link: "/community?category=notice" },
+        { bgColor: "bg-gradient-to-r from-yellow-400 to-orange-500", title: "🔥 지금 가장 인기있는 번개모임", subtitle: "함께 저녁 식사 할 분들을 찾고 있어요!", buttonText: "모임 참여하기", link: "/meeting" },
     ];
 
     const nextSlide = useCallback(() => {
@@ -57,16 +39,18 @@ export default function HomePage() {
         { title: "학식/셔틀", icon: "fa-bus", color: "text-green-500", bgColor: "bg-green-50", path: "/information", description: "필수 정보 확인" },
         { title: "커뮤니티", icon: "fa-comments", color: "text-blue-500", bgColor: "bg-blue-50", path: "/community", description: "소통과 정보공유" },
     ];
-    
-    const recommendedFeatures = [
-        { title: "중고 거래", icon: "fa-exchange-alt", color: "text-purple-500", bgColor: "bg-purple-50", path: "/community/market", description: "안전하고 편리하게 거래해요" },
-        { title: "스터디 그룹", icon: "fa-book-open", color: "text-indigo-500", bgColor: "bg-indigo-50", path: "/community/study", description: "함께 공부하고 성장해요" },
-        { title: "분실물 센터", icon: "fa-search", color: "text-teal-500", bgColor: "bg-teal-50", path: "/community/lostfound", description: "잃어버린 물건을 찾아보세요" },
+
+    const communityShortcuts = [
+        { title: "공지사항", icon: "fa-bullhorn", path: "/community?category=notice" },
+        { title: "자유게시판", icon: "fa-comments", path: "/community?category=free" },
+        { title: "정보공유", icon: "fa-share-alt", path: "/community?category=info" },
+        { title: "질문게시판", icon: "fa-question-circle", path: "/community?category=question" },
     ];
 
     return (
         <div className="min-h-screen bg-gray-50">
             <main className="space-y-12 md:space-y-16 py-12">
+                
                 <section className="max-w-6xl mx-auto px-6">
                     <div className="relative w-full aspect-[2/1] md:aspect-[3/1] overflow-hidden rounded-2xl shadow-xl">
                         {slides.map((slide, index) => (
@@ -102,11 +86,7 @@ export default function HomePage() {
                     <h2 className="text-2xl font-bold text-gray-800 mb-6">주요 서비스</h2>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         {quickLinks.map(link => (
-                            <div
-                                key={link.title}
-                                onClick={() => router.push(link.path)}
-                                className="bg-white rounded-2xl p-6 shadow-lg cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2"
-                            >
+                            <div key={link.title} onClick={() => router.push(link.path)} className="bg-white rounded-2xl p-6 shadow-lg cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
                                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${link.bgColor}`}>
                                     <i className={`fas ${link.icon} text-3xl ${link.color}`}></i>
                                 </div>
@@ -116,27 +96,45 @@ export default function HomePage() {
                         ))}
                     </div>
                 </section>
-
+                
                 <section className="max-w-6xl mx-auto px-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">캠퍼스잇 추천 기능</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {recommendedFeatures.map(feature => (
-                             <div 
-                                key={feature.title} 
-                                onClick={() => router.push(feature.path)}
-                                className="bg-white rounded-2xl p-6 shadow-lg cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex items-center space-x-5"
-                            >
-                                <div className={`w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center ${feature.bgColor}`}>
-                                    <i className={`fas ${feature.icon} text-3xl ${feature.color}`}></i>
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-800">{feature.title}</h3>
-                                    <p className="text-gray-500 text-sm mt-1">{feature.description}</p>
-                                </div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6">오늘의 캠퍼스 라이프</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div onClick={() => router.push('/restaurant')} className="bg-white rounded-2xl shadow-lg p-8 cursor-pointer group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                            <h3 className="text-2xl font-bold text-gray-800">점심 뭐 먹지? 🤔</h3>
+                            <p className="mt-2 text-gray-500">실패 없는 점심을 위해 학우들의 솔직한 맛집 리뷰를 확인해보세요.</p>
+                            <div className="mt-6 font-semibold text-indigo-600 group-hover:underline">
+                                맛집 보러가기 →
                             </div>
-                        ))}
+                        </div>
+                        <div onClick={() => router.push('/meeting')} className="bg-white rounded-2xl shadow-lg p-8 cursor-pointer group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                            <h3 className="text-2xl font-bold text-gray-800">오늘 저녁 약속 있어? ⚡</h3>
+                            <p className="mt-2 text-gray-500">번개 모임으로 새로운 친구들을 만나고 즐거운 저녁 시간을 보내보세요.</p>
+                            <div className="mt-6 font-semibold text-indigo-600 group-hover:underline">
+                                모임 참여하기 →
+                            </div>
+                        </div>
                     </div>
                 </section>
+                
+                <section className="max-w-6xl mx-auto px-6">
+                    <div className="bg-white rounded-2xl p-8 shadow-lg">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6">주요 게시판 바로가기</h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {communityShortcuts.map(shortcut => (
+                                <div 
+                                    key={shortcut.title} 
+                                    onClick={() => router.push(shortcut.path)}
+                                    className="text-center p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-50 hover:shadow-md transition-all"
+                                >
+                                    <i className={`fas ${shortcut.icon} text-2xl text-indigo-500`}></i>
+                                    <p className="mt-2 font-semibold text-gray-700">{shortcut.title}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
             </main>
         </div>
     );

@@ -88,20 +88,25 @@ export default function CommunityPage() {
     const [posts, setPosts] = useState([]);
     const [comments, setComments] = useState({});
     const [currentSort, setCurrentSort] = useState('latest');
-    const [currentCategory, setCurrentCategory] = useState('all');
     const [selectedPost, setSelectedPost] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
-    
     const [postToDelete, setPostToDelete] = useState(null);
     const [commentToDelete, setCommentToDelete] = useState(null);
-
     const [showHelp, setShowHelp] = useState(false);
     const helpRef = useRef(null);
+
+    const [currentCategory, setCurrentCategory] = useState(() => {
+        const categoryFromUrl = searchParams.get('category');
+        const validCategories = ['notice', 'free', 'question', 'info', 'trade'];
+        if (categoryFromUrl && validCategories.includes(categoryFromUrl)) {
+            return categoryFromUrl;
+        }
+        return 'all';
+    });
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -155,7 +160,7 @@ export default function CommunityPage() {
                 setSelectedPost(updatedPost);
             }
         }
-    }, [posts, selectedPost]); 
+    }, [posts, selectedPost]);
 
     useEffect(() => {
         if (!selectedPost) return;
@@ -172,7 +177,7 @@ export default function CommunityPage() {
             }));
         });
         return () => unsubscribe();
-    }, [selectedPost]); 
+    }, [selectedPost]);
 
     useEffect(() => {
         const postIdFromUrl = searchParams.get('postId');
@@ -303,7 +308,7 @@ export default function CommunityPage() {
     const handleDeleteComment = (postId, commentId) => {
         setCommentToDelete({ postId, commentId });
     };
-    
+
     const executeDeleteComment = async () => {
         if (!commentToDelete) return;
         const { postId, commentId } = commentToDelete;
@@ -315,7 +320,7 @@ export default function CommunityPage() {
             const postRef = doc(db, "posts", postId);
             await updateDoc(postRef, { commentCount: increment(-1) });
             
-            setCommentToDelete(null); 
+            setCommentToDelete(null);
             setSuccessMessage("댓글이 삭제되었습니다.");
             setShowSuccessModal(true);
         } catch (error) {
@@ -373,25 +378,25 @@ export default function CommunityPage() {
             const postId = postToDelete;
             const commentsRef = collection(db, "posts", postId, "comments");
             const commentsSnapshot = await getDocs(commentsRef);
-        
+            
             const deletePromises = [];
             commentsSnapshot.forEach((commentDoc) => {
                 deletePromises.push(deleteDoc(commentDoc.ref));
             });
             await Promise.all(deletePromises);
-        
+            
             const postRef = doc(db, "posts", postId);
             await deleteDoc(postRef);
-        
+            
             setSelectedPost(null);
-            setPostToDelete(null); 
+            setPostToDelete(null);
             setSuccessMessage("게시글과 관련 댓글이 모두 삭제되었습니다.");
             setShowSuccessModal(true);
 
         } catch (error) {
             console.error("게시글 삭제 실패:", error);
             alert("게시글 삭제 중 오류가 발생했습니다.");
-            setPostToDelete(null); 
+            setPostToDelete(null);
         }
     };
 
@@ -399,8 +404,8 @@ export default function CommunityPage() {
         if (updatedData.title && updatedData.content) {
             try {
                 const postRef = doc(db, "posts", postId);
-                await updateDoc(postRef, { 
-                    title: updatedData.title, 
+                await updateDoc(postRef, {
+                    title: updatedData.title,
                     content: updatedData.content,
                     isAnonymous: updatedData.isAnonymous
                 });
