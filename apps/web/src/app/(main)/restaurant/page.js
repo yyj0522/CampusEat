@@ -7,7 +7,7 @@ import { useRestaurants } from "../../context/RestaurantProvider";
 import { onAuthStateChanged } from "firebase/auth";
 import { 
     doc, getDoc, collection, getDocs, addDoc, serverTimestamp, 
-    query, orderBy, where, writeBatch, increment, arrayUnion, arrayRemove, deleteDoc
+    query, orderBy, writeBatch, increment, arrayUnion, arrayRemove
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Image from "next/image";

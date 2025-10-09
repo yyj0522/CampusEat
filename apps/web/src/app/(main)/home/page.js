@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "../../../firebase";
+import { auth } from "../../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 
 export default function HomePage() {
     const router = useRouter();
@@ -44,7 +43,7 @@ export default function HomePage() {
     }, [nextSlide]);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (!user) {
                 router.push("/login");
             }

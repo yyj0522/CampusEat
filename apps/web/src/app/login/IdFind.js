@@ -4,7 +4,7 @@ import { useState } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
 
-export default function IdFind({ setMode }) {
+export default function IdFind() {
   const [univEmail, setUnivEmail] = useState("");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);

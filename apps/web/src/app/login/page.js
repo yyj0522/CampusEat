@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { FaChevronDown, FaArrowUp, FaStore, FaHeart, FaCommentDots, FaUsers, FaCalendarAlt, FaClock, FaUtensils, FaBus, FaPen, FaBook, FaBullhorn } from "react-icons/fa";
+import { FaChevronDown, FaArrowUp, FaStore, FaHeart, FaCommentDots, FaUsers, FaCalendarAlt, FaClock, FaUtensils, FaBus } from "react-icons/fa";
 import { motion, useAnimation } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 
@@ -192,7 +192,7 @@ const FeatureSection = ({
                 </div>
                 <div className="w-full max-w-sm flex flex-col items-center">
                      <motion.div variants={itemVariants} className="w-full h-80 bg-white rounded-2xl shadow-lg flex flex-col border border-gray-200">
-                        <div className="p-3 border-b font-bold text-gray-700">"{sampleMeetup.title}" 채팅방</div>
+                        <div className="p-3 border-b font-bold text-gray-700">{`'${sampleMeetup.title}' 채팅방`}</div>
                         <div className="flex-grow p-3 space-y-3 overflow-y-auto">
                             {sampleChat.map((chat, index) => (
                                 <motion.div key={index} variants={itemVariants} className={`flex ${chat.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
@@ -315,8 +315,8 @@ export default function LoginPage() {
 
           {mode === "login" && <LoginForm setMode={setMode} />}
           {mode === "signup" && <SignUpForm setMode={setMode} />}
-          {mode === "findID" && <IdFind setMode={setMode} />}
-          {mode === "findPW" && <PwFind setMode={setMode} />}
+          {mode === "findID" && <IdFind />}
+          {mode === "findPW" && <PwFind />}
 
           {mode !== "login" && (
              <div className="mt-6 text-center">

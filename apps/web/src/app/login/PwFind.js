@@ -5,7 +5,7 @@ import { db, auth } from "../../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { sendPasswordResetEmail } from "firebase/auth";
 
-export default function PwFind({ setMode }) {
+export default function PwFind() {
   const [univEmail, setUnivEmail] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
