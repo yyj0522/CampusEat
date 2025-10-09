@@ -15,7 +15,7 @@ import '../../styles/style.css';
 import UserDisplay from '../../components/UserDisplay';
 
 const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // km
+    const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a =
@@ -77,10 +77,9 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
                 imageUrl = await getDownloadURL(imageRef);
             }
 
+            const reviewColRef = collection(db, "newUniversities", university, "newRestaurants", restaurant.id, "reviews");
+
             const newReviewData = {
-                university,
-                restaurantId: restaurant.id,
-                restaurantName: restaurant.name,
                 authorId: user.uid,
                 nickname,
                 rating,
@@ -89,8 +88,12 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
                 createdAt: serverTimestamp(),
                 likes: 0,
             };
-            const docRef = await addDoc(collection(db, "reviews"), newReviewData);
-            onReviewSubmitted({ id: docRef.id, ...newReviewData, createdAt: { toDate: () => new Date() } });
+            const docRef = await addDoc(reviewColRef, newReviewData);
+            
+            const restaurantDocRef = doc(db, "newUniversities", university, "newRestaurants", restaurant.id);
+            await writeBatch(db).update(restaurantDocRef, { reviewCount: increment(1) }).commit();
+
+            onReviewSubmitted({ id: docRef.id, ...newReviewData, createdAt: { toDate: () => new Date() }, restaurantId: restaurant.id });
             onShowAlert("리뷰가 성공적으로 등록되었습니다.");
             onClose();
         } catch (error) {
@@ -404,8 +407,8 @@ export default function RestaurantPage() {
     const fetchReviewsForRestaurant = async (restaurantId) => {
         if (reviewsByRestaurant[restaurantId]) return;
         try {
-            const reviewColRef = collection(db, "reviews");
-            const q = query(reviewColRef, where("restaurantId", "==", restaurantId), orderBy("createdAt", "desc"));
+            const reviewColRef = collection(db, "newUniversities", university, "newRestaurants", restaurantId, "reviews");
+            const q = query(reviewColRef, orderBy("createdAt", "desc"));
             const reviewSnapshot = await getDocs(q);
             const reviewList = reviewSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setReviewsByRestaurant(prevReviews => ({
@@ -483,12 +486,21 @@ export default function RestaurantPage() {
         if (!reviewToDelete) return;
         const { reviewId, restaurantId } = reviewToDelete;
         try {
-            const reviewRef = doc(db, "reviews", reviewId);
-            await deleteDoc(reviewRef);
+            const reviewRef = doc(db, "newUniversities", university, "newRestaurants", restaurantId, "reviews", reviewId);
+            
+            const batch = writeBatch(db);
+            batch.delete(reviewRef);
+            
+            const restaurantDocRef = doc(db, "newUniversities", university, "newRestaurants", restaurantId);
+            batch.update(restaurantDocRef, { reviewCount: increment(-1) });
+            
+            await batch.commit();
 
             setReviewsByRestaurant(prev => {
                 const updatedReviews = { ...prev };
-                updatedReviews[restaurantId] = updatedReviews[restaurantId].filter(review => review.id !== reviewId);
+                if (updatedReviews[restaurantId]) {
+                    updatedReviews[restaurantId] = updatedReviews[restaurantId].filter(review => review.id !== reviewId);
+                }
                 return updatedReviews;
             });
             showAlert("리뷰가 성공적으로 삭제되었습니다.");
@@ -710,7 +722,7 @@ export default function RestaurantPage() {
                     setReviewsByRestaurant(prev => ({
                         ...prev,
                         [newReview.restaurantId]: [newReview, ...(prev[newReview.restaurantId] || [])]
-                    }))
+                    }));
                 }}
                 onShowAlert={showAlert}
             />

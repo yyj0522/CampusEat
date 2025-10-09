@@ -6,7 +6,7 @@ import { auth, db } from "../../firebase";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 
-export default function LoginForm() {
+export default function LoginForm({ setMode }) { // setMode prop을 받도록 추가
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,10 +52,10 @@ export default function LoginForm() {
         const now = new Date();
 
         if (!suspensionEndDate || suspensionEndDate > now) {
-          const endDateString = suspensionEndDate 
-            ? `${suspensionEndDate.toLocaleDateString('ko-KR')}까지` 
+          const endDateString = suspensionEndDate
+            ? `${suspensionEndDate.toLocaleDateString('ko-KR')}까지`
             : '영구적으로';
-          
+
           await signOut(auth);
           showModal("계정 정지 안내", `이 계정은 ${endDateString} 정지되었습니다.`);
           setIsLoading(false);
@@ -64,7 +64,7 @@ export default function LoginForm() {
           await updateDoc(userRef, { status: '활성' });
         }
       }
-      
+
       router.push("/home");
 
     } catch (err) {
@@ -86,32 +86,34 @@ export default function LoginForm() {
 
   return (
     <>
-      <form onSubmit={handleLogin} className="space-y-6">
+      <form onSubmit={handleLogin} className="space-y-4"> {/* space-y-6 -> space-y-4 로 변경 */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          {/* <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
             이메일
-          </label>
+          </label> */}
           <input
             type="email"
             id="email"
             name="email"
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition" // Tailwind 클래스 수정
+            placeholder="이메일" // placeholder 추가
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          {/* <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
             비밀번호
-          </label>
+          </label> */}
           <input
             type="password"
             id="password"
             name="password"
             required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition" // Tailwind 클래스 수정
+            placeholder="비밀번호" // placeholder 추가
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -120,17 +122,48 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium disabled:opacity-50"
+          className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition duration-200 font-medium disabled:opacity-50 shadow-lg hover:shadow-purple-300" // Tailwind 클래스 수정
         >
-          {isLoading ? "로그인 확인 중..." : "로그인"}
+          {isLoading ? "로그인 확인 중..." : "캠퍼스잇 로그인"} {/* 문구 변경 */}
         </button>
       </form>
+
+      {/* ID찾기 / PW찾기 버튼 */}
+      <div className="mt-4 flex justify-center space-x-6"> {/* mt-6 -> mt-4, space-x-4 -> space-x-6 */}
+        <button
+          type="button"
+          className="text-gray-500 hover:text-purple-600 font-medium text-sm transition-colors"
+          onClick={() => setMode("findID")}
+        >
+          ID찾기
+        </button>
+        <button
+          type="button"
+          className="text-gray-500 hover:text-purple-600 font-medium text-sm transition-colors"
+          onClick={() => setMode("findPW")}
+        >
+          PW찾기
+        </button>
+      </div>
+
+      {/* 회원가입하러 가기 버튼 */}
+      <div className="mt-6 text-center"> {/* 새로운 div로 분리 */}
+        <button
+          type="button"
+          className="text-purple-600 hover:underline font-medium text-base transition-colors" // text-base로 크기 키움
+          onClick={() => setMode("signup")}
+        >
+          회원가입하러 가기
+        </button>
+      </div>
+
 
       {modal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={closeModal}>
           <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="text-center">
-              <i className="fas fa-exclamation-triangle mb-4 text-4xl text-yellow-40T0"></i>
+              {/* <i className="fas fa-exclamation-triangle mb-4 text-4xl text-yellow-40T0"></i> */}
+              {/* 아이콘이 fas fa-exclamation-triangle로 되어 있는데, react-icons를 사용했다면 FaExclamationTriangle로 교체하는 것이 좋습니다. 지금은 주석 처리합니다. */}
               <h3 className="text-lg font-semibold text-gray-900">{modal.title}</h3>
               <div className="mt-2 text-sm text-gray-600">
                 <p>{modal.message}</p>
@@ -139,7 +172,7 @@ export default function LoginForm() {
             <div className="mt-6 flex justify-center">
               <button
                 onClick={closeModal}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none"
+                className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 focus:outline-none" // Tailwind 클래스 수정
               >
                 확인
               </button>

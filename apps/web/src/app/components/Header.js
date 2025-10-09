@@ -54,10 +54,14 @@ export default function Header() {
 
     return (
         <header className="bg-white shadow-md sticky top-0 z-40 relative">
-            <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
+            <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-2">
                 <div className="flex items-center cursor-pointer" onClick={() => router.push("/home")}>
-                    <Image src="/icon.png" alt="캠퍼스잇 로고" width={40} height={40} />
-                    <span className="ml-2 text-xl font-bold text-gray-800">캠퍼스잇</span>
+                    <Image 
+                        src="/icon.png" 
+                        alt="캠퍼스잇 로고" 
+                        width={147}
+                        height={32}
+                    />
                 </div>
 
                 <nav className="hidden md:flex space-x-6">

@@ -8,7 +8,6 @@ import { doc, getDoc } from "firebase/firestore";
 
 export default function HomePage() {
     const router = useRouter();
-    const [, setCurrentUser] = useState({ nickname: "", university: "" });
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const slides = [
@@ -46,27 +45,10 @@ export default function HomePage() {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try {
-                    const docRef = doc(db, "users", user.uid);
-                    const snap = await getDoc(docRef);
-                    if (snap.exists()) {
-                        setCurrentUser({
-                            nickname: snap.data().nickname || "사용자",
-                            university: snap.data().university || "우리 대학",
-                        });
-                    } else {
-                        setCurrentUser({ nickname: "사용자", university: "우리 대학" });
-                    }
-                } catch (error) {
-                    console.error("유저 정보 가져오기 실패:", error);
-                    setCurrentUser({ nickname: "사용자", university: "우리 대학" });
-                }
-            } else {
+            if (!user) {
                 router.push("/login");
             }
         });
-
         return () => unsubscribe();
     }, [router]);
 
@@ -75,6 +57,12 @@ export default function HomePage() {
         { title: "번개모임", icon: "fa-bolt", color: "text-yellow-500", bgColor: "bg-yellow-50", path: "/meeting", description: "오늘의 만남" },
         { title: "학식/셔틀", icon: "fa-bus", color: "text-green-500", bgColor: "bg-green-50", path: "/information", description: "필수 정보 확인" },
         { title: "커뮤니티", icon: "fa-comments", color: "text-blue-500", bgColor: "bg-blue-50", path: "/community", description: "소통과 정보공유" },
+    ];
+    
+    const recommendedFeatures = [
+        { title: "중고 거래", icon: "fa-exchange-alt", color: "text-purple-500", bgColor: "bg-purple-50", path: "/community/market", description: "안전하고 편리하게 거래해요" },
+        { title: "스터디 그룹", icon: "fa-book-open", color: "text-indigo-500", bgColor: "bg-indigo-50", path: "/community/study", description: "함께 공부하고 성장해요" },
+        { title: "분실물 센터", icon: "fa-search", color: "text-teal-500", bgColor: "bg-teal-50", path: "/community/lostfound", description: "잃어버린 물건을 찾아보세요" },
     ];
 
     return (
@@ -131,42 +119,23 @@ export default function HomePage() {
                 </section>
 
                 <section className="max-w-6xl mx-auto px-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6">실시간 캠퍼스 소식</h2>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div>
-                            <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">커뮤니티 인기글 🔥</h3>
-                            <div className="bg-white rounded-xl p-4 shadow-lg space-y-3">
-                                <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                                    <p className="font-semibold text-gray-800 line-clamp-1">이번 학기 꼭 들어야 할 교양수업 추천</p>
-                                    <p className="text-sm text-gray-500">자유게시판 - 15분 전</p>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6">캠퍼스잇 추천 기능</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {recommendedFeatures.map(feature => (
+                             <div 
+                                key={feature.title} 
+                                onClick={() => router.push(feature.path)}
+                                className="bg-white rounded-2xl p-6 shadow-lg cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex items-center space-x-5"
+                            >
+                                <div className={`w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center ${feature.bgColor}`}>
+                                    <i className={`fas ${feature.icon} text-3xl ${feature.color}`}></i>
                                 </div>
-                                <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                                    <p className="font-semibold text-gray-800 line-clamp-1">중고 전공서적 C언어 팝니다!</p>
-                                    <p className="text-sm text-gray-500">거래게시판 - 1시간 전</p>
-                                </div>
-                                <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                                    <p className="font-semibold text-gray-800 line-clamp-1">제1학생회관 1층에 분실물 보관중입니다</p>
-                                    <p className="text-sm text-gray-500">정보공유 - 3시간 전</p>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">{feature.title}</h3>
+                                    <p className="text-gray-500 text-sm mt-1">{feature.description}</p>
                                 </div>
                             </div>
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">마감 임박 번개모임 ⚡️</h3>
-                            <div className="bg-white rounded-xl p-4 shadow-lg space-y-3">
-                                <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                                    <p className="font-semibold text-gray-800 line-clamp-1">오늘 저녁 6시 정문에서 치맥하실 분</p>
-                                    <p className="text-sm text-gray-500">마감까지 2시간 30분 남음</p>
-                                </div>
-                                <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                                    <p className="font-semibold text-gray-800 line-clamp-1">중앙도서관에서 카공할 2인 구해요!</p>
-                                    <p className="text-sm text-gray-500">마감까지 4시간 10분 남음</p>
-                                </div>
-                                <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                                    <p className="font-semibold text-gray-800 line-clamp-1">천안역 방향 택시 같이 타실 분 (3/4)</p>
-                                    <p className="text-sm text-gray-500">1명 남음!</p>
-                                </div>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </section>
             </main>

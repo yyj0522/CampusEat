@@ -81,14 +81,6 @@ export default function PwFind({ setMode }) {
           {status}
         </p>
       )}
-
-      <button
-        type="button"
-        className="w-full text-blue-600 py-3 rounded-lg font-medium mt-4 hover:underline"
-        onClick={() => setMode("login")}
-      >
-        로그인 화면으로 돌아가기
-      </button>
     </form>
   );
 }
