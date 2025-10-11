@@ -1,5 +1,3 @@
-// src/app/(main)/community/PostModal.js
-
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
@@ -213,7 +211,7 @@ const ReportPostModal = ({ isOpen, onClose, post, user, nickname, onShowAlert })
             const newReportRef = doc(reportColRef);
             batch.set(newReportRef, {
                 reporterId: user.uid,
-                reporterNickname: nickname,
+                reporterNickname: nickname || null,
                 reason: finalReason,
                 createdAt: serverTimestamp(),
             });
