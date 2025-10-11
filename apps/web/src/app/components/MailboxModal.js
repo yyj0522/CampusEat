@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useUserInteraction } from "../context/UserInteractionProvider";
 import { useAuth } from "../context/AuthProvider";
 import { db } from "../../firebase";
-import { collection, query, where, orderBy, getDocs, writeBatch, doc } from "firebase/firestore";
+import { collection, query, where, orderBy, writeBatch, doc, onSnapshot, getDocs } from "firebase/firestore";
 
 const AlertModal = ({ message, onClose }) => {
     useEffect(() => {
@@ -49,7 +49,7 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
 
 export default function MailboxModal() {
     const { showMailboxModal, setShowMailboxModal, openDmModal } = useUserInteraction();
-    const { user } = useAuth();
+    const { userInfo } = useAuth();
     const [activeTab, setActiveTab] = useState('inbox');
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -57,46 +57,81 @@ export default function MailboxModal() {
     const [alert, setAlert] = useState({ show: false, message: "" });
 
     useEffect(() => {
-        if (!showMailboxModal || !user) {
+        if (!showMailboxModal || !userInfo) {
             setMessages([]);
             return;
         }
 
-        const fetchMessages = async () => {
-            setIsLoading(true);
-            try {
-                const messagesRef = collection(db, "messages");
-                const targetField = activeTab === 'inbox' ? "recipientId" : "senderId";
-                const q = query(messagesRef, where(targetField, "==", user.uid), orderBy("createdAt", "desc"));
-                const snapshot = await getDocs(q);
-                const fetchedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setMessages(fetchedMessages);
-            } catch (error) {
-                console.error("쪽지 목록 로딩 오류:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+        setIsLoading(true);
+        const messagesRef = collection(db, "messages");
+        const idField = activeTab === 'inbox' ? "recipientId" : "senderId";
+        const deletedField = activeTab === 'inbox' ? "deletedByRecipient" : "deletedBySender";
 
-        fetchMessages();
-    }, [showMailboxModal, user, activeTab]);
+        const q = query(
+            messagesRef,
+            where(idField, "==", userInfo.uid),
+            where(deletedField, "==", false),
+            orderBy("createdAt", "desc")
+        );
+
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
+            let fetchedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            if (activeTab === 'inbox' && fetchedMessages.length > 0) {
+                const senderIds = [...new Set(fetchedMessages.map(msg => msg.senderId).filter(id => id && id !== 'system'))];
+                
+                if (senderIds.length > 0) {
+                    const usersRef = collection(db, "users");
+                    const userQuery = query(usersRef, where('__name__', 'in', senderIds));
+                    const userSnapshot = await getDocs(userQuery);
+                    
+                    const senderRoleMap = {};
+                    userSnapshot.forEach(doc => {
+                        senderRoleMap[doc.id] = doc.data().role;
+                    });
+                    
+                    fetchedMessages = fetchedMessages.map(msg => {
+                        const senderRole = senderRoleMap[msg.senderId];
+                        const senderIsAdmin = senderRole === 'super_admin' || senderRole === 'sub_admin';
+                        return { ...msg, senderIsAdmin };
+                    });
+                }
+            }
+            
+            setMessages(fetchedMessages);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("쪽지 목록 실시간 로딩 오류:", error);
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [showMailboxModal, userInfo, activeTab]);
 
     const handleReply = (msg) => {
-        const targetUser = { id: msg.senderId, nickname: msg.senderNickname };
-        openDmModal(targetUser);
+        const targetUser = {
+            id: msg.senderId,
+            nickname: msg.senderNickname,
+            displayName: msg.senderDisplayName || msg.senderNickname
+        };
+        const replyContext = { originalMessage: msg };
+        openDmModal(targetUser, null, replyContext);
     };
 
     const executeClearMailbox = async () => {
-        if (!user || messages.length === 0) return;
+        if (!userInfo || messages.length === 0) return;
         setShowConfirm(false);
         
         try {
             const batch = writeBatch(db);
+            const fieldToUpdate = activeTab === 'inbox' ? 'deletedByRecipient' : 'deletedBySender';
+            
             messages.forEach(msg => {
-                batch.delete(doc(db, "messages", msg.id));
+                const msgRef = doc(db, "messages", msg.id);
+                batch.update(msgRef, { [fieldToUpdate]: true });
             });
+            
             await batch.commit();
-            setMessages([]);
             setAlert({ show: true, message: "쪽지함을 비웠습니다." });
         } catch (error) {
             console.error("쪽지함 비우기 오류:", error);
@@ -129,15 +164,25 @@ export default function MailboxModal() {
                             <ul className="divide-y divide-gray-200">
                                 {messages.map(msg => (
                                     <li key={msg.id} className="p-3 group">
-                                        <div className="flex justify-between">
-                                            <p className="text-sm font-medium text-gray-800">
-                                                {activeTab === 'inbox' ? `${msg.senderNickname} 님으로부터` : `${msg.recipientNickname} 님에게`}
-                                            </p>
-                                            <p className="text-xs text-gray-500">{formatDate(msg.createdAt)}</p>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-800">
+                                                    {activeTab === 'inbox' ? 
+                                                        `${msg.senderDisplayName || msg.senderNickname} 님으로부터` : 
+                                                        `${msg.recipientDisplayName || msg.recipientNickname} 님에게`
+                                                    }
+                                                </p>
+                                                {msg.sourcePostTitle && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        (게시글: {msg.sourcePostTitle})
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(msg.createdAt)}</p>
                                         </div>
-                                        <p className="mt-1 text-sm text-gray-600">{msg.content}</p>
+                                        <p className="mt-2 text-sm text-gray-600">{msg.content}</p>
                                         
-                                        {activeTab === 'inbox' && msg.senderId !== 'system' && (
+                                        {activeTab === 'inbox' && msg.senderId !== 'system' && !msg.senderIsAdmin && (
                                             <div className="text-right mt-2 opacity-0 group-hover:opacity-100 transition">
                                                 <button onClick={() => handleReply(msg)} className="text-xs text-blue-500 font-semibold hover:underline">답장하기</button>
                                             </div>
@@ -156,7 +201,7 @@ export default function MailboxModal() {
             </div>
             {showConfirm && (
                 <ConfirmModal
-                    message={`정말로 '${activeTab === 'inbox' ? '받은' : '보낸'}' 쪽지함을 모두 비우시겠습니까?`}
+                    message={`정말로 '${activeTab === 'inbox' ? '받은' : '보낸'}' 쪽지함을 모두 비우시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
                     onConfirm={executeClearMailbox}
                     onCancel={() => setShowConfirm(false)}
                 />

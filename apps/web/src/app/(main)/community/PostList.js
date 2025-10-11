@@ -1,8 +1,9 @@
+// src/app/(main)/community/PostList.js
+
 "use client";
 
-import UserDisplay from '../../components/UserDisplay'; // UserDisplay import 추가
+import UserDisplay from '../../components/UserDisplay'; 
 
-// 익명 닉네임 처리 헬퍼 함수
 const formatAuthor = (nickname, isAnonymous) => {
   if (!nickname) return "";
   if (isAnonymous) {
@@ -86,50 +87,59 @@ export default function PostList({
             </p>
           </div>
         ) : (
-          posts.map(post => (
-            <div
-              key={post.id}
-              className="post-card bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-            >
-              <div onClick={() => openPost(post)} className="cursor-pointer">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center space-x-2">
-                    <span className={`category-badge px-2 py-1 rounded text-xs font-medium text-white ${post.category === 'notice' ? 'bg-red-500 notice' : post.category === 'free' ? 'bg-blue-500 free' : post.category === 'question' ? 'bg-green-500 question' : post.category === 'info' ? 'bg-yellow-500 info' : post.category === 'trade' ? 'bg-purple-500 trade' : 'bg-gray-500'}`}>
-                      {getCategoryName(post.category)}
+          posts.map(post => {
+            const displayName = formatAuthor(post.authorNickname, post.isAnonymous);
+            const userTarget = {
+              id: post.authorId,
+              nickname: post.authorNickname, // 실제 닉네임 (쪽지 전송용)
+              displayName: displayName,     // 화면 표시용 이름
+            };
+
+            return (
+              <div
+                key={post.id}
+                className="post-card bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <div onClick={() => openPost(post)} className="cursor-pointer">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center space-x-2">
+                      <span className={`category-badge px-2 py-1 rounded text-xs font-medium text-white ${post.category === 'notice' ? 'bg-red-500 notice' : post.category === 'free' ? 'bg-blue-500 free' : post.category === 'question' ? 'bg-green-500 question' : post.category === 'info' ? 'bg-yellow-500 info' : post.category === 'trade' ? 'bg-purple-500 trade' : 'bg-gray-500'}`}>
+                        {getCategoryName(post.category)}
+                      </span>
+                      {post.category === 'notice' && <i className="fas fa-pin text-red-500"></i>}
+                    </div>
+                    <span className="text-xs text-gray-500">{formatDate(post.createdAt)}</span>
+                  </div>
+                  <h3 className="font-semibold text-lg text-gray-800 mb-2 hover:text-purple-600 transition">
+                    {post.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+                    {post.content.replace(/<[^>]*>/g, '')}
+                  </p>
+                </div>
+                <div className="flex justify-between items-center text-sm pt-4 border-t mt-4">
+                  <UserDisplay
+                    userTarget={userTarget}
+                    context={{ type: 'post', id: post.id }}
+                  >
+                    <div className="flex items-center space-x-2 text-gray-500 cursor-pointer">
+                      <i className="fas fa-user-circle"></i>
+                      <span>{displayName}</span>
+                      {post.university && <span className="text-xs text-gray-400">({post.university})</span>}
+                    </div>
+                  </UserDisplay>
+                  <div className="flex items-center space-x-4">
+                    <span className="flex items-center text-gray-500"><i className="fas fa-eye mr-1"></i>{post.views || 0}</span>
+                    <span className={`flex items-center transition ${post.likedBy?.includes(user?.uid) ? 'text-blue-500 font-semibold' : 'text-gray-500'}`}>
+                      <i className="fas fa-thumbs-up mr-1"></i>
+                      {post.likeCount || 0}
                     </span>
-                    {post.category === 'notice' && <i className="fas fa-pin text-red-500"></i>}
+                    <span className="flex items-center text-gray-500"><i className="fas fa-comments mr-1 text-green-500"></i>{post.commentCount || 0}</span>
                   </div>
-                  <span className="text-xs text-gray-500">{formatDate(post.createdAt)}</span>
-                </div>
-                <h3 className="font-semibold text-lg text-gray-800 mb-2 hover:text-purple-600 transition">
-                  {post.title}
-                </h3>
-                <p className="text-gray-600 text-sm line-clamp-2 mb-3">
-                  {post.content.replace(/<[^>]*>/g, '')}
-                </p>
-              </div>
-              <div className="flex justify-between items-center text-sm pt-4 border-t mt-4">
-                <UserDisplay
-                  userTarget={{ id: post.authorId, nickname: post.authorNickname }}
-                  context={{ type: 'post', id: post.id }}
-                >
-                  <div className="flex items-center space-x-2 text-gray-500 cursor-pointer">
-                    <i className="fas fa-user-circle"></i>
-                    <span>{formatAuthor(post.authorNickname, post.isAnonymous)}</span>
-                    <span className="text-xs text-gray-400">({post.university})</span>
-                  </div>
-                </UserDisplay>
-                <div className="flex items-center space-x-4">
-                  <span className="flex items-center text-gray-500"><i className="fas fa-eye mr-1"></i>{post.views || 0}</span>
-                  <span className={`flex items-center transition ${post.likedBy?.includes(user?.uid) ? 'text-blue-500 font-semibold' : 'text-gray-500'}`}>
-                    <i className="fas fa-thumbs-up mr-1"></i>
-                    {post.likeCount || 0}
-                  </span>
-                  <span className="flex items-center text-gray-500"><i className="fas fa-comments mr-1 text-green-500"></i>{post.commentCount || 0}</span>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </>

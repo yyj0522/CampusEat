@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db, storage } from "../../../firebase";
+import { db, storage } from "../../../firebase";
+import { useAuth } from "../../context/AuthProvider";
 import { useRestaurants } from "../../context/RestaurantProvider";
-import { onAuthStateChanged } from "firebase/auth";
-import { 
-    doc, getDoc, collection, getDocs, addDoc, serverTimestamp, 
-    query, orderBy, writeBatch, increment, arrayUnion, arrayRemove
+import {
+    doc, getDoc, collection, getDocs, addDoc, serverTimestamp,
+    query, orderBy, writeBatch, increment, arrayUnion, arrayRemove, updateDoc
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Image from "next/image";
@@ -26,7 +26,7 @@ const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
     return R * c;
 };
 
-const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, onReviewSubmitted, onShowAlert }) => {
+const ReviewModal = ({ isOpen, onClose, restaurant, userInfo, onReviewSubmitted, onShowAlert }) => {
     const [rating, setRating] = useState(5);
     const [hoverRating, setHoverRating] = useState(0);
     const [reviewContent, setReviewContent] = useState("");
@@ -46,6 +46,19 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
         }
     }, [isOpen]);
 
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Enter' && !isSubmitting && !event.shiftKey) {
+                event.preventDefault();
+                document.getElementById('submit-review-button')?.click();
+            }
+        };
+        if (isOpen) {
+            window.addEventListener('keydown', handleKeyDown);
+        }
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, isSubmitting]);
+
     const handleImageChange = (e) => {
         if (e.target.files.length === 0) return;
         if (imageFile) {
@@ -61,8 +74,7 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
 
     const handleReviewSubmit = async (e) => {
         e.preventDefault();
-        if (isSubmitting) return;
-        if (!user || !restaurant) return;
+        if (isSubmitting || !userInfo) return;
         if (reviewContent.trim() === "") {
             onShowAlert("리뷰 내용을 입력해주세요.");
             return;
@@ -77,11 +89,11 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
                 imageUrl = await getDownloadURL(imageRef);
             }
 
-            const reviewColRef = collection(db, "newUniversities", university, "newRestaurants", restaurant.id, "reviews");
-
+            const reviewColRef = collection(db, "newUniversities", userInfo.university, "newRestaurants", restaurant.id, "reviews");
             const newReviewData = {
-                authorId: user.uid,
-                nickname,
+                authorId: userInfo.uid,
+                nickname: userInfo.nickname,
+                isAdmin: userInfo.isAdmin || false,
                 rating,
                 content: reviewContent,
                 imageUrl: imageUrl,
@@ -89,9 +101,9 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
                 likes: 0,
             };
             const docRef = await addDoc(reviewColRef, newReviewData);
-            
-            const restaurantDocRef = doc(db, "newUniversities", university, "newRestaurants", restaurant.id);
-            await writeBatch(db).update(restaurantDocRef, { reviewCount: increment(1) }).commit();
+
+            const restaurantDocRef = doc(db, "newUniversities", userInfo.university, "newRestaurants", restaurant.id);
+            await updateDoc(restaurantDocRef, { reviewCount: increment(1) });
 
             onReviewSubmitted({ id: docRef.id, ...newReviewData, createdAt: { toDate: () => new Date() }, restaurantId: restaurant.id });
             onShowAlert("리뷰가 성공적으로 등록되었습니다.");
@@ -118,12 +130,8 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
                         <label className="block text-sm font-medium text-gray-700 mb-2">평점</label>
                         <div className="flex items-center space-x-1" onMouseLeave={() => setHoverRating(0)}>
                             {[1, 2, 3, 4, 5].map((star) => (
-                                <i
-                                    key={star}
-                                    className={`fas fa-star cursor-pointer text-xl ${(hoverRating || rating) >= star ? "text-yellow-400" : "text-gray-300"}`}
-                                    onMouseEnter={() => setHoverRating(star)}
-                                    onClick={() => setRating(star)}
-                                ></i>
+                                <i key={star} className={`fas fa-star cursor-pointer text-xl ${(hoverRating || rating) >= star ? "text-yellow-400" : "text-gray-300"}`}
+                                    onMouseEnter={() => setHoverRating(star)} onClick={() => setRating(star)}></i>
                             ))}
                         </div>
                     </div>
@@ -140,9 +148,7 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
                                 <i className="fas fa-camera mr-2"></i> 사진 선택
                             </button>
                             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-                            <span className={`text-sm ${imageFile ? 'text-red-500 font-bold' : 'text-gray-500'}`}>
-                                {imageFile ? '1 / 1' : '0 / 1'}
-                            </span>
+                            <span className={`text-sm ${imageFile ? 'text-red-500 font-bold' : 'text-gray-500'}`}>{imageFile ? '1 / 1' : '0 / 1'}</span>
                         </div>
                         {imagePreview && (
                             <div className="mt-4 relative w-32 h-32">
@@ -154,7 +160,7 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
                     </div>
                     <div className="flex justify-end space-x-3 pt-2">
                         <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition" disabled={isSubmitting}>취소</button>
-                        <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" disabled={isSubmitting}>
+                        <button id="submit-review-button" type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" disabled={isSubmitting}>
                             {isSubmitting ? '등록 중...' : '리뷰 등록'}
                         </button>
                     </div>
@@ -164,7 +170,7 @@ const ReviewModal = ({ isOpen, onClose, restaurant, user, nickname, university, 
     );
 };
 
-const SubmissionModal = ({ isOpen, onClose, user, university, nickname, onShowAlert }) => {
+const SubmissionModal = ({ isOpen, onClose, userInfo, onShowAlert }) => {
     const [name, setName] = useState("");
     const [location, setLocation] = useState("");
     const [description, setDescription] = useState("");
@@ -196,7 +202,7 @@ const SubmissionModal = ({ isOpen, onClose, user, university, nickname, onShowAl
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (isSubmitting) return;
+        if (isSubmitting || !userInfo) return;
         if (!name.trim() || !location.trim()) {
             onShowAlert("가게 이름과 위치는 필수 항목입니다.");
             return;
@@ -217,9 +223,9 @@ const SubmissionModal = ({ isOpen, onClose, user, university, nickname, onShowAl
                 description,
                 imageUrl,
                 status: 'pending',
-                reporterId: user.uid,
-                reporterNickname: nickname,
-                university,
+                reporterId: userInfo.uid,
+                reporterNickname: userInfo.nickname,
+                university: userInfo.university,
                 createdAt: serverTimestamp(),
             });
 
@@ -262,9 +268,7 @@ const SubmissionModal = ({ isOpen, onClose, user, university, nickname, onShowAl
                                 <i className="fas fa-camera mr-2"></i> 사진 선택
                             </button>
                             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-                            <span className={`text-sm ${imageFile ? 'text-red-500 font-bold' : 'text-gray-500'}`}>
-                                {imageFile ? '1 / 1' : '0 / 1'}
-                            </span>
+                            <span className={`text-sm ${imageFile ? 'text-red-500 font-bold' : 'text-gray-500'}`}>{imageFile ? '1 / 1' : '0 / 1'}</span>
                         </div>
                         {imagePreview && (
                             <div className="mt-4 relative w-32 h-32">
@@ -275,9 +279,91 @@ const SubmissionModal = ({ isOpen, onClose, user, university, nickname, onShowAl
                         )}
                     </div>
                     <div className="flex justify-end space-x-3 pt-4">
-                        <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition" disabled={isSubmitting}>취소</button>
-                        <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" disabled={isSubmitting}>
+                        <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-50" disabled={isSubmitting}>취소</button>
+                        <button id="submit-submission-button" type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" disabled={isSubmitting}>
                             {isSubmitting ? '제보 중...' : '제보하기'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const ReportModal = ({ isOpen, onClose, restaurant, userInfo, onShowAlert }) => {
+    const [reason, setReason] = useState('direct');
+    const [customReason, setCustomReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const reportReasons = { direct: '직접 작성할게요.', nonexistent: '지금은 존재하지 않는 음식점이에요.', incorrect: '정보가 실제와 달라요.', far: '학교와 거리가 너무 멀어요.' };
+
+    useEffect(() => {
+        if (!isOpen) {
+            setReason('direct');
+            setCustomReason('');
+            setIsSubmitting(false);
+        }
+    }, [isOpen]);
+
+    const handleSubmitReport = async (e) => {
+        e.preventDefault();
+        if (isSubmitting || !userInfo) return;
+
+        const finalReason = reason === 'direct' ? customReason.trim() : reportReasons[reason];
+        if (!finalReason) {
+            onShowAlert('신고 사유를 입력하거나 선택해주세요.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const reportColRef = collection(db, "newUniversities", userInfo.university, "newRestaurants", restaurant.id, "reports");
+            await addDoc(reportColRef, {
+                reporterId: userInfo.uid,
+                reporterNickname: userInfo.nickname,
+                reason: finalReason,
+                createdAt: serverTimestamp(),
+            });
+
+            const restaurantDocRef = doc(db, "newUniversities", userInfo.university, "newRestaurants", restaurant.id);
+            await updateDoc(restaurantDocRef, { reportCount: increment(1) });
+
+            onShowAlert('신고가 성공적으로 접수되었습니다.');
+            onClose();
+        } catch (error) {
+            console.error('신고 접수 오류:', error);
+            onShowAlert('신고 접수 중 오류가 발생했습니다.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold">{restaurant?.name} 신고하기</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+                <form onSubmit={handleSubmitReport} className="space-y-4">
+                    <div>
+                        <label htmlFor="report-reason" className="block text-sm font-medium text-gray-700 mb-1">신고 사유</label>
+                        <select id="report-reason" value={reason} onChange={(e) => setReason(e.target.value)} className="w-full border p-2 rounded-lg">
+                            {Object.entries(reportReasons).map(([key, value]) => (<option key={key} value={key}>{value}</option>))}
+                        </select>
+                    </div>
+                    {reason === 'direct' && (
+                        <div>
+                            <label htmlFor="custom-reason" className="block text-sm font-medium text-gray-700 mb-1">신고 내용 작성</label>
+                            <textarea id="custom-reason" value={customReason} onChange={(e) => setCustomReason(e.target.value)} rows="3" className="w-full border p-2 rounded-lg" placeholder="신고 사유를 자세히 적어주세요."></textarea>
+                        </div>
+                    )}
+                    <div className="flex justify-end space-x-3 pt-4">
+                        <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-50" disabled={isSubmitting}>취소</button>
+                        <button id="submit-report-button" type="submit" className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700" disabled={isSubmitting}>
+                            {isSubmitting ? '접수 중...' : '접수하기'}
                         </button>
                     </div>
                 </form>
@@ -334,29 +420,47 @@ const AlertModal = ({ message, onClose }) => {
 
 export default function RestaurantPage() {
     const router = useRouter();
-    const { restaurants: allRestaurants, isLoading } = useRestaurants();
-    const [user, setUser] = useState(null);
-    const [nickname, setNickname] = useState("");
-    const [university, setUniversity] = useState("");
-    const [universityLocation, setUniversityLocation] = useState(null);
+    const { userInfo, loading: authLoading } = useAuth();
+    const { restaurants: allRestaurants, isLoading: restaurantsLoading } = useRestaurants();
+
     const [userLikes, setUserLikes] = useState(new Set());
+    const [universityLocation, setUniversityLocation] = useState(null);
     const [reviewsByRestaurant, setReviewsByRestaurant] = useState({});
     const [topRestaurants, setTopRestaurants] = useState([]);
     const [recommendations, setRecommendations] = useState([]);
     const [expandedReviews, setExpandedReviews] = useState(new Set());
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-    const [reviewToDelete, setReviewToDelete] = useState(null); 
+    const [reviewToDelete, setReviewToDelete] = useState(null);
     const [alertModal, setAlertModal] = useState({ show: false, message: "" });
     const [showSubmissionModal, setShowSubmissionModal] = useState(false);
-    const [showReviewImage, setShowReviewImage] = useState({}); 
+    const [showReviewImage, setShowReviewImage] = useState({});
     const [showHelp, setShowHelp] = useState(false);
-    
+    const [currentPage, setCurrentPage] = useState(1);
+    const restaurantsPerPage = 5;
+
     const recommendationsRef = useRef(null);
     const helpRef = useRef(null);
-    
+
     const showAlert = (message) => setAlertModal({ show: true, message });
-    
+
+    useEffect(() => {
+        if (!authLoading && !userInfo) {
+            router.push("/login");
+        } else if (userInfo) {
+            setUserLikes(new Set(userInfo.likedRestaurants || []));
+            if (userInfo.university) {
+                const uniDocRef = doc(db, "newUniversities", userInfo.university);
+                getDoc(uniDocRef).then(uniSnap => {
+                    if (uniSnap.exists()) {
+                        setUniversityLocation(uniSnap.data());
+                    }
+                });
+            }
+        }
+    }, [userInfo, authLoading, router]);
+
     useEffect(() => {
         function handleClickOutside(event) {
             if (helpRef.current && !helpRef.current.contains(event.target)) {
@@ -372,32 +476,6 @@ export default function RestaurantPage() {
     }, [showHelp]);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                setUser(currentUser);
-                const userDocRef = doc(db, "users", currentUser.uid);
-                const userSnap = await getDoc(userDocRef);
-                if (userSnap.exists()) {
-                    const userData = userSnap.data();
-                    setNickname(userData.nickname);
-                    setUniversity(userData.university);
-                    setUserLikes(new Set(userData.likedRestaurants || []));
-                    
-                    const uniDocRef = doc(db, "newUniversities", userData.university);
-                    const uniSnap = await getDoc(uniDocRef);
-                    if (uniSnap.exists()) {
-                        const uniData = uniSnap.data();
-                        setUniversityLocation({ lat: uniData.latitude, lng: uniData.longitude });
-                    }
-                }
-            } else {
-                router.push("/login");
-            }
-        });
-        return () => unsubscribe();
-    }, [router]);
-    
-    useEffect(() => {
         if (allRestaurants.length > 0) {
             const sortedByLikes = [...allRestaurants].sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
             setTopRestaurants(sortedByLikes.slice(0, 10));
@@ -405,12 +483,12 @@ export default function RestaurantPage() {
     }, [allRestaurants]);
 
     const fetchReviewsForRestaurant = async (restaurantId) => {
-        if (reviewsByRestaurant[restaurantId]) return;
+        if (reviewsByRestaurant[restaurantId] || !userInfo?.university) return;
         try {
-            const reviewColRef = collection(db, "newUniversities", university, "newRestaurants", restaurantId, "reviews");
+            const reviewColRef = collection(db, "newUniversities", userInfo.university, "newRestaurants", restaurantId, "reviews");
             const q = query(reviewColRef, orderBy("createdAt", "desc"));
             const reviewSnapshot = await getDocs(q);
-            const reviewList = reviewSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const reviewList = reviewSnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
             setReviewsByRestaurant(prevReviews => ({
                 ...prevReviews,
                 [restaurantId]: reviewList,
@@ -419,7 +497,7 @@ export default function RestaurantPage() {
             console.error(`${restaurantId} 리뷰 로딩 오류:`, error);
         }
     };
-    
+
     const handleToggleReviews = (restaurantId) => {
         setExpandedReviews(prev => {
             const newSet = new Set(prev);
@@ -436,8 +514,12 @@ export default function RestaurantPage() {
     const toggleReviewImage = (reviewId) => {
         setShowReviewImage(prev => ({ ...prev, [reviewId]: !prev[reviewId] }));
     };
-    
+
     const handleGetRecommendations = () => {
+        if (!allRestaurants || allRestaurants.length === 0) {
+            showAlert("추천할 맛집이 아직 없습니다.");
+            return;
+        }
         const shuffled = [...allRestaurants].sort(() => 0.5 - Math.random());
         setRecommendations(shuffled.slice(0, 3));
         setTimeout(() => {
@@ -446,27 +528,38 @@ export default function RestaurantPage() {
     };
 
     const openReviewModal = (restaurant) => {
-        if (!user) {
+        if (!userInfo) {
             showAlert("리뷰 작성을 위해 로그인이 필요합니다.");
             return;
         }
         setSelectedRestaurant(restaurant);
-        setIsModalOpen(true);
+        setIsReviewModalOpen(true);
     };
-    
+
+    const openReportModal = (restaurant) => {
+        if (!userInfo) {
+            showAlert("신고를 위해 로그인이 필요합니다.");
+            return;
+        }
+        setSelectedRestaurant(restaurant);
+        setIsReportModalOpen(true);
+    };
+
     const handleLikeToggle = async (restaurantId, isLiked) => {
-        if (!user) {
+        if (!userInfo) {
             showAlert("로그인이 필요합니다.");
             return;
         }
-        
+
         const batch = writeBatch(db);
-        const restaurantRef = doc(db, "newUniversities", university, "newRestaurants", restaurantId);
-        const userRef = doc(db, "users", user.uid);
+        const restaurantRef = doc(db, "newUniversities", userInfo.university, "newRestaurants", restaurantId);
+        const userRef = doc(db, "users", userInfo.uid);
 
         batch.update(restaurantRef, { likeCount: increment(isLiked ? -1 : 1) });
         batch.update(userRef, { likedRestaurants: isLiked ? arrayRemove(restaurantId) : arrayUnion(restaurantId) });
-        
+
+        await batch.commit();
+
         const newLikes = new Set(userLikes);
         if (isLiked) {
             newLikes.delete(restaurantId);
@@ -474,8 +567,6 @@ export default function RestaurantPage() {
             newLikes.add(restaurantId);
         }
         setUserLikes(newLikes);
-
-        await batch.commit();
     };
 
     const handleDeleteReview = (reviewId, restaurantId) => {
@@ -483,17 +574,17 @@ export default function RestaurantPage() {
     };
 
     const executeDeleteReview = async () => {
-        if (!reviewToDelete) return;
+        if (!reviewToDelete || !userInfo) return;
         const { reviewId, restaurantId } = reviewToDelete;
         try {
-            const reviewRef = doc(db, "newUniversities", university, "newRestaurants", restaurantId, "reviews", reviewId);
-            
+            const reviewRef = doc(db, "newUniversities", userInfo.university, "newRestaurants", restaurantId, "reviews", reviewId);
+
             const batch = writeBatch(db);
             batch.delete(reviewRef);
-            
-            const restaurantDocRef = doc(db, "newUniversities", university, "newRestaurants", restaurantId);
+
+            const restaurantDocRef = doc(db, "newUniversities", userInfo.university, "newRestaurants", restaurantId);
             batch.update(restaurantDocRef, { reviewCount: increment(-1) });
-            
+
             await batch.commit();
 
             setReviewsByRestaurant(prev => {
@@ -516,22 +607,37 @@ export default function RestaurantPage() {
         if (!timestamp) return "";
         return timestamp.toDate().toLocaleDateString("ko-KR");
     };
-    
+
     const WalkingDistance = ({ uniLocation, restLocation }) => {
-        if (!uniLocation || !restLocation?.lat || !restLocation?.lng) return null;
-        const distanceKm = getDistanceFromLatLonInKm(uniLocation.lat, uniLocation.lng, restLocation.lat, restLocation.lng);
+        if (!uniLocation?.latitude || !uniLocation?.longitude || !restLocation?.lat || !restLocation?.lng) return null;
+        const distanceKm = getDistanceFromLatLonInKm(uniLocation.latitude, uniLocation.longitude, restLocation.lat, restLocation.lng);
         const walkingSpeedKmh = 4.5;
         const timeMinutes = Math.round((distanceKm / walkingSpeedKmh) * 60);
         if (timeMinutes < 1) return <span className="ml-2 text-xs font-semibold text-blue-600">(바로 앞)</span>;
         return <span className="ml-2 text-xs font-semibold text-blue-600">(도보 {timeMinutes}분)</span>;
     };
-    
+
     const RestaurantCard = ({ restaurant }) => {
         const restaurantReviews = reviewsByRestaurant[restaurant.id] || [];
-        const loadedReviewCount = restaurantReviews.length;
         const isExpanded = expandedReviews.has(restaurant.id);
         const isLiked = userLikes.has(restaurant.id);
         const reviewCount = restaurant.reviewCount || 0;
+        const [showMenu, setShowMenu] = useState(false);
+        const menuRef = useRef(null);
+
+        useEffect(() => {
+            function handleClickOutside(event) {
+                if (menuRef.current && !menuRef.current.contains(event.target)) {
+                    setShowMenu(false);
+                }
+            }
+            if (showMenu) {
+                document.addEventListener("mousedown", handleClickOutside);
+            }
+            return () => {
+                document.removeEventListener("mousedown", handleClickOutside);
+            };
+        }, [showMenu]);
 
         return (
             <div className="restaurant-card bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg">
@@ -541,7 +647,27 @@ export default function RestaurantPage() {
                     </div>
                 </div>
                 <div className="p-4">
-                    <h3 className="text-lg font-semibold mb-2">{restaurant.name}</h3>
+                    <div className="flex justify-between items-start">
+                        <h3 className="text-lg font-semibold mb-2 pr-2">{restaurant.name}</h3>
+                        <div className="relative" ref={menuRef}>
+                            <button onClick={() => setShowMenu(!showMenu)} className="text-gray-500 hover:text-gray-800 p-1">
+                                <i className="fas fa-ellipsis-v"></i>
+                            </button>
+                            {showMenu && (
+                                <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg z-10">
+                                    <button
+                                        onClick={() => {
+                                            openReportModal(restaurant);
+                                            setShowMenu(false);
+                                        }}
+                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        신고하기
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <div className="flex items-center text-sm text-gray-500 mb-3">
                         <i className="fas fa-map-marker-alt mr-1"></i>
                         <span>{restaurant.vicinity}</span>
@@ -554,7 +680,7 @@ export default function RestaurantPage() {
                                 {restaurant.likeCount || 0}
                             </span>
                             <span className="flex items-center">
-                                <i className="fas fa-comment text-blue-400 mr-1"></i> 
+                                <i className="fas fa-comment text-blue-400 mr-1"></i>
                                 {reviewCount}
                             </span>
                         </div>
@@ -568,7 +694,7 @@ export default function RestaurantPage() {
                     <div className="bg-gray-50 p-4 border-t">
                         <h4 className="font-semibold mb-3">리뷰 ({reviewCount}개)</h4>
                         <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                            {loadedReviewCount > 0 ? restaurantReviews.map(review => (
+                            {restaurantReviews.length > 0 ? restaurantReviews.map(review => (
                                 <div key={review.id} className="relative group p-3 border rounded-lg bg-white">
                                     <div className="flex items-center mb-2">
                                         <div className="text-sm mr-2 text-yellow-400">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</div>
@@ -576,14 +702,18 @@ export default function RestaurantPage() {
                                             userTarget={{ id: review.authorId, nickname: review.nickname }}
                                             context={{ type: 'review', id: review.id, restaurantId: restaurant.id }}
                                         >
-                                            <span className="text-xs text-gray-500 cursor-pointer hover:underline">{formatDate(review.createdAt)} by {review.nickname}</span>
+                                            <span className="text-xs text-gray-500 cursor-pointer hover:underline">
+                                                {formatDate(review.createdAt)} by {' '}
+                                                {review.isAdmin && <span className="font-bold text-blue-500">[관리자] </span>}
+                                                {review.nickname}
+                                            </span>
                                         </UserDisplay>
                                     </div>
                                     <p className="text-sm text-gray-700 pr-8 mb-2">{review.content}</p>
-                                    
+
                                     {review.imageUrl && (
                                         <div className="mt-2">
-                                            <button 
+                                            <button
                                                 onClick={() => toggleReviewImage(review.id)}
                                                 className="text-blue-500 hover:underline text-sm mb-2"
                                             >
@@ -591,10 +721,10 @@ export default function RestaurantPage() {
                                             </button>
                                             {showReviewImage[review.id] && (
                                                 <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                                                    <Image 
-                                                        src={review.imageUrl} 
-                                                        alt="리뷰 사진" 
-                                                        layout="fill" 
+                                                    <Image
+                                                        src={review.imageUrl}
+                                                        alt="리뷰 사진"
+                                                        layout="fill"
                                                         objectFit="contain"
                                                         className="bg-gray-100"
                                                     />
@@ -603,8 +733,8 @@ export default function RestaurantPage() {
                                         </div>
                                     )}
 
-                                    {user && user.uid === review.authorId && (
-                                        <button 
+                                    {userInfo && userInfo.uid === review.authorId && (
+                                        <button
                                             onClick={() => handleDeleteReview(review.id, restaurant.id)}
                                             className="absolute top-3 right-3 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                             title="삭제"
@@ -613,13 +743,29 @@ export default function RestaurantPage() {
                                         </button>
                                     )}
                                 </div>
-                            )) : <p className="text-gray-500 text-sm text-center py-4">리뷰를 불러오는 중이거나 리뷰가 없습니다.</p>}
+                            )) : <p className="text-gray-500 text-sm text-center py-4">리뷰가 없습니다.</p>}
                         </div>
                     </div>
                 )}
             </div>
         );
     };
+    
+    const indexOfLastRestaurant = currentPage * restaurantsPerPage;
+    const indexOfFirstRestaurant = indexOfLastRestaurant - restaurantsPerPage;
+    const currentRestaurants = allRestaurants.slice(indexOfFirstRestaurant, indexOfLastRestaurant);
+    const totalPages = Math.ceil(allRestaurants.length / restaurantsPerPage);
+
+    if (authLoading || restaurantsLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="loading mx-auto"></div>
+                    <p className="mt-4 text-gray-600">데이터를 불러오는 중...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -630,17 +776,13 @@ export default function RestaurantPage() {
                         <button onClick={() => setShowHelp(!showHelp)} className="text-gray-400 hover:text-gray-600 transition-colors">
                             <i className="fa-solid fa-circle-question fa-lg"></i>
                         </button>
-                        
+
                         {showHelp && (
                             <div className="absolute top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-left z-20 animate-fadeIn">
                                 <h4 className="font-bold text-md mb-2 text-gray-800">💡 맛집 추천 이용 안내</h4>
                                 <ul className="space-y-2 text-sm text-gray-600 list-disc list-inside">
-                                    <li>
-                                        <strong className="font-semibold">맛집 제보:</strong> &apos;맛집 제보하기&apos; 버튼으로 리스트에 없는 나만의 맛집을 추가 요청할 수 있습니다.
-                                    </li>
-                                    <li>
-                                        <strong className="font-semibold">리뷰 작성:</strong> 악의적인 비방이나 허위 사실이 포함된 리뷰 작성 시, 관련 법령에 따라 불이익을 받을 수 있습니다.
-                                    </li>
+                                    <li><strong className="font-semibold">맛집 제보:</strong> &apos;맛집 제보하기&apos; 버튼으로 리스트에 없는 나만의 맛집을 추가 요청할 수 있습니다.</li>
+                                    <li><strong className="font-semibold">리뷰 작성:</strong> 악의적인 비방이나 허위 사실이 포함된 리뷰 작성 시, 관련 법령에 따라 불이익을 받을 수 있습니다.</li>
                                 </ul>
                                 <button onClick={() => setShowHelp(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
                                     <i className="fa-solid fa-times"></i>
@@ -668,20 +810,44 @@ export default function RestaurantPage() {
                         </div>
                     </section>
                 )}
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
                         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                            <h3 className="text-xl font-semibold">{university ? `${university} 주변 맛집` : '맛집 목록'}</h3>
+                            <h3 className="text-xl font-semibold">{userInfo?.university ? `${userInfo.university} 주변 맛집` : '맛집 목록'}</h3>
                         </div>
-                        
-                        {isLoading ? (
-                            <p className="text-center text-gray-500">맛집 목록을 불러오는 중...</p>
-                        ) : (
-                            <div className="space-y-6">
-                                {allRestaurants.map(restaurant => (
-                                    <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+
+                        <div className="space-y-6">
+                            {currentRestaurants.map(restaurant => (
+                                <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+                            ))}
+                        </div>
+
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center mt-8 space-x-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 text-gray-700 bg-white rounded-md border hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    이전
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                                    <button
+                                        key={number}
+                                        onClick={() => setCurrentPage(number)}
+                                        className={`px-4 py-2 rounded-md border ${currentPage === number ? 'bg-blue-600 text-white' : 'text-gray-700 bg-white hover:bg-gray-100'}`}
+                                    >
+                                        {number}
+                                    </button>
                                 ))}
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 text-gray-700 bg-white rounded-md border hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    다음
+                                </button>
                             </div>
                         )}
                     </div>
@@ -690,7 +856,7 @@ export default function RestaurantPage() {
                         <div className="bg-white rounded-xl shadow-sm p-6">
                             <h3 className="text-lg font-semibold mb-4 flex items-center">
                                 <i className="fas fa-fire text-red-500 mr-2"></i>
-                                {university ? `${university} 맛집 TOP 10` : '인기 맛집 TOP 10'}
+                                {userInfo?.university ? `${userInfo.university} 맛집 TOP 10` : '인기 맛집 TOP 10'}
                             </h3>
                             <div className="space-y-3">
                                 {topRestaurants.map((resto, index) => (
@@ -711,13 +877,11 @@ export default function RestaurantPage() {
                 </div>
             </main>
 
-            <ReviewModal 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)}
+            <ReviewModal
+                isOpen={isReviewModalOpen}
+                onClose={() => setIsReviewModalOpen(false)}
                 restaurant={selectedRestaurant}
-                user={user}
-                nickname={nickname}
-                university={university}
+                userInfo={userInfo}
                 onReviewSubmitted={(newReview) => {
                     setReviewsByRestaurant(prev => ({
                         ...prev,
@@ -726,13 +890,19 @@ export default function RestaurantPage() {
                 }}
                 onShowAlert={showAlert}
             />
-            
-            <SubmissionModal 
+
+            <SubmissionModal
                 isOpen={showSubmissionModal}
                 onClose={() => setShowSubmissionModal(false)}
-                user={user}
-                university={university}
-                nickname={nickname}
+                userInfo={userInfo}
+                onShowAlert={showAlert}
+            />
+
+            <ReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                restaurant={selectedRestaurant}
+                userInfo={userInfo}
                 onShowAlert={showAlert}
             />
 
@@ -743,7 +913,7 @@ export default function RestaurantPage() {
                     onCancel={() => setReviewToDelete(null)}
                 />
             )}
-            
+
             {alertModal.show && (
                 <AlertModal
                     message={alertModal.message}

@@ -8,12 +8,14 @@ import { collection, query, where, onSnapshot, doc, writeBatch } from 'firebase/
 const UserInteractionContext = createContext();
 
 export const UserInteractionProvider = ({ children }) => {
-    const { user } = useAuth();
+    const { userInfo: user } = useAuth();
     
     const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, targetUser: null, context: null });
     const [showReportModal, setShowReportModal] = useState(false);
     const [showDmModal, setShowDmModal] = useState(false);
     const [dmTarget, setDmTarget] = useState(null);
+    const [dmContext, setDmContext] = useState(null);
+    const [dmReplyContext, setDmReplyContext] = useState(null); 
     const [showMailboxModal, setShowMailboxModal] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState([]);
 
@@ -40,8 +42,10 @@ export const UserInteractionProvider = ({ children }) => {
 
     const closeContextMenu = () => setContextMenu({ ...contextMenu, show: false });
 
-    const openDmModal = (target) => {
+    const openDmModal = (target, context = null, replyContext = null) => {
         setDmTarget(target);
+        setDmContext(context);
+        setDmReplyContext(replyContext); 
         setShowDmModal(true);
     };
 
@@ -67,6 +71,8 @@ export const UserInteractionProvider = ({ children }) => {
         showDmModal,
         setShowDmModal,
         dmTarget,
+        dmContext,
+        dmReplyContext, 
         openDmModal,
         
         showMailboxModal,

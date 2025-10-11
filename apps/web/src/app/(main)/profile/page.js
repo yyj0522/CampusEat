@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db, functions } from "../../../firebase";
-import { onAuthStateChanged, signOut, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "firebase/auth";
+import { signOut, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "firebase/auth";
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, collectionGroup, orderBy } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import '../../styles/style.css'; 
+import { useAuth } from "../../context/AuthProvider";
+import '../../styles/style.css';
 
 const AlertModal = ({ message, onClose }) => {
     useEffect(() => {
@@ -99,14 +100,109 @@ const ChangePasswordModal = ({ isOpen, onClose, showAlert }) => {
             <div className="modal-content w-full max-w-md">
                 <h3 className="text-xl font-bold mb-4">비밀번호 변경</h3>
                 <div className="space-y-3">
-                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="현재 비밀번호"/>
-                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="새 비밀번호 (6자 이상)"/>
-                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="새 비밀번호 확인"/>
+                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="현재 비밀번호" />
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="새 비밀번호 (6자 이상)" />
+                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="새 비밀번호 확인" />
                 </div>
                 <div className="flex justify-end gap-2 mt-4">
                     <button onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-100">취소</button>
                     <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
                         {isSaving ? '변경 중...' : '변경하기'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ChangeUniversityModal = ({ isOpen, onClose, onSave, showAlert }) => {
+    const [searchTerm, setSearchTerm] = useState("");
+    const [allUniversities, setAllUniversities] = useState([]);
+    const [filteredUniversities, setFilteredUniversities] = useState([]);
+    const [selectedUniversity, setSelectedUniversity] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUniversities = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, "newUniversities"));
+                const uniList = querySnapshot.docs.map(doc => doc.id);
+                setAllUniversities(uniList.sort());
+            } catch (error) {
+                console.error("대학교 목록 로딩 오류:", error);
+                showAlert("대학교 목록을 불러오는 데 실패했습니다.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        if (isOpen) {
+            fetchUniversities();
+        }
+    }, [isOpen, showAlert]);
+
+    useEffect(() => {
+        if (searchTerm) {
+            setFilteredUniversities(
+                allUniversities.filter(uni => uni.toLowerCase().includes(searchTerm.toLowerCase()))
+            );
+        } else {
+            setFilteredUniversities([]);
+        }
+    }, [searchTerm, allUniversities]);
+
+    const handleSelectUniversity = (university) => {
+        setSearchTerm(university);
+        setSelectedUniversity(university);
+        setFilteredUniversities([]);
+    };
+    
+    const handleSave = async () => {
+        if (!selectedUniversity || !allUniversities.includes(selectedUniversity)) {
+            showAlert("목록에서 대학교를 선택해주세요.");
+            return;
+        }
+        setIsSaving(true);
+        await onSave(selectedUniversity);
+        setIsSaving(false);
+        onClose();
+    };
+
+    if (!isOpen) return null;
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content w-full max-w-md">
+                <h3 className="text-xl font-bold mb-4">대학교 변경</h3>
+                <div className="relative">
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setSelectedUniversity(null);
+                        }}
+                        className="w-full border p-2 rounded-lg"
+                        placeholder="대학교 이름을 검색하세요"
+                        disabled={isLoading}
+                    />
+                    {searchTerm && filteredUniversities.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {filteredUniversities.map(uni => (
+                                <div
+                                    key={uni}
+                                    onClick={() => handleSelectUniversity(uni)}
+                                    className="p-2 hover:bg-gray-100 cursor-pointer"
+                                >
+                                    {uni}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                    <button onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-100">취소</button>
+                    <button onClick={handleSave} disabled={isSaving || !selectedUniversity} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
+                        {isSaving ? '저장 중...' : '저장'}
                     </button>
                 </div>
             </div>
@@ -174,16 +270,9 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
                 );
             case 'my-reviews':
                 return (
-                     <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => router.push('/restaurant')}>
+                    <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => router.push('/restaurant')}>
                         <p className="font-semibold">{item.restaurantName} <span className="text-yellow-500">{'★'.repeat(item.rating)}</span></p>
                         <p className="text-sm text-gray-700 mt-1">&quot;{item.content}&quot;</p>
-                    </div>
-                );
-            case 'liked-restaurants':
-                 return (
-                    <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => router.push('/restaurant')}>
-                        <p className="font-semibold">{item.name}</p>
-                        <p className="text-sm text-gray-500 mt-1">{item.vicinity}</p>
                     </div>
                 );
             default:
@@ -198,11 +287,9 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
     );
 };
 
-
 export default function ProfilePage() {
     const router = useRouter();
-    const [user, setUser] = useState(null);
-    const [userData, setUserData] = useState(null);
+    const { userInfo, loading: authLoading } = useAuth();
     const [activityFilter, setActivityFilter] = useState('my-posts');
     const [activityData, setActivityData] = useState([]);
     const [isActivityLoading, setIsActivityLoading] = useState(true);
@@ -210,40 +297,29 @@ export default function ProfilePage() {
     const [showNicknameModal, setShowNicknameModal] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showUniversityModal, setShowUniversityModal] = useState(false);
     const [alertInfo, setAlertInfo] = useState({ show: false, message: "" });
 
     const showAlert = (message) => setAlertInfo({ show: true, message });
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (!currentUser) {
-                router.push("/login");
-                return;
-            }
-            setUser(currentUser);
-            const docRef = doc(db, "users", currentUser.uid);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setUserData(docSnap.data());
-            } else {
-                setUserData({ nickname: "사용자", email: currentUser.email, university: "미인증", universityEmail: "" });
-            }
-        });
-        return () => unsubscribe();
-    }, [router]);
+        if (!authLoading && !userInfo) {
+            router.push("/login");
+        }
+    }, [userInfo, authLoading, router]);
 
     useEffect(() => {
-        if (!user || !userData) return;
+        if (!userInfo) return;
         const fetchData = async () => {
             setIsActivityLoading(true);
             setActivityData([]);
             try {
                 if (activityFilter === 'my-posts') {
-                    const q = query(collection(db, "posts"), where("authorId", "==", user.uid), orderBy("createdAt", "desc"));
+                    const q = query(collection(db, "posts"), where("authorId", "==", userInfo.uid), orderBy("createdAt", "desc"));
                     const querySnapshot = await getDocs(q);
                     setActivityData(querySnapshot.docs.map(d => ({ id: d.id, ...d.data() })));
                 } else if (activityFilter === 'my-comments') {
-                    const q = query(collectionGroup(db, 'comments'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
+                    const q = query(collectionGroup(db, 'comments'), where('authorId', '==', userInfo.uid), orderBy('createdAt', 'desc'));
                     const querySnapshot = await getDocs(q);
                     const commentsData = await Promise.all(querySnapshot.docs.map(async (d) => {
                         const comment = { id: d.id, ...d.data() };
@@ -253,25 +329,15 @@ export default function ProfilePage() {
                     }));
                     setActivityData(commentsData);
                 } else if (activityFilter === 'my-reviews') {
-                    const q = query(collection(db, "reviews"), where("authorId", "==", user.uid), orderBy("createdAt", "desc"));
+                    const q = query(collectionGroup(db, 'reviews'), where('authorId', '==', userInfo.uid), orderBy('createdAt', 'desc'));
                     const querySnapshot = await getDocs(q);
-                    setActivityData(querySnapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-                } else if (activityFilter === 'liked-restaurants' && userData.university) {
-                    const userSnap = await getDoc(doc(db, "users", user.uid));
-                    const likedIds = userSnap.data()?.likedRestaurants || [];
-                    if (likedIds.length > 0) {
-                        const restaurantCol = collection(db, `newUniversities/${userData.university}/newRestaurants`);
-                        const results = [];
-                        for (let i = 0; i < likedIds.length; i += 10) {
-                            const chunk = likedIds.slice(i, i + 10);
-                            const q = query(restaurantCol, where('__name__', 'in', chunk));
-                            const querySnapshot = await getDocs(q);
-                            querySnapshot.forEach(d => results.push({ id: d.id, ...d.data() }));
-                        }
-                        setActivityData(results);
-                    } else {
-                        setActivityData([]);
-                    }
+                    const reviewsData = await Promise.all(querySnapshot.docs.map(async (d) => {
+                        const review = { id: d.id, ...d.data() };
+                        const restaurantRef = d.ref.parent.parent;
+                        const restaurantSnap = await getDoc(restaurantRef);
+                        return { ...review, restaurantName: restaurantSnap.exists() ? restaurantSnap.data().name : "삭제된 맛집" };
+                    }));
+                    setActivityData(reviewsData);
                 }
             } catch (error) {
                 console.error("활동 데이터 로드 오류:", error);
@@ -282,7 +348,7 @@ export default function ProfilePage() {
         };
 
         fetchData();
-    }, [user, activityFilter, userData]);
+    }, [userInfo, activityFilter]);
 
     const handleLogout = async () => {
         if (confirm("정말 로그아웃 하시겠습니까?")) {
@@ -297,7 +363,7 @@ export default function ProfilePage() {
     };
 
     const handleUpdateNickname = async (newNickname) => {
-        if (newNickname === userData.nickname) {
+        if (newNickname === userInfo.nickname) {
             showAlert("현재 닉네임과 동일합니다.");
             return false;
         }
@@ -309,9 +375,8 @@ export default function ProfilePage() {
                 showAlert("이미 사용 중인 닉네임입니다.");
                 return false;
             }
-            await updateDoc(doc(db, "users", user.uid), { nickname: newNickname });
-            setUserData(prev => ({ ...prev, nickname: newNickname }));
-            showAlert("닉네임이 변경되었습니다.");
+            await updateDoc(doc(db, "users", userInfo.uid), { nickname: newNickname });
+            showAlert("닉네임이 변경되었습니다. 변경사항은 새로고침 시 적용됩니다.");
             return true;
         } catch (error) {
             console.error("닉네임 업데이트 실패:", error);
@@ -320,6 +385,19 @@ export default function ProfilePage() {
         }
     };
 
+    const handleUpdateUniversity = async (newUniversity) => {
+        try {
+            await updateDoc(doc(db, "users", userInfo.uid), { university: newUniversity });
+            showAlert("대학교 정보가 성공적으로 변경되었습니다. 페이지를 새로고침합니다.");
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } catch (error) {
+            console.error("대학교 업데이트 실패:", error);
+            showAlert("대학교 변경 중 오류가 발생했습니다.");
+        }
+    };
+    
     const handleDeleteAccount = async () => {
         try {
             const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount');
@@ -337,10 +415,9 @@ export default function ProfilePage() {
         { key: 'my-posts', label: '작성한 글' },
         { key: 'my-comments', label: '작성한 댓글' },
         { key: 'my-reviews', label: '맛집 리뷰' },
-        { key: 'liked-restaurants', label: '추천한 맛집' },
     ];
 
-    if (!userData) {
+    if (authLoading || !userInfo) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
@@ -350,6 +427,8 @@ export default function ProfilePage() {
             </div>
         );
     }
+
+    const isAdmin = userInfo.role === 'super_admin' || userInfo.role === 'sub_admin';
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -361,9 +440,22 @@ export default function ProfilePage() {
                         </div>
                     </div>
                     <div className="text-center md:text-left">
-                        <h1 className="text-4xl font-bold text-gray-800">{userData.nickname}</h1>
-                        <p className="mt-2 text-lg text-gray-600">{userData.university}</p>
-                        <p className="mt-1 text-sm text-gray-500">{userData.universityEmail || userData.email}</p>
+                        <h1 className="text-4xl font-bold text-gray-800 flex items-center">
+                            {userInfo.isAdmin && <span className="text-blue-500 mr-2">[관리자]</span>}
+                            {userInfo.nickname}
+                        </h1>
+                        <div className="mt-2 flex items-center justify-center md:justify-start gap-2">
+                            <p className="text-lg text-gray-600">{userInfo.university}</p>
+                            {isAdmin && (
+                                <button
+                                    onClick={() => setShowUniversityModal(true)}
+                                    className="px-3 py-1 text-xs bg-blue-100 text-blue-700 font-semibold rounded-full hover:bg-blue-200 transition"
+                                >
+                                    변경
+                                </button>
+                            )}
+                        </div>
+                        <p className="mt-1 text-sm text-gray-500">{userInfo.universityEmail || userInfo.email}</p>
                     </div>
                 </section>
 
@@ -385,7 +477,7 @@ export default function ProfilePage() {
                             <ActivityFeed filter={activityFilter} data={activityData} isLoading={isActivityLoading} router={router} />
                         </div>
                     </section>
-                    
+
                     <section>
                         <h2 className="text-2xl font-bold text-gray-800 mb-4">계정 설정</h2>
                         <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -415,19 +507,25 @@ export default function ProfilePage() {
                     </section>
                 </div>
 
-                <ChangeNicknameModal 
-                    isOpen={showNicknameModal} 
+                <ChangeNicknameModal
+                    isOpen={showNicknameModal}
                     onClose={() => setShowNicknameModal(false)}
-                    currentNickname={userData.nickname}
+                    currentNickname={userInfo.nickname}
                     onSave={handleUpdateNickname}
                     showAlert={showAlert}
                 />
-                <ChangePasswordModal 
+                <ChangePasswordModal
                     isOpen={showPasswordModal}
                     onClose={() => setShowPasswordModal(false)}
                     showAlert={showAlert}
                 />
-                <DeleteAccountModal 
+                <ChangeUniversityModal
+                    isOpen={showUniversityModal}
+                    onClose={() => setShowUniversityModal(false)}
+                    onSave={handleUpdateUniversity}
+                    showAlert={showAlert}
+                />
+                <DeleteAccountModal
                     isOpen={showDeleteModal}
                     onClose={() => setShowDeleteModal(false)}
                     onDelete={handleDeleteAccount}

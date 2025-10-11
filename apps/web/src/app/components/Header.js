@@ -3,17 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
-import { auth, db } from "../../firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { useAuth } from "../context/AuthProvider";
 import { useUserInteraction } from "../context/UserInteractionProvider";
 
 export default function Header() {
     const router = useRouter();
     const pathname = usePathname();
+    const { userInfo } = useAuth();
     const { handleOpenMailbox, unreadCount } = useUserInteraction();
 
-    const [nickname, setNickname] = useState("");
     const [isMenuOpen, setIsMenuOpen] = useState(false); 
 
     const tabs = [
@@ -22,20 +20,6 @@ export default function Header() {
         { label: "학식/셔틀정보", path: "/information" },
         { label: "자유게시판", path: "/community" },
     ];
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                const snap = await getDoc(doc(db, "users", currentUser.uid));
-                if (snap.exists()) {
-                    setNickname(snap.data().nickname);
-                }
-            } else {
-                setNickname("");
-            }
-        });
-        return () => unsubscribe();
-    }, []);
     
     useEffect(() => {
         const handleResize = () => {
@@ -87,12 +71,18 @@ export default function Header() {
                     </button>
                     
                     <div className="hidden md:flex items-center space-x-4">
-                        {nickname && <span className="text-gray-700 font-semibold">{nickname}님</span>}
+                        {userInfo && (
+                            <span className="text-gray-700 font-semibold flex items-center">
+                                {userInfo.isAdmin && <span className="text-blue-500 font-bold mr-1">[관리자]</span>}
+                                {userInfo.nickname}님
+                            </span>
+                        )}
                         <button
                             onClick={() => router.push("/profile")}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                            aria-label="프로필 설정"
                         >
-                            프로필
+                            <i className="fas fa-cog text-xl text-gray-600"></i>
                         </button>
                     </div>
 

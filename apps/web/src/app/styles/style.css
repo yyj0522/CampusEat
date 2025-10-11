@@ -699,3 +699,7 @@ input:checked + .slider:before {
 .animate-fadeIn {
     animation: fadeIn 0.5s ease-in-out;
 }
+
+#__next-error-overlay__ {
+  background: rgba(0, 0, 0, 0.5) !important;
+}

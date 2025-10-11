@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { auth, db } from "../../../firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { db } from "../../../firebase";
+import { useAuth } from "../../context/AuthProvider";
 import {
-    collection, query, orderBy, doc, getDoc, addDoc, serverTimestamp,
+    collection, query, orderBy, doc, addDoc, serverTimestamp,
     updateDoc, increment, deleteDoc, onSnapshot, runTransaction, getDocs,
-    arrayUnion, arrayRemove
+    arrayUnion, arrayRemove, where
 } from "firebase/firestore";
 
 import PostList from './PostList';
@@ -82,14 +82,13 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
 export default function CommunityPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [user, setUser] = useState(null);
-    const [nickname, setNickname] = useState("");
-    const [university, setUniversity] = useState("");
+    const { userInfo, loading: authLoading } = useAuth();
+
+    const [rawPosts, setRawPosts] = useState([]);
     const [posts, setPosts] = useState([]);
     const [comments, setComments] = useState({});
     const [currentSort, setCurrentSort] = useState('latest');
     const [selectedPost, setSelectedPost] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -97,6 +96,8 @@ export default function CommunityPage() {
     const [postToDelete, setPostToDelete] = useState(null);
     const [commentToDelete, setCommentToDelete] = useState(null);
     const [showHelp, setShowHelp] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const postsPerPage = 10;
     const helpRef = useRef(null);
 
     const [currentCategory, setCurrentCategory] = useState(() => {
@@ -107,23 +108,16 @@ export default function CommunityPage() {
         }
         return 'all';
     });
-
+    
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                setUser(currentUser);
-                const docRef = doc(db, "users", currentUser.uid);
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    setNickname(snap.data().nickname);
-                    setUniversity(snap.data().university);
-                }
-            } else {
-                router.push("/login");
-            }
-        });
-        return () => unsubscribe();
-    }, [router]);
+        if (!authLoading && !userInfo) {
+            router.push("/login");
+        }
+    }, [userInfo, authLoading, router]);
+    
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [currentCategory, currentSort, searchQuery]);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -147,11 +141,52 @@ export default function CommunityPage() {
                 id: docSnap.id,
                 ...docSnap.data()
             }));
-            setPosts(data);
-            setLoading(false);
+            setRawPosts(data);
         });
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        const processPosts = async () => {
+            if (rawPosts.length === 0) {
+                setPosts([]);
+                return;
+            }
+
+            const authorIds = [...new Set(rawPosts.map(p => p.authorId).filter(Boolean))];
+            if (authorIds.length === 0) {
+                setPosts(rawPosts);
+                return;
+            }
+            
+            const usersRef = collection(db, "users");
+            const q = query(usersRef, where('__name__', 'in', authorIds));
+            const userSnapshot = await getDocs(q);
+            const authorMap = {};
+            userSnapshot.forEach(doc => {
+                authorMap[doc.id] = doc.data();
+            });
+
+            const finalPosts = rawPosts.map(post => {
+                const authorData = authorMap[post.authorId];
+                if (!authorData) return post;
+
+                const authorIsAdmin = authorData.role === 'super_admin' || authorData.role === 'sub_admin';
+                
+                if (authorIsAdmin) {
+                    return {
+                        ...post,
+                        isAnonymous: false,
+                        authorNickname: `[관리자] ${authorData.nickname || post.authorNickname}`,
+                        university: null,
+                    };
+                }
+                return post;
+            });
+            setPosts(finalPosts);
+        };
+        processPosts();
+    }, [rawPosts]);
 
     useEffect(() => {
         if (selectedPost && posts.length > 0) {
@@ -232,8 +267,14 @@ export default function CommunityPage() {
                 default: return b.createdAt?.seconds - a.createdAt?.seconds;
             }
         });
+    
+    const pageCount = Math.ceil(filteredPosts.length / postsPerPage);
+    const indexOfLastPost = currentPage * postsPerPage;
+    const indexOfFirstPost = indexOfLastPost - postsPerPage;
+    const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
 
     const handleCreatePost = async (postData) => {
+        if (!userInfo) return;
         if (!postData.title || !postData.category || !postData.content.trim()) {
             alert("모든 필드를 입력해주세요.");
             return;
@@ -243,10 +284,10 @@ export default function CommunityPage() {
                 title: postData.title,
                 category: postData.category,
                 content: postData.content,
-                isAnonymous: postData.isAnonymous,
-                authorId: user.uid,
-                authorNickname: nickname,
-                university,
+                isAnonymous: userInfo.isAdmin ? false : postData.isAnonymous,
+                authorId: userInfo.uid,
+                authorNickname: userInfo.isAdmin ? `[관리자] ${userInfo.nickname}` : userInfo.nickname,
+                university: userInfo.isAdmin ? null : userInfo.university,
                 views: 0,
                 likeCount: 0,
                 likedBy: [],
@@ -283,15 +324,16 @@ export default function CommunityPage() {
     };
 
     const handleAddComment = async (postId, commentData) => {
+        if (!userInfo) return;
         if (!commentData.text.trim()) return;
         try {
             const commentRef = collection(db, "posts", postId, "comments");
             await addDoc(commentRef, {
-                authorId: user.uid,
-                authorNickname: nickname,
-                university: university,
+                authorId: userInfo.uid,
+                authorNickname: userInfo.isAdmin ? `[관리자] ${userInfo.nickname}` : userInfo.nickname,
+                university: userInfo.isAdmin ? null : userInfo.university,
                 content: commentData.text,
-                isAnonymous: commentData.isAnonymous,
+                isAnonymous: userInfo.isAdmin ? false : commentData.isAnonymous,
                 likes: 0,
                 likedBy: [],
                 createdAt: serverTimestamp(),
@@ -312,14 +354,14 @@ export default function CommunityPage() {
     const executeDeleteComment = async () => {
         if (!commentToDelete) return;
         const { postId, commentId } = commentToDelete;
-        
+
         try {
             const commentRef = doc(db, "posts", postId, "comments", commentId);
             await deleteDoc(commentRef);
 
             const postRef = doc(db, "posts", postId);
             await updateDoc(postRef, { commentCount: increment(-1) });
-            
+
             setCommentToDelete(null);
             setSuccessMessage("댓글이 삭제되었습니다.");
             setShowSuccessModal(true);
@@ -331,17 +373,17 @@ export default function CommunityPage() {
     };
 
     const handleLikePost = async (postId) => {
-        if (!user) return;
+        if (!userInfo) return;
         const postRef = doc(db, "posts", postId);
         try {
             await runTransaction(db, async (transaction) => {
                 const postDoc = await transaction.get(postRef);
                 if (!postDoc.exists()) { throw "문서가 존재하지 않습니다!"; }
                 const likedBy = postDoc.data().likedBy || [];
-                if (likedBy.includes(user.uid)) {
-                    transaction.update(postRef, { likedBy: arrayRemove(user.uid), likeCount: increment(-1) });
+                if (likedBy.includes(userInfo.uid)) {
+                    transaction.update(postRef, { likedBy: arrayRemove(userInfo.uid), likeCount: increment(-1) });
                 } else {
-                    transaction.update(postRef, { likedBy: arrayUnion(user.uid), likeCount: increment(1) });
+                    transaction.update(postRef, { likedBy: arrayUnion(userInfo.uid), likeCount: increment(1) });
                 }
             });
         } catch (error) {
@@ -350,17 +392,17 @@ export default function CommunityPage() {
     };
 
     const handleLikeComment = async (postId, commentId) => {
-        if (!user) return;
+        if (!userInfo) return;
         const commentRef = doc(db, "posts", postId, "comments", commentId);
         try {
             await runTransaction(db, async (transaction) => {
                 const commentDoc = await transaction.get(commentRef);
                 if (!commentDoc.exists()) { throw "댓글이 존재하지 않습니다!"; }
                 const likedBy = commentDoc.data().likedBy || [];
-                if (likedBy.includes(user.uid)) {
-                    transaction.update(commentRef, { likedBy: arrayRemove(user.uid), likes: increment(-1) });
+                if (likedBy.includes(userInfo.uid)) {
+                    transaction.update(commentRef, { likedBy: arrayRemove(userInfo.uid), likes: increment(-1) });
                 } else {
-                    transaction.update(commentRef, { likedBy: arrayUnion(user.uid), likes: increment(1) });
+                    transaction.update(commentRef, { likedBy: arrayUnion(userInfo.uid), likes: increment(1) });
                 }
             });
         } catch (error) {
@@ -378,16 +420,16 @@ export default function CommunityPage() {
             const postId = postToDelete;
             const commentsRef = collection(db, "posts", postId, "comments");
             const commentsSnapshot = await getDocs(commentsRef);
-            
+
             const deletePromises = [];
             commentsSnapshot.forEach((commentDoc) => {
                 deletePromises.push(deleteDoc(commentDoc.ref));
             });
             await Promise.all(deletePromises);
-            
+
             const postRef = doc(db, "posts", postId);
             await deleteDoc(postRef);
-            
+
             setSelectedPost(null);
             setPostToDelete(null);
             setSuccessMessage("게시글과 관련 댓글이 모두 삭제되었습니다.");
@@ -427,7 +469,7 @@ export default function CommunityPage() {
         .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
         .slice(0, 5);
 
-    if (loading) return (
+    if (authLoading || !userInfo) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
             <div className="text-center">
                 <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full border-purple-500 border-t-transparent"></div>
@@ -474,9 +516,9 @@ export default function CommunityPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                         <div className="lg:col-span-3 space-y-6">
                             <PostList
-                                posts={filteredPosts}
+                                posts={currentPosts}
                                 openPost={openPost}
-                                user={user}
+                                user={userInfo}
                                 currentCategory={currentCategory}
                                 setCurrentCategory={setCurrentCategory}
                                 currentSort={currentSort}
@@ -486,6 +528,33 @@ export default function CommunityPage() {
                                 formatDate={formatDate}
                                 getCategoryName={getCategoryName}
                             />
+                            {pageCount > 1 && (
+                                <div className="flex justify-center items-center mt-8 space-x-2">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-4 py-2 text-gray-700 bg-white rounded-md border hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        이전
+                                    </button>
+                                    {Array.from({ length: pageCount }, (_, i) => i + 1).map(number => (
+                                        <button
+                                            key={number}
+                                            onClick={() => setCurrentPage(number)}
+                                            className={`px-4 py-2 rounded-md border ${currentPage === number ? 'bg-purple-600 text-white' : 'text-gray-700 bg-white hover:bg-gray-100'}`}
+                                        >
+                                            {number}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
+                                        disabled={currentPage === pageCount}
+                                        className="px-4 py-2 text-gray-700 bg-white rounded-md border hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        다음
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <aside className="space-y-6">
@@ -546,7 +615,7 @@ export default function CommunityPage() {
                 <PostModal
                     post={selectedPost}
                     comments={comments[selectedPost.id] || []}
-                    user={user}
+                    user={userInfo}
                     onClose={closePost}
                     onAddComment={handleAddComment}
                     onLikePost={handleLikePost}
