@@ -25,6 +25,20 @@ const AlertModal = ({ message, onClose }) => {
     );
 };
 
+const ConfirmModal = ({ message, onConfirm, onCancel }) => {
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content w-full max-w-sm text-center">
+                <p className="text-lg mb-8">{message}</p>
+                <div className="flex justify-center gap-4">
+                    <button onClick={onCancel} className="px-4 py-2 w-full border rounded-lg hover:bg-gray-100">취소</button>
+                    <button onClick={onConfirm} className="px-4 py-2 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700">확인</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ChangeNicknameModal = ({ isOpen, onClose, currentNickname, onSave, showAlert }) => {
     const [newNickname, setNewNickname] = useState(currentNickname);
     const [isSaving, setIsSaving] = useState(false);
@@ -299,6 +313,7 @@ export default function ProfilePage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showUniversityModal, setShowUniversityModal] = useState(false);
     const [alertInfo, setAlertInfo] = useState({ show: false, message: "" });
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     const showAlert = (message) => setAlertInfo({ show: true, message });
 
@@ -350,15 +365,19 @@ export default function ProfilePage() {
         fetchData();
     }, [userInfo, activityFilter]);
 
-    const handleLogout = async () => {
-        if (confirm("정말 로그아웃 하시겠습니까?")) {
-            try {
-                await signOut(auth);
-                router.push("/login");
-            } catch (error) {
-                console.error("로그아웃 실패:", error);
-                showAlert("로그아웃 중 오류가 발생했습니다.");
-            }
+    const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const executeLogout = async () => {
+        try {
+            await signOut(auth);
+            router.push("/login");
+        } catch (error) {
+            console.error("로그아웃 실패:", error);
+            showAlert("로그아웃 중 오류가 발생했습니다.");
+        } finally {
+            setShowLogoutConfirm(false);
         }
     };
 
@@ -531,6 +550,7 @@ export default function ProfilePage() {
                     onDelete={handleDeleteAccount}
                 />
                 {alertInfo.show && <AlertModal message={alertInfo.message} onClose={() => setAlertInfo({ show: false, message: "" })} />}
+                {showLogoutConfirm && <ConfirmModal message="정말 로그아웃 하시겠습니까?" onConfirm={executeLogout} onCancel={() => setShowLogoutConfirm(false)} />}
             </main>
         </div>
     );

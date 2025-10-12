@@ -91,8 +91,8 @@ function InquiryItem({ inquiry, isOpen, onClick, answers, onCancel }) {
         <div className="border-b border-gray-200 py-4">
             <div className="w-full flex justify-between items-center text-left text-lg font-medium text-gray-800">
                 <button onClick={onClick} className="flex-grow flex items-center gap-4 focus:outline-none">
-                    <span className={`px-3 py-1 text-sm rounded-full ${inquiry.status === 'answered' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
-                        {inquiry.status === 'answered' ? '답변 완료' : '답변 대기'}
+                    <span className={`px-3 py-1 text-sm rounded-full ${inquiry.isAnswer === true ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
+                        {inquiry.isAnswer === true ? '답변 완료' : '답변 대기'}
                     </span>
                     <span>{inquiry.title}</span>
                 </button>
