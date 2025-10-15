@@ -9,7 +9,6 @@ import { RestaurantProvider } from "./context/RestaurantProvider";
 import { ChatProvider } from "./context/ChatProvider";
 import { UserInteractionProvider } from "./context/UserInteractionProvider";
 
-import GlobalChatWidget from "./components/GlobalChatWidget";
 import CustomContextMenu from "./components/CustomContextMenu";
 import ReportModal from "./components/ReportModal";
 import DirectMessageModal from "./components/DirectMessageModal";
@@ -28,7 +27,6 @@ export default function RootLayout({ children }) {
             <ChatProvider>
               <UserInteractionProvider>
                 {children}
-                <GlobalChatWidget />
                 <CustomContextMenu />
                 <ReportModal />
                 <DirectMessageModal />

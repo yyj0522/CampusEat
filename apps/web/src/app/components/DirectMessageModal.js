@@ -36,14 +36,14 @@ function AlertModal({ message, onClose }) {
 
 export default function DirectMessageModal() {
   const { showDmModal, setShowDmModal, dmTarget, dmContext, dmReplyContext } = useUserInteraction();
-  const { userInfo } = useAuth();
+  const { user } = useAuth();
   const [content, setContent] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [alert, setAlert] = useState({ show: false, message: "" });
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!content.trim() || !userInfo || (!dmTarget && !dmReplyContext)) return;
+    if (!content.trim() || !user || (!dmTarget && !dmReplyContext)) return;
     if (isSending) return;
     setIsSending(true);
 
@@ -53,16 +53,16 @@ export default function DirectMessageModal() {
             content: content.trim(),
             createdAt: serverTimestamp(),
             isRead: false,
-            deletedBySender: false,      // 이 필드를 추가합니다.
-            deletedByRecipient: false, // 이 필드를 추가합니다.
+            deletedBySender: false,    
+            deletedByRecipient: false,
         };
 
         if (dmReplyContext) {
             const originalMsg = dmReplyContext.originalMessage;
             messageData = {
                 ...baseData,
-                senderId: userInfo.uid,
-                senderNickname: userInfo.nickname,
+                senderId: user.uid,
+                senderNickname: user.nickname,
                 senderDisplayName: originalMsg.recipientDisplayName,
                 recipientId: originalMsg.senderId,
                 recipientNickname: originalMsg.senderNickname,
@@ -89,9 +89,9 @@ export default function DirectMessageModal() {
 
             messageData = {
                 ...baseData,
-                senderId: userInfo.uid,
-                senderNickname: userInfo.nickname,
-                senderDisplayName: userInfo.isAdmin ? `[관리자] ${userInfo.nickname}` : userInfo.nickname,
+                senderId: user.uid,
+                senderNickname: user.nickname,
+                senderDisplayName: user.isAdmin ? `[관리자] ${user.nickname}` : user.nickname,
                 recipientId: dmTarget.id,
                 recipientNickname: dmTarget.nickname,
                 recipientDisplayName: dmTarget.displayName || dmTarget.nickname,

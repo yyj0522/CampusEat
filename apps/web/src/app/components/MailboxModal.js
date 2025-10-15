@@ -49,7 +49,7 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
 
 export default function MailboxModal() {
     const { showMailboxModal, setShowMailboxModal, openDmModal } = useUserInteraction();
-    const { userInfo } = useAuth();
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('inbox');
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +57,7 @@ export default function MailboxModal() {
     const [alert, setAlert] = useState({ show: false, message: "" });
 
     useEffect(() => {
-        if (!showMailboxModal || !userInfo) {
+        if (!showMailboxModal || !user) {
             setMessages([]);
             return;
         }
@@ -69,7 +69,7 @@ export default function MailboxModal() {
 
         const q = query(
             messagesRef,
-            where(idField, "==", userInfo.uid),
+            where(idField, "==", user.uid),
             where(deletedField, "==", false),
             orderBy("createdAt", "desc")
         );
@@ -106,7 +106,7 @@ export default function MailboxModal() {
         });
 
         return () => unsubscribe();
-    }, [showMailboxModal, userInfo, activeTab]);
+    }, [showMailboxModal, user, activeTab]);
 
     const handleReply = (msg) => {
         const targetUser = {
@@ -119,7 +119,7 @@ export default function MailboxModal() {
     };
 
     const executeClearMailbox = async () => {
-        if (!userInfo || messages.length === 0) return;
+        if (!user || messages.length === 0) return;
         setShowConfirm(false);
         
         try {

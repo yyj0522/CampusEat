@@ -136,6 +136,77 @@ exports.kickUserFromMeeting = onCall(async (request) => {
     });
 });
 
+exports.deleteMeeting = onCall(async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "You must be logged in to delete a meeting.");
+    }
+
+    const meetingId = request.data.meetingId;
+    const uid = request.auth.uid;
+
+    if (!meetingId) {
+        throw new HttpsError("invalid-argument", "The function must be called with a 'meetingId'.");
+    }
+
+    const meetingRef = db.collection("meetings").doc(meetingId);
+
+    try {
+        const doc = await meetingRef.get();
+        if (!doc.exists) {
+            throw new HttpsError("not-found", "No such meeting exists.");
+        }
+
+        if (doc.data().creatorId !== uid) {
+            throw new HttpsError("permission-denied", "You do not have permission to delete this meeting.");
+        }
+
+        const messagesRef = meetingRef.collection("messages");
+        const messagesSnapshot = await messagesRef.get();
+        const batch = db.batch();
+        messagesSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+
+        await meetingRef.delete();
+
+        return { success: true };
+
+    } catch (error) {
+        logger.error("Error deleting meeting:", error);
+        if (error instanceof HttpsError) {
+            throw error;
+        }
+        throw new HttpsError("internal", "Could not delete meeting.");
+    }
+});
+
+exports.createMeetingChat = onDocumentCreated("meetings/{meetingId}", async (event) => {
+    const snap = event.data;
+    if (!snap) {
+        logger.log("No data associated with the event");
+        return;
+    }
+    const meetingData = snap.data();
+    const meetingId = event.params.meetingId;
+
+    logger.log(`New meeting created: ${meetingId}. Adding initial system message.`);
+
+    const messagesRef = snap.ref.collection("messages");
+
+    try {
+        await messagesRef.add({
+            text: `${meetingData.creatorNickname}님이 모임을 생성했습니다.`,
+            senderId: "system",
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        logger.log(`Successfully added initial message for meeting: ${meetingId}`);
+
+    } catch (error) {
+        logger.error(`Error adding initial message for meeting ${meetingId}:`, error);
+    }
+});
+
 exports.cleanupExpiredMeetings = onSchedule("every 10 minutes", async (event) => {
     const now = admin.firestore.Timestamp.now();
     const expiredMeetingsQuery = db.collection("meetings").where("datetime", "<=", now);

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function CustomContextMenu() {
     const { contextMenu, closeContextMenu, setShowReportModal, openDmModal } = useUserInteraction();
-    const { userInfo } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
 
     if (!contextMenu.show) return null;
@@ -25,7 +25,7 @@ export default function CustomContextMenu() {
         closeContextMenu();
     };
 
-    const isSelf = userInfo && userInfo.uid === contextMenu.targetUser?.id;
+    const isSelf = user && user.uid === contextMenu.targetUser?.id;
     const isTargetAdmin = contextMenu.targetUser?.role === 'super_admin' || contextMenu.targetUser?.role === 'sub_admin';
 
     if (!isSelf && isTargetAdmin) {

@@ -8,16 +8,16 @@ import { useAuth } from './AuthProvider';
 const RestaurantContext = createContext();
 
 export const RestaurantProvider = ({ children }) => {
-    const { userInfo } = useAuth();
+    const { user } = useAuth();
     const [restaurants, setRestaurants] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         let unsubscribe = () => {};
 
-        if (userInfo && userInfo.university) {
+        if (user && user.university) {
             setIsLoading(true);
-            const restaurantColRef = collection(db, "newUniversities", userInfo.university, "newRestaurants");
+            const restaurantColRef = collection(db, "newUniversities", user.university, "newRestaurants");
             const q = query(restaurantColRef);
             
             unsubscribe = onSnapshot(q, (snapshot) => {
@@ -36,7 +36,7 @@ export const RestaurantProvider = ({ children }) => {
         }
 
         return () => unsubscribe();
-    }, [userInfo]);
+    }, [user]);
 
     const value = { restaurants, isLoading };
 

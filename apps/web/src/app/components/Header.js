@@ -9,7 +9,7 @@ import { useUserInteraction } from "../context/UserInteractionProvider";
 export default function Header() {
     const router = useRouter();
     const pathname = usePathname();
-    const { userInfo } = useAuth();
+    const { user } = useAuth();
     const { handleOpenMailbox, unreadCount } = useUserInteraction();
 
     const [isMenuOpen, setIsMenuOpen] = useState(false); 
@@ -71,10 +71,10 @@ export default function Header() {
                     </button>
                     
                     <div className="hidden md:flex items-center space-x-4">
-                        {userInfo && (
+                        {user && (
                             <span className="text-gray-700 font-semibold flex items-center">
-                                {userInfo.isAdmin && <span className="text-blue-500 font-bold mr-1">[관리자]</span>}
-                                {userInfo.nickname}님
+                                {user.isAdmin && <span className="text-blue-500 font-bold mr-1">[관리자]</span>}
+                                {user.nickname}님
                             </span>
                         )}
                         <button

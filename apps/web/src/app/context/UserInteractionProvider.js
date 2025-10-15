@@ -8,7 +8,7 @@ import { collection, query, where, onSnapshot, doc, writeBatch } from 'firebase/
 const UserInteractionContext = createContext();
 
 export const UserInteractionProvider = ({ children }) => {
-    const { userInfo: user } = useAuth();
+    const { user: user } = useAuth();
     
     const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, targetUser: null, context: null });
     const [showReportModal, setShowReportModal] = useState(false);

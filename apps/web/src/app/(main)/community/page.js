@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { db } from "../../../firebase";
 import { useAuth } from "../../context/AuthProvider";
@@ -82,7 +82,7 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
 export default function CommunityPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { userInfo, loading: authLoading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
 
     const [rawPosts, setRawPosts] = useState([]);
     const [posts, setPosts] = useState([]);
@@ -110,10 +110,10 @@ export default function CommunityPage() {
     });
     
     useEffect(() => {
-        if (!authLoading && !userInfo) {
+        if (!authLoading && !user) {
             router.push("/login");
         }
-    }, [userInfo, authLoading, router]);
+    }, [user, authLoading, router]);
     
     useEffect(() => {
         setCurrentPage(1);
@@ -274,7 +274,7 @@ export default function CommunityPage() {
     const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
 
     const handleCreatePost = async (postData) => {
-        if (!userInfo) return;
+        if (!user) return;
         if (!postData.title || !postData.category || !postData.content.trim()) {
             alert("모든 필드를 입력해주세요.");
             return;
@@ -284,10 +284,10 @@ export default function CommunityPage() {
                 title: postData.title,
                 category: postData.category,
                 content: postData.content,
-                isAnonymous: userInfo.isAdmin ? false : postData.isAnonymous,
-                authorId: userInfo.uid,
-                authorNickname: userInfo.isAdmin ? `[관리자] ${userInfo.nickname}` : userInfo.nickname,
-                university: userInfo.isAdmin ? null : userInfo.university,
+                isAnonymous: user.isAdmin ? false : postData.isAnonymous,
+                authorId: user.uid,
+                authorNickname: user.isAdmin ? `[관리자] ${user.nickname}` : user.nickname,
+                university: user.isAdmin ? null : user.university,
                 views: 0,
                 likeCount: 0,
                 likedBy: [],
@@ -324,16 +324,16 @@ export default function CommunityPage() {
     };
 
     const handleAddComment = async (postId, commentData) => {
-        if (!userInfo) return;
+        if (!user) return;
         if (!commentData.text.trim()) return;
         try {
             const commentRef = collection(db, "posts", postId, "comments");
             await addDoc(commentRef, {
-                authorId: userInfo.uid,
-                authorNickname: userInfo.isAdmin ? `[관리자] ${userInfo.nickname}` : userInfo.nickname,
-                university: userInfo.isAdmin ? null : userInfo.university,
+                authorId: user.uid,
+                authorNickname: user.isAdmin ? `[관리자] ${user.nickname}` : user.nickname,
+                university: user.isAdmin ? null : user.university,
                 content: commentData.text,
-                isAnonymous: userInfo.isAdmin ? false : commentData.isAnonymous,
+                isAnonymous: user.isAdmin ? false : commentData.isAnonymous,
                 likes: 0,
                 likedBy: [],
                 createdAt: serverTimestamp(),
@@ -373,17 +373,17 @@ export default function CommunityPage() {
     };
 
     const handleLikePost = async (postId) => {
-        if (!userInfo) return;
+        if (!user) return;
         const postRef = doc(db, "posts", postId);
         try {
             await runTransaction(db, async (transaction) => {
                 const postDoc = await transaction.get(postRef);
                 if (!postDoc.exists()) { throw "문서가 존재하지 않습니다!"; }
                 const likedBy = postDoc.data().likedBy || [];
-                if (likedBy.includes(userInfo.uid)) {
-                    transaction.update(postRef, { likedBy: arrayRemove(userInfo.uid), likeCount: increment(-1) });
+                if (likedBy.includes(user.uid)) {
+                    transaction.update(postRef, { likedBy: arrayRemove(user.uid), likeCount: increment(-1) });
                 } else {
-                    transaction.update(postRef, { likedBy: arrayUnion(userInfo.uid), likeCount: increment(1) });
+                    transaction.update(postRef, { likedBy: arrayUnion(user.uid), likeCount: increment(1) });
                 }
             });
         } catch (error) {
@@ -392,17 +392,17 @@ export default function CommunityPage() {
     };
 
     const handleLikeComment = async (postId, commentId) => {
-        if (!userInfo) return;
+        if (!user) return;
         const commentRef = doc(db, "posts", postId, "comments", commentId);
         try {
             await runTransaction(db, async (transaction) => {
                 const commentDoc = await transaction.get(commentRef);
                 if (!commentDoc.exists()) { throw "댓글이 존재하지 않습니다!"; }
                 const likedBy = commentDoc.data().likedBy || [];
-                if (likedBy.includes(userInfo.uid)) {
-                    transaction.update(commentRef, { likedBy: arrayRemove(userInfo.uid), likes: increment(-1) });
+                if (likedBy.includes(user.uid)) {
+                    transaction.update(commentRef, { likedBy: arrayRemove(user.uid), likes: increment(-1) });
                 } else {
-                    transaction.update(commentRef, { likedBy: arrayUnion(userInfo.uid), likes: increment(1) });
+                    transaction.update(commentRef, { likedBy: arrayUnion(user.uid), likes: increment(1) });
                 }
             });
         } catch (error) {
@@ -469,7 +469,7 @@ export default function CommunityPage() {
         .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
         .slice(0, 5);
 
-    if (authLoading || !userInfo) return (
+    if (authLoading || !user) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
             <div className="text-center">
                 <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full border-purple-500 border-t-transparent"></div>
@@ -518,7 +518,7 @@ export default function CommunityPage() {
                             <PostList
                                 posts={currentPosts}
                                 openPost={openPost}
-                                user={userInfo}
+                                user={user}
                                 currentCategory={currentCategory}
                                 setCurrentCategory={setCurrentCategory}
                                 currentSort={currentSort}
@@ -615,7 +615,7 @@ export default function CommunityPage() {
                 <PostModal
                     post={selectedPost}
                     comments={comments[selectedPost.id] || []}
-                    user={userInfo}
+                    user={user}
                     onClose={closePost}
                     onAddComment={handleAddComment}
                     onLikePost={handleLikePost}

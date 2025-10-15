@@ -21,14 +21,17 @@ export const ChatProvider = ({ children }) => {
 
         const q = query(
             collection(db, "meetings"),
-            where("participantIds", "array-contains", user.uid)
+            where("participantIds", "array-contains", user.uid),
+            where("status", "==", "active")
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const now = new Date();
             const meetings = snapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
-                .filter(meeting => meeting.datetime.toDate() > now);
+                .filter(meeting => meeting.datetime && meeting.datetime.toDate() > now);
+
+            meetings.sort((a, b) => a.datetime.toDate() - b.datetime.toDate());
             
             setActiveMeetings(meetings);
 

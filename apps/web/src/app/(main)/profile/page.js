@@ -91,6 +91,11 @@ const ChangePasswordModal = ({ isOpen, onClose, showAlert }) => {
         }
         setIsSaving(true);
         const user = auth.currentUser;
+        if (!user) {
+            showAlert("사용자 인증 정보가 없습니다. 다시 로그인해주세요.");
+            setIsSaving(false);
+            return;
+        }
         const credential = EmailAuthProvider.credential(user.email, currentPassword);
         try {
             await reauthenticateWithCredential(user, credential);
@@ -303,7 +308,7 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
 
 export default function ProfilePage() {
     const router = useRouter();
-    const { userInfo, loading: authLoading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const [activityFilter, setActivityFilter] = useState('my-posts');
     const [activityData, setActivityData] = useState([]);
     const [isActivityLoading, setIsActivityLoading] = useState(true);
@@ -318,39 +323,45 @@ export default function ProfilePage() {
     const showAlert = (message) => setAlertInfo({ show: true, message });
 
     useEffect(() => {
-        if (!authLoading && !userInfo) {
+        if (!authLoading && !user) {
             router.push("/login");
         }
-    }, [userInfo, authLoading, router]);
+    }, [user, authLoading, router]);
 
     useEffect(() => {
-        if (!userInfo) return;
+        if (!user) return;
         const fetchData = async () => {
             setIsActivityLoading(true);
             setActivityData([]);
             try {
                 if (activityFilter === 'my-posts') {
-                    const q = query(collection(db, "posts"), where("authorId", "==", userInfo.uid), orderBy("createdAt", "desc"));
+                    const q = query(collection(db, "posts"), where("authorId", "==", user.uid), orderBy("createdAt", "desc"));
                     const querySnapshot = await getDocs(q);
                     setActivityData(querySnapshot.docs.map(d => ({ id: d.id, ...d.data() })));
                 } else if (activityFilter === 'my-comments') {
-                    const q = query(collectionGroup(db, 'comments'), where('authorId', '==', userInfo.uid), orderBy('createdAt', 'desc'));
+                    const q = query(collectionGroup(db, 'comments'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
                     const querySnapshot = await getDocs(q);
                     const commentsData = await Promise.all(querySnapshot.docs.map(async (d) => {
                         const comment = { id: d.id, ...d.data() };
                         const postRef = d.ref.parent.parent;
-                        const postSnap = await getDoc(postRef);
-                        return { ...comment, postId: postRef.id, postTitle: postSnap.exists() ? postSnap.data().title : "삭제된 게시글" };
+                        if (postRef) {
+                            const postSnap = await getDoc(postRef);
+                            return { ...comment, postId: postRef.id, postTitle: postSnap.exists() ? postSnap.data().title : "삭제된 게시글" };
+                        }
+                        return { ...comment, postId: null, postTitle: "알 수 없는 게시글" };
                     }));
                     setActivityData(commentsData);
                 } else if (activityFilter === 'my-reviews') {
-                    const q = query(collectionGroup(db, 'reviews'), where('authorId', '==', userInfo.uid), orderBy('createdAt', 'desc'));
+                    const q = query(collectionGroup(db, 'reviews'), where('authorId', '==', user.uid), orderBy('createdAt', 'desc'));
                     const querySnapshot = await getDocs(q);
                     const reviewsData = await Promise.all(querySnapshot.docs.map(async (d) => {
                         const review = { id: d.id, ...d.data() };
                         const restaurantRef = d.ref.parent.parent;
-                        const restaurantSnap = await getDoc(restaurantRef);
-                        return { ...review, restaurantName: restaurantSnap.exists() ? restaurantSnap.data().name : "삭제된 맛집" };
+                        if(restaurantRef) {
+                            const restaurantSnap = await getDoc(restaurantRef);
+                            return { ...review, restaurantName: restaurantSnap.exists() ? restaurantSnap.data().name : "삭제된 맛집" };
+                        }
+                        return { ...review, restaurantName: "알 수 없는 맛집" };
                     }));
                     setActivityData(reviewsData);
                 }
@@ -363,7 +374,7 @@ export default function ProfilePage() {
         };
 
         fetchData();
-    }, [userInfo, activityFilter]);
+    }, [user, activityFilter]);
 
     const handleLogout = () => {
         setShowLogoutConfirm(true);
@@ -382,7 +393,7 @@ export default function ProfilePage() {
     };
 
     const handleUpdateNickname = async (newNickname) => {
-        if (newNickname === userInfo.nickname) {
+        if (newNickname === user?.nickname) {
             showAlert("현재 닉네임과 동일합니다.");
             return false;
         }
@@ -394,7 +405,7 @@ export default function ProfilePage() {
                 showAlert("이미 사용 중인 닉네임입니다.");
                 return false;
             }
-            await updateDoc(doc(db, "users", userInfo.uid), { nickname: newNickname });
+            await updateDoc(doc(db, "users", user.uid), { nickname: newNickname });
             showAlert("닉네임이 변경되었습니다. 변경사항은 새로고침 시 적용됩니다.");
             return true;
         } catch (error) {
@@ -406,7 +417,7 @@ export default function ProfilePage() {
 
     const handleUpdateUniversity = async (newUniversity) => {
         try {
-            await updateDoc(doc(db, "users", userInfo.uid), { university: newUniversity });
+            await updateDoc(doc(db, "users", user.uid), { university: newUniversity });
             showAlert("대학교 정보가 성공적으로 변경되었습니다. 페이지를 새로고침합니다.");
             setTimeout(() => {
                 window.location.reload();
@@ -436,7 +447,7 @@ export default function ProfilePage() {
         { key: 'my-reviews', label: '맛집 리뷰' },
     ];
 
-    if (authLoading || !userInfo) {
+    if (authLoading || !user) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
@@ -447,7 +458,7 @@ export default function ProfilePage() {
         );
     }
 
-    const isAdmin = userInfo.role === 'super_admin' || userInfo.role === 'sub_admin';
+    const isAdmin = user.role === 'super_admin' || user.role === 'sub_admin';
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -460,11 +471,11 @@ export default function ProfilePage() {
                     </div>
                     <div className="text-center md:text-left">
                         <h1 className="text-4xl font-bold text-gray-800 flex items-center">
-                            {userInfo.isAdmin && <span className="text-blue-500 mr-2">[관리자]</span>}
-                            {userInfo.nickname}
+                            {user.isAdmin && <span className="text-blue-500 mr-2">[관리자]</span>}
+                            {user.nickname}
                         </h1>
                         <div className="mt-2 flex items-center justify-center md:justify-start gap-2">
-                            <p className="text-lg text-gray-600">{userInfo.university}</p>
+                            <p className="text-lg text-gray-600">{user.university}</p>
                             {isAdmin && (
                                 <button
                                     onClick={() => setShowUniversityModal(true)}
@@ -474,7 +485,7 @@ export default function ProfilePage() {
                                 </button>
                             )}
                         </div>
-                        <p className="mt-1 text-sm text-gray-500">{userInfo.universityEmail || userInfo.email}</p>
+                        <p className="mt-1 text-sm text-gray-500">{user.universityEmail || user.email}</p>
                     </div>
                 </section>
 
@@ -529,7 +540,7 @@ export default function ProfilePage() {
                 <ChangeNicknameModal
                     isOpen={showNicknameModal}
                     onClose={() => setShowNicknameModal(false)}
-                    currentNickname={userInfo.nickname}
+                    currentNickname={user.nickname}
                     onSave={handleUpdateNickname}
                     showAlert={showAlert}
                 />
