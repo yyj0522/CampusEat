@@ -1,0 +1,87 @@
+# .github/workflows/backend-deploy.yml
+name: Backend Deploy to Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**' # backend 폴더에 변경이 있을 때만 실행
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ap-northeast-2 # 서울 리전
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm install
+
+      - name: Build backend project
+        working-directory: ./backend
+        run: npm run build
+      
+      - name: Create ZIP file for deployment
+        working-directory: ./backend
+        run: |
+          # dist 폴더와 package.json 등 실행에 필요한 파일만 압축
+          zip -r deploy.zip dist node_modules package.json package-lock.json .npmrc .platform Procfile
+
+      - name: Deploy to AWS Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: campus-eat-backend # EB 애플리케이션 이름
+          environment_name: Campus-eat-backend-env # EB 환경 이름 (대시보드에서 확인)
+          region: ${{ env.AWS_REGION }}
+          deployment_package: backend/deploy.zip
+```
+*(참고: `environment_name`은 실제 Elastic Beanstalk 대시보드에 표시되는 이름으로 정확히 수정해야 합니다.)*
+
+---
+
+### **4단계: 프론트엔드 배포 (AWS Amplify & GitHub Actions)**
+
+#### **Part A: Amplify 앱 생성**
+
+1.  AWS 콘솔에서 `Amplify`를 검색하여 서비스로 이동합니다.
+2.  **새 앱 호스팅** > **GitHub** 선택 후 `campuseat3` 리포지토리와 `main` 브랜치를 연결합니다.
+3.  **빌드 설정** 단계에서, Amplify가 자동으로 `frontend` 폴더를 인식합니다. `amplify.yml` 편집기 화면이 나오면 아래 내용으로 덮어씁니다.
+
+    ```yaml
+    version: 1
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - cd frontend
+            - npm install --legacy-peer-deps
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: frontend/.next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - frontend/node_modules/**/*
+    

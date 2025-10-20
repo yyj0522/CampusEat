@@ -1,0 +1,6 @@
+// 파일 전체 경로: tsconfig.build.json
+
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}
