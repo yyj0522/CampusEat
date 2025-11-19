@@ -53,7 +53,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white sticky top-0 z-40 relative">
+    <header className="bg-white sticky top-0 z-40 border-b border-[#DCDCDC]">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-4 sm:py-5">
         <div
           className="flex items-center cursor-pointer"
@@ -64,6 +64,7 @@ export default function Header() {
             alt="캠퍼스잇 로고"
             width={147}
             height={32}
+            priority 
           />
         </div>
 
@@ -83,14 +84,15 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex items-center space-x-3 sm:space-x-5">
           <button
             onClick={handleProtectedMailbox}
-            className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+            className="relative p-2 group transition-transform hover:scale-105"
+            aria-label="알림함"
           >
-            <i className="fas fa-envelope text-xl text-gray-600"></i>
+            <i className="fas fa-bell text-xl text-gray-600 group-hover:text-blue-600 transition-colors"></i>
             {user && unreadCount > 0 && (
-              <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center border-2 border-white">
+              <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -101,10 +103,10 @@ export default function Header() {
               <>
                 <button
                   onClick={() => router.push("/profile")}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  className="p-1 group transition-transform hover:scale-105"
                   aria-label="프로필 설정"
                 >
-                  <i className="fas fa-cog text-xl text-gray-600"></i>
+                  <i className="fas fa-user-circle text-3xl text-gray-400 group-hover:text-blue-600 transition-colors"></i>
                 </button>
               </>
             )}
@@ -121,7 +123,7 @@ export default function Header() {
       </div>
 
       {isMenuOpen && (
-        <div className="absolute top-full left-0 w-full bg-white shadow-lg md:hidden animate-fadeInDown">
+        <div className="absolute top-full left-0 w-full bg-white shadow-lg md:hidden animate-fadeInDown border-t border-gray-100">
           <nav className="flex flex-col p-4 space-y-1">
             {tabs.map((tab) => (
               <button
@@ -140,12 +142,13 @@ export default function Header() {
               <>
                 <button
                   onClick={() => router.push("/profile")}
-                  className={`p-3 text-left rounded-md font-semibold transition border-t mt-2 pt-3 ${
+                  className={`p-3 text-left rounded-md font-semibold transition border-t mt-2 pt-3 flex items-center ${
                     pathname === "/profile"
                       ? "text-blue-600 bg-blue-50"
                       : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
+                  <i className="fas fa-user-circle mr-2 text-lg"></i>
                   프로필
                 </button>
               </>

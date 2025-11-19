@@ -116,16 +116,40 @@ export default function HomePage() {
     router.push(`/community/${id}`);
   };
 
+  const communityShortcuts = [
+    { 
+      title: "자유게시판", 
+      icon: "fa-comments", 
+      path: "/community?category=free", 
+      color: "from-blue-400 to-blue-600", 
+      desc: "자유로운 소통 공간" 
+    },
+    { 
+      title: "정보공유", 
+      icon: "fa-lightbulb", 
+      path: "/community?category=info", 
+      color: "from-yellow-400 to-orange-500", 
+      desc: "꿀팁과 학교 소식" 
+    },
+    { 
+      title: "질문게시판", 
+      icon: "fa-question-circle", 
+      path: "/community?category=question", 
+      color: "from-green-400 to-emerald-600", 
+      desc: "무엇이든 물어보세요" 
+    },
+    { 
+      title: "거래게시판", 
+      icon: "fa-handshake", 
+      path: "/community?category=trade", 
+      color: "from-purple-400 to-indigo-600", 
+      desc: "중고 물품 교환" 
+    },
+  ];
+
   if (loading) {
     return <div className="min-h-screen bg-white"></div>;
   }
-
-  const communityShortcuts = [
-    { title: "자유게시판", icon: "fa-comments", path: "/community?category=free" },
-    { title: "정보공유", icon: "fa-share-alt", path: "/community?category=info" },
-    { title: "질문게시판", icon: "fa-question-circle", path: "/community?category=question" },
-    { title: "거래게시판", icon: "fa-handshake", path: "/community?category=trade" },
-  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -278,17 +302,46 @@ export default function HomePage() {
           ref={(el) => (sectionRefs.current[1] = el)}
           className="max-w-6xl mx-auto px-6 fade-in-up"
         >
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">주요 게시판 바로가기</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-gray-100">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-gray-800">
+                <span className="text-indigo-600 mr-2">Community</span>
+                바로가기
+              </h2>
+              <button 
+                onClick={() => handleProtectedNavigation("/community")}
+                className="text-sm text-gray-500 hover:text-indigo-600 transition-colors flex items-center"
+              >
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {communityShortcuts.map((shortcut) => (
                 <div
                   key={shortcut.title}
                   onClick={() => handleProtectedNavigation(shortcut.path)}
-                  className="text-center p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-50 hover:shadow-md transition-all"
+                  className="group relative bg-white rounded-2xl border border-gray-100 p-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                 >
-                  <i className={`fas ${shortcut.icon} text-2xl text-indigo-500`}></i>
-                  <p className="mt-2 font-semibold text-gray-700">{shortcut.title}</p>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${shortcut.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+                  
+                  <div className="flex flex-col items-start h-full justify-between space-y-4">
+                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${shortcut.color} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                      <i className={`fas ${shortcut.icon} text-white text-xl`}></i>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-bold text-gray-800 text-lg group-hover:text-indigo-600 transition-colors">
+                        {shortcut.title}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-1 font-medium">
+                        {shortcut.desc}
+                      </p>
+                    </div>
+
+                    <div className="absolute top-5 right-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                      <i className="fas fa-arrow-right text-gray-300 text-sm"></i>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -299,61 +352,73 @@ export default function HomePage() {
           ref={(el) => (sectionRefs.current[3] = el)}
           className="max-w-6xl mx-auto px-6 fade-in-up"
         >
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                <i className="fas fa-bullhorn text-purple-500 mr-2"></i>공지사항
+          <div className="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                <span className="text-purple-600 mr-2">Notice</span>
+                공지사항
               </h2>
             </div>
 
-            <div className="overflow-hidden">
-              <div className="min-w-full">
-                <div className="bg-gray-50 border-b border-gray-200 grid grid-cols-12 gap-4 p-3 text-xs font-semibold text-gray-500 text-center">
-                    <div className="col-span-2 md:col-span-1">번호</div>
-                    <div className="col-span-7 md:col-span-9 text-left pl-2">제목</div>
-                    <div className="col-span-3 md:col-span-2">작성일</div>
+            <div className="flex flex-col">
+              {currentNotices.length === 0 ? (
+                <div className="py-12 text-center text-gray-400 text-sm bg-gray-50 rounded-xl border border-gray-100">
+                  <i className="fas fa-inbox text-2xl mb-2 block"></i>
+                  등록된 공지사항이 없습니다.
                 </div>
-                <div className="divide-y divide-gray-100">
-                  {currentNotices.length === 0 ? (
-                    <div className="py-8 text-center text-gray-500 text-sm">등록된 공지사항이 없습니다.</div>
-                  ) : (
-                    currentNotices.map((notice, index) => (
-                      <div 
-                        key={notice.id}
-                        onClick={() => handleNoticeClick(notice.id)}
-                        className="grid grid-cols-12 gap-4 p-3 hover:bg-purple-50 cursor-pointer transition-colors items-center text-sm text-gray-700"
-                      >
-                        <div className="col-span-2 md:col-span-1 text-center font-medium text-gray-500">
-                            {notices.length - ((noticePage - 1) * itemsPerNoticePage) - index}
+              ) : (
+                <div className="space-y-3">
+                  {currentNotices.map((notice, index) => (
+                    <div 
+                      key={notice.id}
+                      onClick={() => handleNoticeClick(notice.id)}
+                      className="group flex items-center justify-between bg-white hover:bg-purple-50/50 p-4 rounded-xl border border-gray-100 cursor-pointer transition-all hover:shadow-sm hover:border-purple-100"
+                    >
+                      <div className="flex items-center flex-1 min-w-0 mr-4">
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-4 ${index < 2 ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}>
+                           <i className={`fas ${index < 2 ? 'fa-bullhorn' : 'fa-check'} text-sm`}></i>
                         </div>
-                        <div className="col-span-7 md:col-span-9 text-left pl-2 font-medium truncate">
-                            {notice.title}
-                        </div>
-                        <div className="col-span-3 md:col-span-2 text-center text-xs text-gray-500">
-                            {new Date(notice.createdAt).toLocaleDateString("ko-KR")}
+                        
+                        <div className="min-w-0 flex-1">
+                           <div className="flex items-center mb-1">
+                              {index === 0 && noticePage === 1 && (
+                                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mr-2 flex-shrink-0 animate-pulse">NEW</span>
+                              )}
+                              <h3 className="text-gray-800 font-medium text-sm md:text-base truncate group-hover:text-purple-700 transition-colors">
+                                {notice.title}
+                              </h3>
+                           </div>
+                           <p className="text-xs text-gray-400">
+                              관리자 · {new Date(notice.createdAt).toLocaleDateString("ko-KR")}
+                           </p>
                         </div>
                       </div>
-                    ))
-                  )}
+
+                      <div className="hidden sm:flex items-center text-gray-300 group-hover:text-purple-400 group-hover:translate-x-1 transition-all">
+                        <span className="text-xs font-medium mr-2 opacity-0 group-hover:opacity-100 transition-opacity">읽기</span>
+                        <i className="fas fa-chevron-right text-xs"></i>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
 
             {totalNoticePages > 1 && (
-              <div className="flex justify-center items-center mt-6 space-x-1 md:space-x-2">
+              <div className="flex justify-center items-center mt-8 space-x-1 md:space-x-2">
                 <button 
                   onClick={() => setNoticePage(1)} 
                   disabled={noticePage === 1}
-                  className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 disabled:opacity-30"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors"
                 >
-                  <i className="fas fa-angle-double-left"></i>
+                  <i className="fas fa-angle-double-left text-xs"></i>
                 </button>
                 <button 
                   onClick={() => setNoticePage(prev => Math.max(1, prev - 1))} 
                   disabled={noticePage === 1}
-                  className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 disabled:opacity-30"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors"
                 >
-                  <i className="fas fa-angle-left"></i>
+                  <i className="fas fa-angle-left text-xs"></i>
                 </button>
 
                 <div className="flex space-x-1 mx-2">
@@ -361,10 +426,10 @@ export default function HomePage() {
                         <button
                             key={num}
                             onClick={() => setNoticePage(num)}
-                            className={`w-8 h-8 flex items-center justify-center rounded text-sm font-medium transition-colors ${
+                            className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold transition-all transform ${
                                 noticePage === num 
-                                ? "bg-purple-600 text-white" 
-                                : "text-gray-700 hover:bg-gray-100"
+                                ? "bg-purple-600 text-white shadow-md scale-110" 
+                                : "text-gray-500 hover:bg-gray-100"
                             }`}
                         >
                             {num}
@@ -375,16 +440,16 @@ export default function HomePage() {
                 <button 
                   onClick={() => setNoticePage(prev => Math.min(totalNoticePages, prev + 1))} 
                   disabled={noticePage === totalNoticePages}
-                  className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 disabled:opacity-30"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors"
                 >
-                  <i className="fas fa-angle-right"></i>
+                  <i className="fas fa-angle-right text-xs"></i>
                 </button>
                 <button 
                   onClick={() => setNoticePage(totalNoticePages)} 
                   disabled={noticePage === totalNoticePages}
-                  className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 disabled:opacity-30"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 disabled:opacity-30 transition-colors"
                 >
-                  <i className="fas fa-angle-double-right"></i>
+                  <i className="fas fa-angle-double-right text-xs"></i>
                 </button>
               </div>
             )}
