@@ -1,63 +1,79 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import { FaChevronDown, FaRegFileImage } from "react-icons/fa";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../../context/AuthProvider"; 
+import { useAuth } from "../../context/AuthProvider";
 import apiClient from "@/lib/api";
+import { FaChevronDown, FaRegFileImage, FaHeadset, FaHistory, FaQuestionCircle } from "react-icons/fa";
 
-function AlertModal({ message, onClose }) {
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === 'Enter') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+const AlertModal = ({ message, onClose }) => {
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Enter') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
 
-  if (!message) return null;
-
-  return (
-    <div 
-        className="fixed inset-0 flex items-center justify-center z-[60]"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-    >
-      <div className="modal-content bg-white rounded-xl shadow-lg p-8 text-center w-full max-w-sm animate-fadeIn">
-        <p className="text-lg mb-6">{message}</p>
-        <button onClick={onClose} className="bg-indigo-600 text-white px-8 py-2 rounded-lg w-full hover:bg-indigo-700 transition">확인</button>
-      </div>
-    </div>
-  );
-}
-
-function ConfirmModal({ message, onConfirm, onCancel }) {
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === 'Enter') onConfirm();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onConfirm]);
-
-  return (
-    <div 
-        className="fixed inset-0 flex items-center justify-center z-50"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-    >
-      <div className="modal-content bg-white rounded-xl shadow-lg p-8 text-center w-full max-w-sm animate-fadeIn">
-        <p className="text-lg font-medium text-gray-800 mb-8">{message}</p>
-        <div className="flex justify-center gap-4">
-          <button onClick={onCancel} className="w-1/2 bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition">
-            아니요
-          </button>
-          <button onClick={onConfirm} className="w-1/2 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">
-            네
-          </button>
+    return (
+        <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
+            onClick={onClose}
+        >
+            <style>{`
+                @keyframes scaleUp {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-scaleUp {
+                    animation: scaleUp 0.2s ease-out forwards;
+                }
+            `}</style>
+            <div 
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-scaleUp flex flex-col items-center"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-5 shadow-sm">
+                    <i className="fas fa-info text-2xl text-blue-500"></i>
+                </div>
+                <h3 className="text-xl font-extrabold text-gray-900 mb-2">알림</h3>
+                <p className="text-gray-600 text-sm font-medium leading-relaxed mb-8 break-keep">
+                    {message}
+                </p>
+                <button 
+                    onClick={onClose} 
+                    className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-md hover:bg-blue-700 transition active:scale-95"
+                >
+                    확인
+                </button>
+            </div>
         </div>
-      </div>
-    </div>
-  );
-}
+    );
+};
+
+const ConfirmModal = ({ message, onConfirm, onCancel }) => {
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+             <style>{`
+                @keyframes scaleUp {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-scaleUp {
+                    animation: scaleUp 0.2s ease-out forwards;
+                }
+            `}</style>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-scaleUp">
+                <h3 className="text-xl font-extrabold text-gray-900 mb-4">확인</h3>
+                <p className="text-gray-600 font-medium mb-8 break-keep">{message}</p>
+                <div className="flex gap-3">
+                    <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
+                    <button onClick={onConfirm} className="flex-1 bg-red-500 text-white py-3.5 rounded-2xl font-bold text-sm hover:bg-red-600 transition shadow-md">확인</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const faqData = [
   { id: 1, question: "학교/캠퍼스가 바뀌었는데 변경할 수 없나요?", answer: "회원가입 시 선택한 학교/캠퍼스는 가입 이후 변경할 수 없습니다. 다른 학교/캠퍼스로 변경을 원하실 경우, 현재 사용하시는 계정을 탈퇴하신 후 새로운 학교/캠퍼스로 다시 회원가입을 진행해주시기 바랍니다." },
@@ -77,25 +93,30 @@ const faqData = [
   { id: 15, question: "개인정보는 안전하게 관리되나요?", answer: "그럼요. 회원님의 개인정보는 개인정보처리방침에 따라 암호화되어 안전하게 관리되고 있습니다. 자세한 내용은 홈페이지 하단의 '개인정보처리방침' 문서를 참고해주시기 바랍니다." }
 ];
 
-function FaqItem({ faq, isOpen, onClick, onSwitchToForm }) {
+function FaqItem({ faq, isOpen, onClick }) {
   return (
-    <div className="border-b border-gray-200 py-4">
-      <button onClick={onClick} className="w-full flex justify-between items-center text-left text-lg font-medium text-gray-800 focus:outline-none">
-        <span>{faq.question}</span>
-        <FaChevronDown className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-      {isOpen && (
-        <div className="mt-4 text-gray-600 bg-gray-50 p-4 rounded-md animate-fadeIn">
-          <p>{faq.answer}</p>
-          <div className="mt-6 text-sm text-center border-t pt-4">
-            <span>해결이 되지 않으셨나요? </span>
-            <button onClick={onSwitchToForm} className="font-semibold text-indigo-600 hover:underline">
-              문의하기
-            </button>
-            <span>를 통해 접수해주세요!</span>
-          </div>
+    <div className="border-b border-gray-100 last:border-none">
+      <button 
+        onClick={onClick} 
+        className={`w-full flex justify-between items-center text-left py-5 px-4 hover:bg-gray-50 transition-colors rounded-lg ${isOpen ? 'bg-gray-50' : ''}`}
+      >
+        <span className="font-bold text-gray-800 text-sm md:text-base pr-4 flex items-center gap-3">
+            <span className="text-blue-600 font-black text-lg">Q.</span>
+            {faq.question}
+        </span>
+        <div className={`transform transition-transform duration-300 text-gray-400 ${isOpen ? 'rotate-180' : ''}`}>
+            <FaChevronDown />
         </div>
-      )}
+      </button>
+      
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="p-5 bg-gray-50 rounded-b-lg text-sm md:text-base text-gray-600 leading-relaxed border-t border-gray-100 mx-2 mb-2">
+            <div className="flex gap-3">
+                <span className="text-red-500 font-black text-lg">A.</span>
+                <p>{faq.answer}</p>
+            </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -118,58 +139,72 @@ function InquiryItem({ inquiry, isOpen, onClick, onCancel, showAlert }) {
   };
 
   return (
-    <div className="border-b border-gray-200 py-4">
-      <div className="w-full flex justify-between items-center text-left text-lg font-medium text-gray-800">
-        <button onClick={onClick} className="flex-grow flex items-center gap-4 focus:outline-none">
-          <span className={`px-3 py-1 text-sm rounded-full ${inquiry.status === 'answered' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4 shadow-sm hover:shadow-md transition-shadow">
+      <div 
+        onClick={onClick}
+        className="w-full flex flex-col md:flex-row justify-between items-start md:items-center p-5 cursor-pointer bg-white hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-start gap-3 mb-2 md:mb-0 flex-1 min-w-0">
+          <span className={`px-2.5 py-1 text-xs font-bold rounded-md flex-shrink-0 ${inquiry.status === 'answered' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
             {inquiry.status === 'answered' ? '답변 완료' : '답변 대기'}
           </span>
-          <span>{inquiry.title}</span>
-        </button>
-        <div className="flex items-center gap-4 flex-shrink-0">
-          <span className="text-sm text-gray-500 font-normal">{inquiryDate}</span>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onCancel(inquiry.id);
-            }} 
-            className="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 py-1 px-3 rounded-md transition"
-          >
-            문의 취소
-          </button>
-          <button onClick={onClick} className="focus:outline-none">
-            <FaChevronDown className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-          </button>
+          <span className="font-bold text-gray-800 truncate pt-0.5">{inquiry.title}</span>
+        </div>
+        
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end pl-11 md:pl-0">
+          <span className="text-xs text-gray-400 font-medium">{inquiryDate}</span>
+          <div className="flex items-center gap-2">
+              {inquiry.status !== 'answered' && (
+                <button 
+                    onClick={(e) => {
+                    e.stopPropagation();
+                    onCancel(inquiry.id);
+                    }} 
+                    className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 py-1.5 px-3 rounded-lg transition"
+                >
+                    취소
+                </button>
+              )}
+              <FaChevronDown className={`text-gray-400 transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+          </div>
         </div>
       </div>
 
       {isOpen && (
-        <div className="mt-4 space-y-6 text-gray-700 bg-gray-50 p-6 rounded-md animate-fadeIn">
-          <div className="border-b pb-4">
-            <p className="whitespace-pre-wrap">{inquiry.content}</p>
+        <div className="border-t border-gray-100 bg-gray-50 p-6 animate-fadeIn">
+          <div className="prose prose-sm max-w-none text-gray-700 mb-6">
+            <p className="whitespace-pre-wrap leading-relaxed">{inquiry.content}</p>
             {inquiry.fileName && (
-              <p className="text-sm text-gray-500 mt-4">
-                첨부파일:{" "}
-                <button
-                  onClick={handleDownload}
-                  className="text-indigo-600 hover:underline"
-                >
+              <div className="mt-4 flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200 w-fit">
+                <FaRegFileImage className="text-gray-400" />
+                <button onClick={handleDownload} className="text-sm text-blue-600 hover:underline font-medium truncate max-w-xs">
                   {inquiry.fileName}
                 </button>
-              </p>
+              </div>
             )}
           </div>
+
           {inquiry.answers && inquiry.answers.length > 0 ? (
-            inquiry.answers.map(answer => (
-              <div key={answer.id} className="bg-indigo-50 p-4 rounded">
-                <p className="font-semibold text-indigo-800 mb-2">
-                  관리자 답변 ({new Date(answer.createdAt).toLocaleDateString('ko-KR')})
-                </p>
-                <p className="whitespace-pre-wrap">{answer.content}</p>
-              </div>
-            ))
+            <div className="space-y-4 mt-6 border-t border-gray-200 pt-6">
+              {inquiry.answers.map(answer => (
+                <div key={answer.id} className="bg-blue-50 p-5 rounded-xl border border-blue-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-bold text-blue-700 flex items-center gap-2">
+                        <i className="fas fa-headset"></i> 관리자 답변
+                    </span>
+                    <span className="text-xs text-blue-400">{new Date(answer.createdAt).toLocaleDateString('ko-KR')}</span>
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{answer.content}</p>
+                </div>
+              ))}
+            </div>
           ) : (
-            <p className="text-sm text-center text-gray-500">아직 등록된 답변이 없습니다.</p>
+            <div className="mt-6 pt-6 border-t border-gray-200 text-center py-8">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+                    <i className="fas fa-hourglass-half"></i>
+                </div>
+                <p className="text-sm text-gray-500">담당자가 확인 중입니다.<br/>조금만 기다려주세요.</p>
+            </div>
           )}
         </div>
       )}
@@ -181,7 +216,7 @@ export default function ContactPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   
-  const [mode, setMode] = useState('faq');
+  const [mode, setMode] = useState('faq'); 
   const [openFaqId, setOpenFaqId] = useState(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -211,6 +246,7 @@ export default function ContactPage() {
       return;
     }
     setMode(targetMode);
+    window.scrollTo(0, 0);
   };
 
   const fetchInquiries = useCallback(async () => {
@@ -305,180 +341,242 @@ export default function ContactPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50 py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">고객센터</h1>
-          <p className="mt-4 text-lg text-gray-500">
-            {mode === 'faq' && "먼저 자주 묻는 질문을 확인해보세요."}
-            {mode === 'myInquiries' && "작성한 문의와 답변을 확인해보세요."}
-            {mode === 'form' && "궁금한 점을 문의해주시면 최대한 빠르게 답변드리겠습니다."}
-          </p>
+    <div className="min-h-screen bg-white font-sans">
+        <style>{`
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fadeIn {
+                animation: fadeIn 0.4s ease-out forwards;
+            }
+        `}</style>
+      <main className="max-w-4xl mx-auto px-4 py-10 animate-fadeIn">
+        {/* Header Section */}
+        <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg text-center relative overflow-hidden">
+             <div className="relative z-10">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i className="fas fa-headset text-3xl text-white"></i>
+                </div>
+                <h1 className="text-3xl md:text-4xl font-extrabold mb-3">고객센터</h1>
+                <p className="text-lg text-blue-100 font-medium">
+                    무엇을 도와드릴까요? 궁금한 점을 빠르게 해결해드립니다.
+                </p>
+            </div>
+            <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
+            <div className="absolute bottom-0 right-0 w-40 h-40 bg-indigo-500/30 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl"></div>
         </div>
 
-        {mode === 'faq' && (
-          <div className="bg-white p-8 border rounded-lg shadow-sm" style={{ minHeight: '400px' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">자주 묻는 질문</h2>
-              <div>
-                <button onClick={() => handleProtectedMode('myInquiries')} className="text-sm font-semibold text-gray-600 hover:text-indigo-600 transition mr-4">내 문의 보기</button>
-                <button onClick={() => handleProtectedMode('form')} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">1:1 문의하기</button>
-              </div>
+        {/* Navigation Tabs */}
+        <div className="flex justify-center mb-8">
+            <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 inline-flex">
+                {[
+                    { id: 'faq', label: '자주 묻는 질문', icon: <FaQuestionCircle className="mr-2"/> },
+                    { id: 'myInquiries', label: '내 문의 내역', icon: <FaHistory className="mr-2"/> },
+                    { id: 'form', label: '1:1 문의하기', icon: <FaHeadset className="mr-2"/> }
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => tab.id === 'faq' ? setMode('faq') : handleProtectedMode(tab.id)}
+                        className={`flex items-center px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${mode === tab.id ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                    >
+                        {tab.icon} {tab.label}
+                    </button>
+                ))}
             </div>
-            <div>
-              {faqData.map(faq => <FaqItem key={faq.id} faq={faq} isOpen={openFaqId === faq.id} onClick={() => setOpenFaqId(openFaqId === faq.id ? null : faq.id)} onSwitchToForm={() => handleProtectedMode('form')} />)}
-            </div>
-          </div>
-        )}
+        </div>
 
-        {mode === 'myInquiries' && user && (
-          <div className="bg-white p-8 border rounded-lg shadow-sm" style={{ minHeight: '1000px' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">내 문의</h2>
-              <div>
-                <button onClick={() => setMode('faq')} className="text-sm font-semibold text-gray-600 hover:text-indigo-600 transition mr-4">FAQ 보기</button>
-                <button onClick={() => handleProtectedMode('form')} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">새 문의 작성</button>
-              </div>
-            </div>
-            <div>
-              {isLoading ? <p>문의 내역을 불러오는 중입니다...</p> : inquiries.length > 0 ? (
-                inquiries.map(inquiry => (
-                  <InquiryItem
-                    key={inquiry.id}
-                    inquiry={inquiry}
-                    isOpen={openInquiryId === inquiry.id}
-                    onClick={() => handleInquiryClick(inquiry.id)}
-                    answers={inquiry.answers} 
-                    onCancel={handleCancelInquiry}
-                    showAlert={showAlert}
-                  />
-                ))
-              ) : (
-                <p className="text-center text-gray-500 py-8">작성한 문의가 없습니다.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {mode === 'form' && user && (
-          <div className="bg-white p-8 border rounded-lg shadow-sm" style={{ minHeight: '1000px' }}>
-            <div className="flex justify-end items-center mb-6">
-              <button onClick={() => setMode('faq')} className="text-sm font-semibold text-gray-600 hover:text-indigo-600 transition">← FAQ로 돌아가기</button>
-            </div>
-            <form
-              className="space-y-6"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSubmitInquiry();
-              }}
-              noValidate
-            >
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">제목</label>
-                <input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="문의 제목을 입력해주세요."
-                />
-              </div>
-              <div>
-                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">내용</label>
-                <textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows="8"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="문의하실 내용을 자세하게 작성해주세요."
-                ></textarea>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">파일 첨부</label>
-                <div className="mt-1 flex items-center gap-4">
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    <FaRegFileImage className="inline-block mr-2" /> 파일 선택
-                  </label>
-                  <input
-                    id="file-upload"
-                    name="file-upload"
-                    type="file"
-                    className="sr-only"
-                    onChange={(e) => setFile(e.target.files[0])}
-                  />
-                  {file && <span className="text-sm text-gray-600">{file.name}</span>}
+        {/* Content Area */}
+        <div className="bg-white border border-gray-100 rounded-3xl shadow-sm min-h-[500px] overflow-hidden">
+            
+            {mode === 'faq' && (
+                <div className="p-6 md:p-8 animate-fadeIn">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <span className="w-2 h-8 bg-indigo-500 rounded-full mr-3"></span>
+                        자주 묻는 질문
+                    </h2>
+                    <div className="space-y-2">
+                        {faqData.map(faq => <FaqItem key={faq.id} faq={faq} isOpen={openFaqId === faq.id} onClick={() => setOpenFaqId(openFaqId === faq.id ? null : faq.id)} />)}
+                    </div>
+                    <div className="mt-10 p-6 bg-gray-50 rounded-2xl text-center border border-gray-100">
+                        <p className="text-gray-600 mb-4 font-medium">원하는 답변을 찾지 못하셨나요?</p>
+                        <button 
+                            onClick={() => handleProtectedMode('form')} 
+                            className="bg-black text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-gray-800 transition shadow-lg"
+                        >
+                            1:1 문의 남기기
+                        </button>
+                    </div>
                 </div>
-              </div>
-              <div>
-                <label htmlFor="replyEmail" className="block text-sm font-medium text-gray-700 mb-1">연락받을 이메일</label>
-                <input
-                  id="replyEmail"
-                  value={replyEmail}
-                  onChange={(e) => setReplyEmail(e.target.value)}
-                  type="email"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">이용자 아이디</label>
-                <input
-                  type="text"
-                  value={user?.nickname || ''}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">학교</label>
-                <input
-                  type="text"
-                  value={user?.university || ''}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
-                />
-              </div>
-              <div className="border-t pt-6">
-                <label className="flex items-start">
-                  <input
-                    type="checkbox"
-                    checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mt-1"
-                  />
-                  <div className="ml-3 text-sm">
-                    <span className="font-medium text-gray-800">
-                      개인정보 수집 및 이용 동의 (필수)
-                    </span>
-                    <p className="text-gray-500">
-                      문의 처리를 위해 이메일, 문의내용에 포함된 개인정보를 수집하며,
-                      개인정보처리방침에 따라 3년간 보관 후 파기합니다. 개인정보 수집 및 이용을 거부할 수 있으며,
-                      거부할 경우 문의가 불가합니다.
-                    </p>
-                  </div>
-                </label>
-              </div>
-              <button
-                type="submit"
-                disabled={isSubmitting || !consent}
-                className="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                {isSubmitting ? "접수 중..." : "문의 접수하기"}
-              </button>
-            </form>
-          </div>
-        )}
+            )}
+
+            {mode === 'myInquiries' && user && (
+                <div className="p-6 md:p-8 animate-fadeIn">
+                    <div className="flex justify-between items-center mb-6">
+                         <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                            <span className="w-2 h-8 bg-indigo-500 rounded-full mr-3"></span>
+                            내 문의 내역
+                        </h2>
+                        <button onClick={() => handleProtectedMode('form')} className="text-sm font-bold text-indigo-600 hover:text-indigo-700 transition flex items-center">
+                            <i className="fas fa-plus mr-1"></i> 새 문의 작성
+                        </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        {isLoading ? (
+                             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                                <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
+                                <p>문의 내역을 불러오는 중입니다...</p>
+                            </div>
+                        ) : inquiries.length > 0 ? (
+                            inquiries.map(inquiry => (
+                                <InquiryItem
+                                    key={inquiry.id}
+                                    inquiry={inquiry}
+                                    isOpen={openInquiryId === inquiry.id}
+                                    onClick={() => handleInquiryClick(inquiry.id)}
+                                    onCancel={handleCancelInquiry}
+                                    showAlert={showAlert}
+                                />
+                            ))
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                <i className="far fa-folder-open text-4xl mb-3 opacity-50"></i>
+                                <p>작성한 문의 내역이 없습니다.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {mode === 'form' && user && (
+                <div className="p-6 md:p-8 animate-fadeIn">
+                     <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center">
+                        <span className="w-2 h-8 bg-indigo-500 rounded-full mr-3"></span>
+                        1:1 문의 작성
+                    </h2>
+                    <p className="text-gray-500 mb-8 text-sm ml-5">문의 내용을 상세히 적어주시면 정확한 답변을 받으실 수 있습니다.</p>
+
+                    <form
+                        className="space-y-6 max-w-3xl"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSubmitInquiry();
+                        }}
+                        noValidate
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">이용자 아이디</label>
+                                <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-600 text-sm font-medium">
+                                    {user?.nickname || ''}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">답변 받을 이메일</label>
+                                <input
+                                    value={replyEmail}
+                                    onChange={(e) => setReplyEmail(e.target.value)}
+                                    type="email"
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-sm"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">문의 제목</label>
+                            <input
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                type="text"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-sm font-bold"
+                                placeholder="제목을 입력해주세요."
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">문의 내용</label>
+                            <textarea
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                rows="8"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-sm resize-none"
+                                placeholder="문의하실 내용을 자세하게 작성해주세요."
+                            ></textarea>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">파일 첨부 (선택)</label>
+                            <div className="flex items-center gap-3">
+                                <label
+                                    htmlFor="file-upload"
+                                    className="cursor-pointer bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 transition flex items-center gap-2"
+                                >
+                                    <FaRegFileImage /> 파일 선택
+                                </label>
+                                <input
+                                    id="file-upload"
+                                    type="file"
+                                    className="hidden"
+                                    onChange={(e) => setFile(e.target.files[0])}
+                                />
+                                {file && (
+                                    <div className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-medium">
+                                        <span>{file.name}</span>
+                                        <button type="button" onClick={() => setFile(null)} className="hover:text-indigo-900"><i className="fas fa-times"></i></button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-6">
+                            <label className="flex items-start gap-3 cursor-pointer group">
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={consent}
+                                        onChange={(e) => setConsent(e.target.checked)}
+                                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-gray-300 transition-all checked:border-indigo-500 checked:bg-indigo-500"
+                                    />
+                                     <i className="fas fa-check text-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs opacity-0 peer-checked:opacity-100 pointer-events-none"></i>
+                                </div>
+                                <div className="text-sm">
+                                    <span className="font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">
+                                        개인정보 수집 및 이용 동의 (필수)
+                                    </span>
+                                    <p className="text-gray-500 text-xs mt-1 leading-relaxed">
+                                        문의 처리를 위해 이메일, 문의내용에 포함된 개인정보를 수집하며,
+                                        개인정보처리방침에 따라 3년간 보관 후 파기합니다. 동의를 거부할 수 있으나, 이 경우 문의 접수가 제한됩니다.
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div className="pt-4">
+                            <button
+                                type="submit"
+                                disabled={isSubmitting || !consent}
+                                className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none transition-all text-lg"
+                            >
+                                {isSubmitting ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                        접수 중...
+                                    </span>
+                                ) : "문의하기"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+        </div>
 
         {alertInfo.show && (
           <AlertModal message={alertInfo.message} onClose={closeAlert} />
@@ -486,12 +584,12 @@ export default function ContactPage() {
 
         {showConfirmModal && (
           <ConfirmModal
-            message="정말 문의를 취소하시겠습니까?"
+            message="정말 문의를 취소하시겠습니까? (삭제된 문의는 복구할 수 없습니다)"
             onConfirm={executeDeleteInquiry}
             onCancel={() => setShowConfirmModal(false)}
           />
         )}
-      </div>
+      </main>
     </div>
   );
 }

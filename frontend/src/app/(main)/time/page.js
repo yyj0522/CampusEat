@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthProvider";
 import apiClient from "@/lib/api";
 import html2canvas from "html2canvas";
-import '../../styles/style.css';
 
 const Toast = ({ message, show, onClose }) => {
     useEffect(() => {
@@ -272,7 +271,7 @@ export default function TimetablePage() {
         const days = ['월', '화', '수', '목', '금'];
         const startHour = 9;
         const hours = Array.from({ length: 14 }, (_, i) => startHour + i);
-        const cellHeight = 60;
+        const cellHeight = 90;
 
         const lectureBlocks = [];
         const cyberLectures = [];
@@ -406,28 +405,33 @@ export default function TimetablePage() {
             `}</style>
 
             <div className="max-w-6xl mx-auto px-4 py-8">
-                <div className="text-center mb-8">
-                    <div ref={helpRef} className="relative flex justify-center items-center gap-2">
-                        <h1 className="text-4xl font-bold text-gray-800">시간표</h1>
-                        <button onClick={() => setShowHelp(!showHelp)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                            <i className="fa-solid fa-circle-question fa-lg"></i>
-                        </button>
-                        {showHelp && (
-                            <div className="absolute top-full mt-3 w-80 bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-left z-20 animate-fadeIn">
-                                <h4 className="font-bold text-md mb-2 text-gray-800">시간표 기능 사용 안내</h4>
-                                <ul className="space-y-1.5 text-sm text-gray-600 list-disc list-inside">
-                                    <li>좌측 사이드바에서 '새 시간표 만들기'로 여러 개의 시간표를 관리할 수 있습니다.</li>
-                                    <li>'수업 목록에서 검색'을 통해 학교에 개설된 실제 강의를 추가할 수 있습니다.</li>
-                                    <li>'직접 추가'를 통해 목록에 없는 일정이나 스터디 등을 자유롭게 등록하세요.</li>
-                                    <li>'이미지로 저장' 버튼을 누르면 내 시간표를 이미지 파일로 소장할 수 있습니다.</li>
-                                </ul>
-                                <button onClick={() => setShowHelp(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
-                                    <i className="fa-solid fa-times"></i>
-                                </button>
-                            </div>
-                        )}
+                <div className="mb-8 p-8 rounded-3xl bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg relative">
+                    <div className="flex items-center gap-3 mb-4">
+                        <h1 className="text-4xl font-extrabold">시간표</h1>
+                        <div ref={helpRef} className="relative">
+                            <button onClick={() => setShowHelp(!showHelp)} className="text-white/70 hover:text-white transition-colors">
+                                <i className="fa-solid fa-circle-question fa-lg"></i>
+                            </button>
+                            {showHelp && (
+                                <>
+                                    <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={() => setShowHelp(false)} />
+                                    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 max-w-[90vw] bg-white border border-gray-200 rounded-xl shadow-2xl p-5 text-left z-50 animate-fadeIn md:absolute md:top-full md:left-0 md:translate-x-0 md:translate-y-0 md:mt-3 md:w-80 md:shadow-xl text-gray-800">
+                                        <h4 className="font-bold text-md mb-2 text-gray-800">시간표 기능 사용 안내</h4>
+                                        <ul className="space-y-1.5 text-sm text-gray-600 list-disc list-inside">
+                                            <li>좌측 사이드바에서 '새 시간표 만들기'로 여러 개의 시간표를 관리할 수 있습니다.</li>
+                                            <li>'수업 목록에서 검색'을 통해 학교에 개설된 실제 강의를 추가할 수 있습니다.</li>
+                                            <li>'직접 추가'를 통해 목록에 없는 일정이나 스터디 등을 자유롭게 등록하세요.</li>
+                                            <li>'이미지로 저장' 버튼을 누르면 내 시간표를 이미지 파일로 소장할 수 있습니다.</li>
+                                        </ul>
+                                        <button onClick={() => setShowHelp(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                                            <i className="fa-solid fa-times"></i>
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
-                    <p className="text-xl text-gray-600 mt-4">수강신청한 강의들을 등록하고 나만의 시간표를 완성해보세요!</p>
+                    <p className="text-lg opacity-90">수강신청한 강의들을 등록하고 나만의 시간표를 완성해보세요!</p>
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-6">

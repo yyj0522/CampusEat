@@ -1,55 +1,33 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import apiClient from "@/lib/api";
 import TextEditor from "../../(main)/community/TextEditor";
 
-function ConfirmModal({ message, onConfirm, onCancel }) {
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === "Enter") {
-        onConfirm();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onConfirm]);
+const Toast = ({ message, show, onClose }) => {
+    useEffect(() => { if (show) { const timer = setTimeout(onClose, 3000); return () => clearTimeout(timer); } }, [show, onClose]);
+    if (!show) return null;
+    return <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] animate-fade-in-down"><div className="bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg text-sm font-medium flex items-center gap-2"><i className="fas fa-info-circle"></i>{message}</div></div>;
+};
 
-  return (
-    <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="modal-content bg-white rounded-xl shadow-lg p-8 text-center w-full max-w-[500px]">
-        <p className="text-lg font-medium text-gray-800 mb-8">{message}</p>
-        <div className="flex justify-center gap-4">
-          <button
-            onClick={onCancel}
-            className="bg-gray-200 text-gray-800 px-8 py-2 rounded-lg hover:bg-gray-300 transition w-1/2"
-          >
-            취소
-          </button>
-          <button
-            onClick={onConfirm}
-            className="text-white px-8 py-2 rounded-lg transition w-1/2 bg-red-500 hover:bg-red-600"
-          >
-            삭제
-          </button>
+const ConfirmModal = ({ message, onConfirm, onCancel }) => (
+    <div className="fixed inset-0 flex items-center justify-center z-[200]">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm animate-scale-up border border-gray-100">
+            <p className="text-gray-800 font-bold mb-6">{message}</p>
+            <div className="flex gap-3">
+                <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-sm hover:bg-gray-50 transition">취소</button>
+                <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition shadow-md">삭제</button>
+            </div>
         </div>
-      </div>
     </div>
-  );
-}
+);
 
 const generateRandomPastelColor = () => {
   const hue = Math.floor(Math.random() * 360);
-  const saturation = 70 + Math.random() * 10; 
-  const lightness = 90 + Math.random() * 5;   
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  return `hsl(${hue}, 85%, 96%)`;
 };
 
-export default function NoticeUploaderPage() {
-  const router = useRouter();
+export default function NoticeAdminPage() {
   const [title, setTitle] = useState("");
   const [slideCaption, setSlideCaption] = useState("");
   const [slideCaptionSmall, setSlideCaptionSmall] = useState("");
@@ -58,26 +36,29 @@ export default function NoticeUploaderPage() {
   const [editorContent, setEditorContent] = useState("");
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
+  
   const [notices, setNotices] = useState([]);
-  const [isLoadingNotices, setIsLoadingNotices] = useState(true);
-  const [editingPost, setEditingPost] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [alertMessage, setAlertMessage] = useState(null);
+  const [isListLoading, setIsListLoading] = useState(true);
+  const [editingPost, setEditingPost] = useState(null);
+  
+  const [toast, setToast] = useState({ show: false, message: "" });
   const [postToDelete, setPostToDelete] = useState(null);
 
+  const showToast = (msg) => setToast({ show: true, message: msg });
+
   const fetchNotices = useCallback(async () => {
-    setIsLoadingNotices(true);
+    setIsListLoading(true);
     try {
       const response = await apiClient.get("/posts");
       const noticePosts = response.data
         .filter((post) => post.category === "notice")
-        .sort((a, b) => new Date(b.createdAt) - new Date(b.createdAt));
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setNotices(noticePosts);
     } catch (error) {
-      console.error("공지사항 목록 로딩 실패:", error);
-      setAlertMessage("공지사항 목록을 불러오는 데 실패했습니다.");
+      showToast("목록을 불러오지 못했습니다.");
     } finally {
-      setIsLoadingNotices(false);
+      setIsListLoading(false);
     }
   }, []);
 
@@ -87,18 +68,13 @@ export default function NoticeUploaderPage() {
   }, [fetchNotices]);
 
   const resetForm = () => {
-    setTitle("");
-    setSlideCaption("");
-    setSlideCaptionSmall("");
-    setAuthorDisplayName("관리자");
-    setEditorContent("");
-    setBannerFile(null);
-    setBannerPreview(null);
-    setEditingPost(null);
-    setIsLoading(false);
+    setTitle(""); setSlideCaption(""); setSlideCaptionSmall("");
+    setAuthorDisplayName("관리자"); setEditorContent("");
+    setBannerFile(null); setBannerPreview(null);
+    setEditingPost(null); setIsLoading(false);
     setSlideBackgroundColor(generateRandomPastelColor());
-    const bannerInput = document.getElementById("banner");
-    if (bannerInput) bannerInput.value = null;
+    const fileInput = document.getElementById("banner-upload");
+    if(fileInput) fileInput.value = "";
   };
 
   const handleBannerImageChange = (e) => {
@@ -108,72 +84,51 @@ export default function NoticeUploaderPage() {
       const reader = new FileReader();
       reader.onloadend = () => setBannerPreview(reader.result);
       reader.readAsDataURL(file);
-    } else if (!editingPost) {
-      setBannerFile(null);
-      setBannerPreview(null);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return setAlertMessage("제목을 입력해주세요.");
-    if (!authorDisplayName.trim()) return setAlertMessage("작성자명을 입력해주세요.");
-    if (!editingPost && !bannerFile) return setAlertMessage("신규 작성 시 배너 이미지는 필수입니다.");
-    if (!editorContent.trim() || editorContent === "<p><br></p>")
-      return setAlertMessage("내용을 입력해주세요.");
+    if (!title.trim()) return showToast("제목을 입력해주세요.");
+    if (!editingPost && !bannerFile) return showToast("배너 이미지는 필수입니다.");
     
     setIsLoading(true);
-    setAlertMessage(null);
     try {
       let slideImageUrl = editingPost ? editingPost.slideImage : null;
       
       if (bannerFile) {
-        const bannerFormData = new FormData();
-        bannerFormData.append("file", bannerFile);
-        const uploadResponse = await apiClient.post("/uploads", bannerFormData, {
+        const formData = new FormData();
+        formData.append("file", bannerFile);
+        const uploadResponse = await apiClient.post("/uploads", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
         slideImageUrl = uploadResponse.data.imageUrl;
-        if (!slideImageUrl) throw new Error("배너 이미지 업로드 실패");
       }
-      
-      const finalSlideImage = (slideImageUrl === null || slideImageUrl === "") ? undefined : slideImageUrl;
 
-      const basePostData = {
+      const postData = {
         title,
         content: editorContent,
-        slideImage: finalSlideImage, 
+        slideImage: slideImageUrl,
         slideCaption,
         slideCaptionSmall,
         slideBackgroundColor,
         authorDisplayName,
         isAnonymous: false,
+        ...(editingPost ? {} : { category: "notice" })
       };
 
       if (editingPost) {
-        // 수정(PATCH) 요청 시: category 필드를 전송하지 않음
-        const updateData = { ...basePostData };
-        // updateData.category = editingPost.category; // 이 라인을 제거하여 400 에러 방지
-
-        await apiClient.patch(`/posts/${editingPost.id}`, updateData);
-        setAlertMessage("공지사항이 성공적으로 수정되었습니다.");
+        await apiClient.patch(`/posts/${editingPost.id}`, postData);
+        showToast("수정되었습니다.");
       } else {
-        // 생성(POST) 요청 시: category 필드를 포함
-        const createData = {
-            ...basePostData,
-            category: "notice",
-        };
-        await apiClient.post("/posts", createData);
-        setAlertMessage("공지사항이 성공적으로 작성되었습니다.");
+        await apiClient.post("/posts", postData);
+        showToast("작성되었습니다.");
       }
-      
       resetForm();
       fetchNotices();
     } catch (error) {
-      console.error("Axios 오류 객체:", error);
-      const errorMsg =
-        error.response?.data?.message || error.message || "알 수 없는 오류가 발생했습니다.";
-      setAlertMessage(`작업 실패: ${errorMsg}`);
+      showToast("오류가 발생했습니다.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -187,233 +142,140 @@ export default function NoticeUploaderPage() {
     setAuthorDisplayName(notice.authorDisplayName || "관리자");
     setEditorContent(notice.content);
     setBannerPreview(notice.slideImage);
-    setBannerFile(null);
-    setAlertMessage(null);
     window.scrollTo(0, 0);
   };
 
-  const handleDeleteClick = (notice) => {
-    setPostToDelete(notice);
-  };
-
   const executeDelete = async () => {
-    if (!postToDelete) return;
-    setIsLoading(true);
-    try {
-      await apiClient.delete(`/posts/${postToDelete.id}`);
-      setAlertMessage("공지사항이 삭제되었습니다.");
-      fetchNotices();
-    } catch (error) {
-      console.error("공지사항 삭제 오류:", error);
-      setAlertMessage("삭제 중 오류가 발생했습니다.");
-    } finally {
-      setPostToDelete(null);
-      setIsLoading(false);
-    }
+      if (!postToDelete) return;
+      try {
+          await apiClient.delete(`/posts/${postToDelete.id}`);
+          showToast("삭제되었습니다.");
+          fetchNotices();
+      } catch {
+          showToast("삭제 실패");
+      } finally {
+          setPostToDelete(null);
+      }
   };
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-100 py-12">
-        <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">
-            {editingPost ? "공지사항 수정" : "공지사항 작성"}
-          </h1>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label htmlFor="title" className="block text-lg font-semibold text-gray-700 mb-2">
-                  공지사항 제목 (리스트 노출)
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="공지사항 리스트에 표시될 제목을 입력하세요"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label htmlFor="slideCaption" className="block text-lg font-semibold text-gray-700 mb-2">
-                  슬라이드 문구 (큰 글씨 - 메인 배너 노출)
-                </label>
-                <input
-                  type="text"
-                  id="slideCaption"
-                  value={slideCaption}
-                  onChange={(e) => setSlideCaption(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="예: 든든한 노후, 지금부터 시작하세요"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label htmlFor="slideCaptionSmall" className="block text-lg font-semibold text-gray-700 mb-2">
-                  슬라이드 문구 (작은 글씨 - 메인 배너 노출)
-                </label>
-                <input
-                  type="text"
-                  id="slideCaptionSmall"
-                  value={slideCaptionSmall}
-                  onChange={(e) => setSlideCaptionSmall(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="예: 캠퍼스잇[테스트]"
-                />
-              </div>
-              <div>
-                <label htmlFor="author" className="block text-lg font-semibold text-gray-700 mb-2">
-                  작성자명
-                </label>
-                <input
-                  type="text"
-                  id="author"
-                  value={authorDisplayName}
-                  onChange={(e) => setAuthorDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="예: 관리자"
-                />
-              </div>
-              <div>
-                 <label htmlFor="banner" className="block text-lg font-semibold text-gray-700 mb-2">
-                  배너 이미지 {editingPost && "(수정 시에만 선택 사항)"}
-                </label>
-                <input
-                  type="file"
-                  id="banner"
-                  accept="image/*"
-                  onChange={handleBannerImageChange}
-                  className="w-full text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200"
-                />
-              </div>
+    <div className="space-y-10">
+        <div className="flex justify-between items-center">
+            <div>
+                <h2 className="text-2xl font-extrabold text-gray-900">공지사항 관리</h2>
+                <p className="text-sm text-gray-500 mt-1">메인 배너 및 공지사항 게시글을 관리합니다.</p>
             </div>
-            
-            {bannerPreview && (
-              <div className="mt-4 space-y-2">
-                <span className="text-md font-medium text-gray-600">
-                  배너 미리보기 (홈 화면 적용 예시)
-                </span>
-                <div 
-                    className="relative w-full aspect-[21/8] overflow-hidden rounded-[2rem] shadow-lg flex"
-                    style={{ backgroundColor: slideBackgroundColor }}
-                >
-                    <div className="w-3/5 h-full flex flex-col justify-center pl-10 pr-4 z-10">
-                        <h2 className="text-3xl font-extrabold text-gray-900 leading-tight mb-3 break-keep">
-                            {slideCaption || "슬라이드 문구 (큰 글씨)"}
-                        </h2>
-                        <p className="text-gray-600 text-lg font-medium">
-                            {slideCaptionSmall || "슬라이드 문구 (작은 글씨)"}
-                        </p>
-                        <div className="mt-6 px-5 py-2.5 bg-black text-white text-sm font-bold rounded-lg w-fit shadow-md">
-                            자세히보기
+            {editingPost && (
+                <button onClick={resetForm} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-300">
+                    작성 모드로 전환
+                </button>
+            )}
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-6 border-b pb-4">
+                    {editingPost ? "공지사항 수정" : "새 공지사항 작성"}
+                </h3>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">제목</label>
+                        <input type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-black transition-all" placeholder="제목을 입력하세요" />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                         <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">작성자명</label>
+                            <input type="text" value={authorDisplayName} onChange={e => setAuthorDisplayName(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none" />
+                        </div>
+                         <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">배경색 (Hex)</label>
+                            <div className="flex gap-2">
+                                <input type="text" value={slideBackgroundColor} onChange={e => setSlideBackgroundColor(e.target.value)} className="flex-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none" />
+                                <div className="w-10 h-10 rounded-xl shadow-inner border border-gray-200" style={{ backgroundColor: slideBackgroundColor }}></div>
+                                <button type="button" onClick={() => setSlideBackgroundColor(generateRandomPastelColor())} className="p-3 bg-gray-100 rounded-xl hover:bg-gray-200"><i className="fas fa-sync-alt text-gray-500"></i></button>
+                            </div>
                         </div>
                     </div>
-                    <div className="absolute top-0 right-0 w-2/5 h-full flex items-center justify-center">
-                         <img 
-                            src={bannerPreview} 
-                            alt="배너 미리보기" 
-                            className="w-full h-full object-cover" 
-                         />
-                    </div>
-                </div>
-                <div className="flex justify-end">
-                    <button 
-                        type="button"
-                        onClick={() => setSlideBackgroundColor(generateRandomPastelColor())}
-                        className="text-sm text-gray-500 hover:text-purple-600 underline"
-                    >
-                        배경색 변경하기 (랜덤)
-                    </button>
-                </div>
-              </div>
-            )}
-            
-            <div>
-              <label className="block text-lg font-semibold text-gray-700 mb-2">
-                내용 (본문 이미지 첨부 가능)
-              </label>
-              <TextEditor initialContent={editorContent} onContentChange={setEditorContent} />
-            </div>
-            
-            <div className="flex justify-end items-center gap-4">
-              {alertMessage && (
-                <div
-                  className={`p-3 rounded-lg text-center font-medium ${
-                    alertMessage.includes("실패") || alertMessage.includes("오류")
-                      ? "bg-red-100 text-red-700"
-                      : "bg-green-100 text-green-700"
-                  }`}
-                >
-                  {alertMessage}
-                </div>
-              )}
-              {editingPost && (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-6 py-3 bg-gray-500 text-white text-lg font-semibold rounded-lg hover:bg-gray-600 transition duration-300"
-                >
-                  수정 취소
-                </button>
-              )}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-10 py-3 bg-purple-600 text-white text-lg font-semibold rounded-lg hover:bg-purple-700 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {editingPost ? (isLoading ? "수정 중..." : "공지사항 수정") : isLoading ? "작성 중..." : "공지사항 작성"}
-              </button>
-            </div>
-          </form>
-          <hr className="my-12 border-t-2 border-gray-100" />
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">공지사항 목록</h2>
-            <div className="space-y-4">
-              {isLoadingNotices ? (
-                <p className="text-gray-500">목록을 불러오는 중...</p>
-              ) : notices.length === 0 ? (
-                <p className="text-gray-500">작성된 공지사항이 없습니다.</p>
-              ) : (
-                notices.map((notice) => (
-                  <div key={notice.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg shadow-sm">
+
                     <div>
-                      <span className="text-lg font-medium text-gray-700">{notice.title}</span>
-                      <span className="text-sm text-gray-500 ml-3">
-                        ({notice.authorDisplayName || "알 수 없음"})
-                      </span>
-                      {notice.slideCaption && (
-                         <p className="text-xs text-gray-400 mt-1">
-                             슬라이드: {notice.slideCaption} / {notice.slideCaptionSmall}
-                         </p>
-                      )}
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">배너 문구 (메인/서브)</label>
+                        <div className="space-y-2">
+                            <input type="text" value={slideCaption} onChange={e => setSlideCaption(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none" placeholder="큰 문구 (예: 든든한 식사)" />
+                            <input type="text" value={slideCaptionSmall} onChange={e => setSlideCaptionSmall(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none" placeholder="작은 문구 (예: 캠퍼스잇에서)" />
+                        </div>
                     </div>
-                    <div className="space-x-3 flex-shrink-0 ml-4">
-                      <button
-                        onClick={() => handleEditClick(notice)}
-                        className="text-sm font-medium text-blue-600 hover:underline"
-                      >
-                        수정
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(notice)}
-                        className="text-sm font-medium text-red-600 hover:underline"
-                      >
-                        삭제
-                      </button>
+
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">배너 이미지</label>
+                        <div className="flex items-center gap-4">
+                            <label htmlFor="banner-upload" className="cursor-pointer px-4 py-3 bg-gray-50 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:bg-gray-100 transition flex items-center gap-2">
+                                <i className="fas fa-image"></i> 파일 선택
+                            </label>
+                            <input id="banner-upload" type="file" accept="image/*" onChange={handleBannerImageChange} className="hidden" />
+                            {bannerFile && <span className="text-xs text-blue-600 font-bold">{bannerFile.name}</span>}
+                        </div>
                     </div>
-                  </div>
-                ))
-              )}
+
+                    {bannerPreview && (
+                         <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shadow-inner border border-gray-100" style={{ backgroundColor: slideBackgroundColor }}>
+                            <div className="absolute inset-0 flex flex-col justify-center pl-8 z-10">
+                                <h2 className="text-2xl font-extrabold text-gray-900 mb-1">{slideCaption}</h2>
+                                <p className="text-gray-600 font-medium">{slideCaptionSmall}</p>
+                            </div>
+                            <img src={bannerPreview} alt="Preview" className="absolute right-0 top-0 h-full w-1/2 object-cover mask-image-gradient" />
+                        </div>
+                    )}
+
+                    <div className="min-h-[300px] border border-gray-200 rounded-xl overflow-hidden">
+                        <TextEditor initialContent={editorContent} onContentChange={setEditorContent} />
+                    </div>
+
+                    <button type="submit" disabled={isLoading} className="w-full py-4 bg-black text-white rounded-xl font-bold text-lg shadow-lg hover:bg-gray-800 transition transform active:scale-99 disabled:opacity-50">
+                        {isLoading ? "처리 중..." : (editingPost ? "수정 완료" : "공지사항 등록")}
+                    </button>
+                </form>
             </div>
-          </div>
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">공지사항 목록</h3>
+                {isListLoading ? (
+                    <div className="text-center py-10 text-gray-400">로딩 중...</div>
+                ) : notices.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400 bg-white rounded-2xl border border-gray-200">공지사항이 없습니다.</div>
+                ) : (
+                    <div className="space-y-3 max-h-[800px] overflow-y-auto pr-2 scrollbar-hide">
+                        {notices.map(notice => (
+                            <div key={notice.id} className={`p-5 bg-white border rounded-2xl transition-all group ${editingPost?.id === notice.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-100 hover:border-gray-300 shadow-sm'}`}>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 mb-1">{notice.title}</h4>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                            <span>{notice.authorDisplayName}</span>
+                                            <span>·</span>
+                                            <span>{new Date(notice.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => handleEditClick(notice)} className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-blue-100 hover:text-blue-600 transition"><i className="fas fa-pen text-xs"></i></button>
+                                        <button onClick={() => setPostToDelete(notice)} className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-red-100 hover:text-red-600 transition"><i className="fas fa-trash text-xs"></i></button>
+                                    </div>
+                                </div>
+                                {notice.slideCaption && (
+                                    <div className="mt-3 px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-500 flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full border border-gray-300" style={{ backgroundColor: notice.slideBackgroundColor }}></div>
+                                        <span className="truncate">{notice.slideCaption}</span>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
-      </div>
-      {postToDelete && (
-        <ConfirmModal
-          message="공지사항을 삭제하시겠습니까?"
-          onConfirm={executeDelete}
-          onCancel={() => setPostToDelete(null)}
-        />
-      )}
-    </>
+
+        {postToDelete && <ConfirmModal message="정말 삭제하시겠습니까?" onConfirm={executeDelete} onCancel={() => setPostToDelete(null)} />}
+        {toast.show && <Toast message={toast.message} show={toast.show} onClose={() => setToast({ show: false, message: "" })} />}
+    </div>
   );
 }

@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthProvider";
 import apiClient from "@/lib/api";
-import '../../styles/style.css';
+import { FaUserEdit, FaKey, FaUniversity, FaSignOutAlt, FaUserSlash, FaChevronRight, FaPen, FaCommentDots, FaStar } from "react-icons/fa";
+
 
 const AlertModal = ({ message, onClose }) => {
     useEffect(() => {
@@ -12,24 +13,47 @@ const AlertModal = ({ message, onClose }) => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
+
     return (
-        <div className="modal-overlay">
-            <div className="modal-content w-full max-w-sm text-center">
-                <p className="text-lg mb-6">{message}</p>
-                <button onClick={onClose} className="bg-blue-600 text-white px-8 py-2 rounded-lg w-full hover:bg-blue-700 transition">확인</button>
+        <div className="fixed inset-0 flex items-center justify-center z-[200] p-4" onClick={onClose}>
+             <style>{`
+                @keyframes scaleUp {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-scaleUp {
+                    animation: scaleUp 0.2s ease-out forwards;
+                }
+            `}</style>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-scaleUp border border-gray-100" onClick={(e) => e.stopPropagation()}>
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
+                    <i className="fas fa-info text-2xl text-blue-500"></i>
+                </div>
+                <p className="text-gray-800 font-medium text-lg mb-8 break-keep">{message}</p>
+                <button onClick={onClose} className="w-full py-3.5 bg-black text-white rounded-2xl font-bold text-sm shadow-md hover:bg-gray-800 transition active:scale-95">확인</button>
             </div>
         </div>
     );
 };
 
-const ConfirmModal = ({ message, onConfirm, onCancel }) => {
+const ConfirmModal = ({ message, onConfirm, onCancel, isDestructive = false }) => {
     return (
-        <div className="modal-overlay">
-            <div className="modal-content w-full max-w-sm text-center">
-                <p className="text-lg mb-8">{message}</p>
-                <div className="flex justify-center gap-4">
-                    <button onClick={onCancel} className="px-4 py-2 w-full border rounded-lg hover:bg-gray-100">취소</button>
-                    <button onClick={onConfirm} className="px-4 py-2 w-full bg-blue-600 text-white rounded-lg hover:bg-blue-700">확인</button>
+        <div className="fixed inset-0 flex items-center justify-center z-[200] p-4">
+            <style>{`
+                @keyframes scaleUp {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-scaleUp {
+                    animation: scaleUp 0.2s ease-out forwards;
+                }
+            `}</style>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-scaleUp border border-gray-100">
+                <h3 className="text-xl font-extrabold text-gray-900 mb-4">확인</h3>
+                <p className="text-gray-600 font-medium mb-8 break-keep">{message}</p>
+                <div className="flex gap-3">
+                    <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
+                    <button onClick={onConfirm} className={`flex-1 text-white py-3.5 rounded-2xl font-bold text-sm transition shadow-md ${isDestructive ? 'bg-red-500 hover:bg-red-600' : 'bg-black hover:bg-gray-800'}`}>확인</button>
                 </div>
             </div>
         </div>
@@ -55,13 +79,19 @@ const ChangeNicknameModal = ({ isOpen, onClose, currentNickname, onSave, showAle
 
     if (!isOpen) return null;
     return (
-        <div className="modal-overlay">
-            <div className="modal-content w-full max-w-md">
-                <h3 className="text-xl font-bold mb-4">닉네임 변경</h3>
-                <input type="text" value={newNickname} onChange={(e) => setNewNickname(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="새 닉네임을 입력하세요" />
-                <div className="flex justify-end gap-2 mt-4">
-                    <button onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-100">취소</button>
-                    <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-scaleUp border border-gray-100">
+                <h3 className="text-xl font-extrabold text-gray-900 mb-6">닉네임 변경</h3>
+                <input 
+                    type="text" 
+                    value={newNickname} 
+                    onChange={(e) => setNewNickname(e.target.value)} 
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all font-medium mb-6" 
+                    placeholder="새 닉네임을 입력하세요" 
+                />
+                <div className="flex justify-end gap-3">
+                    <button onClick={onClose} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition">취소</button>
+                    <button onClick={handleSave} disabled={isSaving} className="flex-[2] py-3.5 bg-black text-white rounded-xl font-bold text-sm shadow-lg hover:bg-gray-800 transition disabled:opacity-70">
                         {isSaving ? '저장 중...' : '저장'}
                     </button>
                 </div>
@@ -94,17 +124,17 @@ const ChangePasswordModal = ({ isOpen, onClose, showAlert, onSave }) => {
 
     if (!isOpen) return null;
     return (
-        <div className="modal-overlay">
-            <div className="modal-content w-full max-w-md">
-                <h3 className="text-xl font-bold mb-4">비밀번호 변경</h3>
-                <div className="space-y-3">
-                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="현재 비밀번호" />
-                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="새 비밀번호 (4자 이상)" />
-                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full border p-2 rounded-lg" placeholder="새 비밀번호 확인" />
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-scaleUp border border-gray-100">
+                <h3 className="text-xl font-extrabold text-gray-900 mb-6">비밀번호 변경</h3>
+                <div className="space-y-4 mb-8">
+                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all" placeholder="현재 비밀번호" />
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all" placeholder="새 비밀번호 (4자 이상)" />
+                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all" placeholder="새 비밀번호 확인" />
                 </div>
-                <div className="flex justify-end gap-2 mt-4">
-                    <button onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-100">취소</button>
-                    <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
+                <div className="flex justify-end gap-3">
+                    <button onClick={onClose} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition">취소</button>
+                    <button onClick={handleSave} disabled={isSaving} className="flex-[2] py-3.5 bg-black text-white rounded-xl font-bold text-sm shadow-lg hover:bg-gray-800 transition disabled:opacity-70">
                         {isSaving ? '변경 중...' : '변경하기'}
                     </button>
                 </div>
@@ -125,7 +155,13 @@ const ChangeUniversityModal = ({ isOpen, onClose, onSave, showAlert }) => {
         const fetchUniversities = async () => {
             try {
                 const response = await apiClient.get('/universities');
-                setAllUniversities(response.data.sort());
+                let data = [];
+                if (Array.isArray(response.data)) {
+                    data = response.data.map(item => typeof item === 'object' && item.name ? item.name : item);
+                } else if (response.data && Array.isArray(response.data.universities)) {
+                    data = response.data.universities.map(item => typeof item === 'object' && item.name ? item.name : item);
+                }
+                setAllUniversities(data.sort());
             } catch (error) {
                 console.error("대학교 목록 로딩 오류:", error);
                 showAlert("대학교 목록을 불러오는 데 실패했습니다.");
@@ -135,18 +171,25 @@ const ChangeUniversityModal = ({ isOpen, onClose, onSave, showAlert }) => {
         };
         if (isOpen) {
             fetchUniversities();
+            setSearchTerm("");
+            setSelectedUniversity(null);
         }
     }, [isOpen, showAlert]);
 
-    useEffect(() => {
-        if (searchTerm) {
-            setFilteredUniversities(
-                allUniversities.filter(uni => uni.toLowerCase().includes(searchTerm.toLowerCase()))
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        setSelectedUniversity(null);
+
+        if (value.trim()) {
+            const filtered = allUniversities.filter(uni => 
+                uni.toLowerCase().includes(value.toLowerCase())
             );
+            setFilteredUniversities(filtered);
         } else {
             setFilteredUniversities([]);
         }
-    }, [searchTerm, allUniversities]);
+    };
 
     const handleSelectUniversity = (university) => {
         setSearchTerm(university);
@@ -167,38 +210,40 @@ const ChangeUniversityModal = ({ isOpen, onClose, onSave, showAlert }) => {
 
     if (!isOpen) return null;
     return (
-        <div className="modal-overlay">
-            <div className="modal-content w-full max-w-md">
-                <h3 className="text-xl font-bold mb-4">대학교 변경</h3>
-                <div className="relative">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-scaleUp overflow-visible border border-gray-100">
+                <h3 className="text-xl font-extrabold text-gray-900 mb-6">대학교 변경</h3>
+                <div className="relative mb-8">
                     <input
                         type="text"
                         value={searchTerm}
-                        onChange={(e) => {
-                            setSearchTerm(e.target.value);
-                            setSelectedUniversity(null);
-                        }}
-                        className="w-full border p-2 rounded-lg"
+                        onChange={handleSearchChange}
+                        className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all"
                         placeholder="대학교 이름을 검색하세요"
                         disabled={isLoading}
                     />
-                    {searchTerm && filteredUniversities.length > 0 && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {searchTerm && filteredUniversities.length > 0 && !selectedUniversity && (
+                        <div className="absolute z-[9999] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl max-h-80 overflow-y-auto">
                             {filteredUniversities.map(uni => (
                                 <div
                                     key={uni}
                                     onClick={() => handleSelectUniversity(uni)}
-                                    className="p-2 hover:bg-gray-100 cursor-pointer"
+                                    className="p-3 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-50 last:border-none"
                                 >
                                     {uni}
                                 </div>
                             ))}
                         </div>
                     )}
+                    {searchTerm && filteredUniversities.length === 0 && !selectedUniversity && (
+                         <div className="absolute z-[9999] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl p-3 text-center text-sm text-gray-500">
+                            검색 결과가 없습니다.
+                        </div>
+                    )}
                 </div>
-                <div className="flex justify-end gap-2 mt-4">
-                    <button onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-100">취소</button>
-                    <button onClick={handleSave} disabled={isSaving || !selectedUniversity} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400">
+                <div className="flex justify-end gap-3">
+                    <button onClick={onClose} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition">취소</button>
+                    <button onClick={handleSave} disabled={isSaving || !selectedUniversity} className="flex-[2] py-3.5 bg-black text-white rounded-xl font-bold text-sm shadow-lg hover:bg-gray-800 transition disabled:opacity-70">
                         {isSaving ? '저장 중...' : '저장'}
                     </button>
                 </div>
@@ -218,20 +263,38 @@ const DeleteAccountModal = ({ isOpen, onClose, onDelete }) => {
     };
     if (!isOpen) return null;
     return (
-        <div className="modal-overlay">
-            <div className="modal-content w-full max-w-lg">
-                <h3 className="text-xl font-bold text-red-600 mb-4">회원 탈퇴</h3>
-                <p className="text-gray-600 mb-4">정말로 회원 탈퇴를 진행하시겠습니까? 탈퇴 시 아래의 모든 데이터가 영구적으로 삭제되며, 복구할 수 없습니다.</p>
-                <ul className="list-disc list-inside bg-yellow-50 p-3 rounded-lg text-yellow-800 text-sm mb-4">
-                    <li>계정 정보 (닉네임, 이메일 등)</li>
-                    <li>작성한 모든 게시글 및 댓글</li>
-                    <li>기타 모든 활동 내역</li>
-                </ul>
-                <p className="text-gray-600 mb-2">탈퇴를 원하시면, 아래 입력창에 <strong className="text-red-600">&quot;{requiredText}&quot;</strong>를 정확히 입력해주세요.</p>
-                <input type="text" value={confirmationText} onChange={(e) => setConfirmationText(e.target.value)} className="w-full border p-2 rounded-lg" />
-                <div className="flex justify-end gap-2 mt-4">
-                    <button onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-100">취소</button>
-                    <button onClick={handleDelete} disabled={confirmationText !== requiredText || isDeleting} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 animate-scaleUp border border-gray-100">
+                <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i className="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+                    </div>
+                    <h3 className="text-xl font-extrabold text-red-600">회원 탈퇴</h3>
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-xl mb-6 text-sm text-gray-600 leading-relaxed">
+                    <p className="font-bold mb-2 text-gray-800">다음 데이터가 모두 삭제되며 복구할 수 없습니다.</p>
+                    <ul className="list-disc list-inside space-y-1 text-gray-500">
+                        <li>계정 정보 (닉네임, 이메일 등)</li>
+                        <li>작성한 모든 게시글 및 댓글</li>
+                        <li>활동 내역 및 포인트</li>
+                    </ul>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-3 text-center">
+                    탈퇴를 원하시면, 아래 입력창에 <strong className="text-gray-900 select-all">"{requiredText}"</strong>를 정확히 입력해주세요.
+                </p>
+                <input 
+                    type="text" 
+                    value={confirmationText} 
+                    onChange={(e) => setConfirmationText(e.target.value)} 
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all mb-8 text-center font-bold" 
+                    placeholder={requiredText}
+                />
+
+                <div className="flex justify-end gap-3">
+                    <button onClick={onClose} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition">취소</button>
+                    <button onClick={handleDelete} disabled={confirmationText !== requiredText || isDeleting} className="flex-[2] py-3.5 bg-red-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
                         {isDeleting ? '탈퇴 처리 중...' : '회원 탈퇴'}
                     </button>
                 </div>
@@ -241,7 +304,7 @@ const DeleteAccountModal = ({ isOpen, onClose, onDelete }) => {
 };
 
 const ActivityFeed = ({ filter, data, isLoading, router }) => {
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 5; 
     const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
@@ -250,14 +313,20 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
 
     if (isLoading) {
         return (
-            <div className="text-center py-8">
-                <div className="loading mx-auto"></div>
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
+                <p>활동 내역을 불러오는 중...</p>
             </div>
         );
     }
 
     if (!data || data.length === 0) {
-        return <p className="text-center text-gray-500 py-8">활동 내역이 없습니다.</p>;
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                <i className="far fa-folder-open text-4xl mb-3 opacity-50"></i>
+                <p>활동 내역이 없습니다.</p>
+            </div>
+        );
     }
 
     const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
@@ -265,76 +334,61 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const currentItems = data.slice(startIndex, endIndex);
 
-    const handlePrev = () => {
-        if (currentPage > 1) setCurrentPage(currentPage - 1);
-    };
-
-    const handleNext = () => {
-        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-    };
+    const handlePrev = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
+    const handleNext = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
 
     const renderItem = (item) => {
         switch (filter) {
             case "my-posts":
                 return (
                     <div
-                        className="p-5 border rounded-xl shadow-sm bg-white hover:shadow-md transition cursor-pointer"
-                        onClick={() => router.push(`/community?postId=${item.id}`)}
+                        className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+                        onClick={() => router.push(`/community/${item.id}`)}
                     >
-                        <p className="text-sm text-gray-500 mb-1">제목 :</p>
-                        <h3 className="font-bold text-lg text-gray-800 mb-3 line-clamp-1">
+                        <div className="flex justify-between items-start mb-2">
+                            <span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded-full font-bold">게시글</span>
+                            <span className="text-xs text-gray-400">{new Date(item.createdAt).toLocaleDateString("ko-KR")}</span>
+                        </div>
+                        <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1 group-hover:text-indigo-600 transition-colors">
                             {item.title}
                         </h3>
-                        <p className="text-sm text-gray-500 mb-1">본문 :</p>
-                        <p className="text-gray-700 text-sm line-clamp-2">{item.content}</p>
-                        <p className="text-xs text-gray-400 mt-3">
-                            {new Date(item.createdAt).toLocaleDateString("ko-KR")}
-                        </p>
+                        <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">{item.content}</p>
                     </div>
                 );
 
             case "my-comments":
                 return (
                     <div
-                        className="p-5 border rounded-xl shadow-sm bg-white hover:shadow-md transition cursor-pointer"
-                        onClick={() => router.push(`/community?postId=${item.post?.id}`)}
+                        className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+                        onClick={() => router.push(`/community/${item.post?.id}`)}
                     >
-                        <p className="text-sm text-gray-500 mb-1">댓글 내용 :</p>
-                        <p className="text-gray-800 text-sm mb-3 line-clamp-2">“{item.content}”</p>
-                        <p className="text-sm text-gray-500 mb-1">원문 게시글 :</p>
-                        <p className="text-blue-600 text-sm font-medium line-clamp-1">
-                            {item.post?.title || "게시글"}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-3">
-                            {new Date(item.createdAt).toLocaleDateString("ko-KR")}
-                        </p>
+                         <div className="flex justify-between items-start mb-2">
+                            <span className="bg-blue-50 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold">댓글</span>
+                            <span className="text-xs text-gray-400">{new Date(item.createdAt).toLocaleDateString("ko-KR")}</span>
+                        </div>
+                        <p className="text-gray-800 text-sm mb-3 line-clamp-2 leading-relaxed font-medium">“{item.content}”</p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
+                            <span className="font-bold text-gray-400 shrink-0">원문</span>
+                            <span className="truncate">{item.post?.title || "삭제된 게시글"}</span>
+                        </div>
                     </div>
                 );
 
             case "my-reviews":
                 return (
-                    <div className="p-5 border rounded-xl shadow-sm bg-white hover:shadow-md transition">
-                        <div className="flex items-center justify-start gap-2 mb-1">
-                            <p className="font-semibold text-gray-800">
-                                {item.restaurant?.name || "리뷰한 식당"}
-                            </p>
-                            <div className="flex items-center">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <i
-                                        key={star}
-                                        className={`fas fa-star text-sm ${
-                                            star <= item.rating
-                                                ? "text-yellow-400"
-                                                : "text-gray-300"
-                                        }`}
-                                    ></i>
-                                ))}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all">
+                         <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-2">
+                                <span className="bg-orange-50 text-orange-600 text-[10px] px-2 py-1 rounded-full font-bold">리뷰</span>
+                                <span className="font-bold text-gray-800 text-sm">{item.restaurant?.name || "알 수 없음"}</span>
+                            </div>
+                            <div className="flex items-center gap-0.5 text-xs">
+                                <i className="fas fa-star text-yellow-400"></i>
+                                <span className="font-bold text-gray-700">{item.rating}</span>
                             </div>
                         </div>
-                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">{item.content}</p>
-                        <p className="text-xs text-gray-400 mt-2">
-                            {new Date(item.createdAt).toLocaleDateString("ko-KR")}
-                        </p>
+                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed mb-2">{item.content}</p>
+                        <p className="text-xs text-gray-400 text-right">{new Date(item.createdAt).toLocaleDateString("ko-KR")}</p>
                     </div>
                 );
 
@@ -344,7 +398,7 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 animate-fadeIn">
             {currentItems.map((item) => (
                 <div key={item.id}>{renderItem(item)}</div>
             ))}
@@ -354,29 +408,19 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
                     <button
                         onClick={handlePrev}
                         disabled={currentPage === 1}
-                        className={`px-4 py-2 rounded-md border text-sm font-medium transition ${
-                            currentPage === 1
-                                ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                                : "text-blue-600 border-blue-300 hover:bg-blue-50"
-                        }`}
+                        className={`w-10 h-10 rounded-full border flex items-center justify-center transition ${currentPage === 1 ? "text-gray-300 border-gray-200 cursor-not-allowed" : "text-indigo-600 border-indigo-200 hover:bg-indigo-50 shadow-sm"}`}
                     >
-                        이전
+                        <i className="fas fa-chevron-left text-xs"></i>
                     </button>
-
-                    <span className="text-gray-600 text-sm">
+                    <span className="text-gray-600 text-sm font-medium font-mono">
                         {currentPage} / {totalPages}
                     </span>
-
                     <button
                         onClick={handleNext}
                         disabled={currentPage === totalPages}
-                        className={`px-4 py-2 rounded-md border text-sm font-medium transition ${
-                            currentPage === totalPages
-                                ? "text-gray-400 border-gray-200 cursor-not-allowed"
-                                : "text-blue-600 border-blue-300 hover:bg-blue-50"
-                        }`}
+                        className={`w-10 h-10 rounded-full border flex items-center justify-center transition ${currentPage === totalPages ? "text-gray-300 border-gray-200 cursor-not-allowed" : "text-indigo-600 border-indigo-200 hover:bg-indigo-50 shadow-sm"}`}
                     >
-                        다음
+                        <i className="fas fa-chevron-right text-xs"></i>
                     </button>
                 </div>
             )}
@@ -431,14 +475,8 @@ export default function ProfilePage() {
         fetchData();
     }, [user, activityFilter]);
 
-    const handleLogout = () => {
-        setShowLogoutConfirm(true);
-    };
-
-    const executeLogout = () => {
-        logout(); 
-        setShowLogoutConfirm(false);
-    };
+    const handleLogout = () => setShowLogoutConfirm(true);
+    const executeLogout = () => { logout(); setShowLogoutConfirm(false); };
 
     const handleUpdateNickname = async (newNickname) => {
         if (newNickname === user?.nickname) {
@@ -450,7 +488,6 @@ export default function ProfilePage() {
             showAlert("닉네임이 변경되었습니다. 변경사항은 새로고침 시 적용됩니다.");
             return true;
         } catch (error) {
-            console.error("닉네임 업데이트 실패:", error);
             showAlert(error.response?.data?.message || "닉네임 변경 중 오류가 발생했습니다.");
             return false;
         }
@@ -462,7 +499,6 @@ export default function ProfilePage() {
             showAlert("비밀번호가 성공적으로 변경되었습니다.");
             return true;
         } catch (error) {
-            console.error("비밀번호 변경 실패:", error);
             showAlert(error.response?.data?.message || "비밀번호 변경 중 오류가 발생했습니다.");
             return false;
         }
@@ -474,7 +510,6 @@ export default function ProfilePage() {
             showAlert("대학교 정보가 성공적으로 변경되었습니다. 페이지를 새로고침합니다.");
             setTimeout(() => window.location.reload(), 1500);
         } catch (error) {
-            console.error("대학교 업데이트 실패:", error);
             showAlert(error.response?.data?.message || "대학교 변경 중 오류가 발생했습니다.");
         }
     };
@@ -485,24 +520,20 @@ export default function ProfilePage() {
             showAlert("회원 탈퇴 처리가 완료되었습니다. 이용해주셔서 감사합니다.");
             logout(); 
         } catch (error) {
-            console.error("회원 탈퇴 처리 실패:", error);
             showAlert("회원 탈퇴 중 오류가 발생했습니다.");
         }
     };
 
     const activityTags = [
-        { key: 'my-posts', label: '작성한 글' },
-        { key: 'my-comments', label: '작성한 댓글' },
-        { key: 'my-reviews', label: '맛집 리뷰' },
+        { key: 'my-posts', label: '작성한 글', icon: <FaPen /> },
+        { key: 'my-comments', label: '작성한 댓글', icon: <FaCommentDots /> },
+        { key: 'my-reviews', label: '맛집 리뷰', icon: <FaStar /> },
     ];
 
     if (authLoading || !user) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="loading mx-auto"></div>
-                    <p className="mt-4 text-gray-600">사용자 정보를 불러오는 중...</p>
-                </div>
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="w-10 h-10 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
             </div>
         );
     }
@@ -510,90 +541,162 @@ export default function ProfilePage() {
     const isAdmin = user.role === 'super_admin' || user.role === 'sub_admin';
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <main className="max-w-4xl mx-auto py-12 px-4">
-                <section className="bg-white rounded-2xl shadow-lg p-8 flex flex-col md:flex-row items-center gap-8 mb-8 animate-fadeIn">
-                    <div className="relative">
-                        <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                            <i className="fas fa-user text-5xl text-white"></i>
-                        </div>
-                    </div>
-                    <div className="text-center md:text-left">
-                        <h1 className="text-4xl font-bold text-gray-800 flex items-center">
-                            {isAdmin && <span className="text-blue-500 mr-2">[관리자]</span>}
-                            {user.nickname}
-                        </h1>
-                        <div className="mt-2 flex items-center justify-center md:justify-start gap-2">
-                            <p className="text-lg text-gray-600">{user.university}</p>
-                            {isAdmin && (
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setShowUniversityModal(true)}
-                                        className="px-3 py-1 text-xs bg-blue-100 text-blue-700 font-semibold rounded-full hover:bg-blue-200 transition"
-                                    >
-                                        변경
-                                    </button>
+        <div className="min-h-screen bg-gray-50 font-sans">
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fadeIn {
+                    animation: fadeIn 0.4s ease-out forwards;
+                }
+            `}</style>
+            
+            <main className="max-w-5xl mx-auto py-12 px-4 animate-fadeIn">
+                {/* Profile Header Card */}
+                <section className="bg-white rounded-3xl shadow-xl overflow-visible mb-8">
+                    <div className="h-32 bg-gradient-to-r from-violet-600 to-fuchsia-600 relative rounded-t-3xl md:hidden"></div>
+                    <div className="px-8 py-8">
+                        <div className="flex flex-col md:flex-row items-center gap-6 md:items-center">
+                            <div className="relative -mt-16 md:mt-0">
+                                <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center shadow-lg p-1">
+                                    <div className="w-full h-full bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                                        <i className="fas fa-user text-5xl"></i>
+                                    </div>
+                                </div>
+                                {isAdmin && (
+                                    <span className="absolute bottom-1 right-1 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm border-2 border-white">ADMIN</span>
+                                )}
+                            </div>
+                            <div className="text-center md:text-left flex-1">
+                                <h1 className="text-3xl font-extrabold text-gray-900 mb-1">{user.nickname}</h1>
+                                <p className="text-gray-500 font-medium flex items-center justify-center md:justify-start gap-2">
+                                    <i className="fas fa-university text-gray-400"></i> {user.university}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">{user.universityEmail || user.email}</p>
+                            </div>
+                            <div className="flex gap-2">
+                                {isAdmin && (
                                     <button
                                         onClick={() => router.push('/admin/timetable')}
-                                        className="px-3 py-1 text-xs bg-gray-100 text-gray-700 font-semibold rounded-full hover:bg-gray-200 transition"
+                                        className="px-5 py-2.5 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition shadow-md flex items-center gap-2"
                                     >
-                                        관리
+                                        <i className="fas fa-cog"></i> 관리자 페이지
                                     </button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
-                        <p className="mt-1 text-sm text-gray-500">{user.universityEmail || user.email}</p>
                     </div>
                 </section>
 
-                <div className="space-y-10">
-                    <section>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">내 활동</h2>
-                        <div className="bg-white rounded-lg p-2 shadow-md flex flex-wrap gap-2 mb-6">
-                            {activityTags.map(tag => (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Activity Feed Section */}
+                    <section className="lg:col-span-2 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-extrabold text-gray-900">나의 활동</h2>
+                        </div>
+                        
+                        <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 inline-flex w-full md:w-auto overflow-x-auto">
+                             {activityTags.map(tag => (
                                 <button
                                     key={tag.key}
                                     onClick={() => setActivityFilter(tag.key)}
-                                    className={`px-4 py-2 rounded-md font-semibold transition-colors text-sm ${activityFilter === tag.key ? 'bg-blue-600 text-white shadow' : 'text-gray-600 hover:bg-gray-100'}`}
+                                    className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap ${activityFilter === tag.key ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
                                 >
-                                    {tag.label}
+                                    {tag.icon} {tag.label}
                                 </button>
                             ))}
                         </div>
-                        <div className="bg-white rounded-2xl shadow-lg p-6 min-h-[200px]">
+
+                        <div className="min-h-[300px]">
                             <ActivityFeed filter={activityFilter} data={activityData} isLoading={isActivityLoading} router={router} />
                         </div>
                     </section>
 
-                    <section>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">계정 설정</h2>
-                        <div className="bg-white rounded-2xl shadow-lg p-6">
-                            <ul className="space-y-2">
-                                <li onClick={() => setShowNicknameModal(true)} className="profile-list-item">
-                                    <i className="fas fa-user-edit w-6 text-gray-500"></i>
-                                    <span>닉네임 변경</span>
-                                    <i className="fas fa-chevron-right text-gray-400"></i>
-                                </li>
-                                <li onClick={() => setShowPasswordModal(true)} className="profile-list-item">
-                                    <i className="fas fa-key w-6 text-gray-500"></i>
-                                    <span>비밀번호 변경</span>
-                                    <i className="fas fa-chevron-right text-gray-400"></i>
-                                </li>
-                                <li onClick={handleLogout} className="profile-list-item text-red-600 hover:bg-red-50 font-semibold">
-                                    <i className="fas fa-sign-out-alt w-6"></i>
-                                    <span>로그아웃</span>
-                                    <i className="fas fa-chevron-right"></i>
-                                </li>
-                                <li onClick={() => setShowDeleteModal(true)} className="profile-list-item text-gray-500 hover:bg-gray-100">
-                                    <i className="fas fa-user-slash w-6"></i>
-                                    <span>회원 탈퇴</span>
-                                    <i className="fas fa-chevron-right"></i>
-                                </li>
-                            </ul>
+                    {/* Settings Sidebar */}
+                    <aside className="space-y-6">
+                        <h2 className="text-xl font-extrabold text-gray-900">계정 설정</h2>
+                        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden p-4 space-y-2">
+                            <button 
+                                onClick={() => setShowNicknameModal(true)} 
+                                className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition group text-left"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-100 transition">
+                                        <FaUserEdit />
+                                    </div>
+                                    <div>
+                                        <span className="block text-sm font-bold text-gray-800">닉네임 변경</span>
+                                        <span className="block text-xs text-gray-500">활동명을 수정합니다</span>
+                                    </div>
+                                </div>
+                                <FaChevronRight className="text-gray-300 group-hover:text-gray-500" />
+                            </button>
+
+                            <button 
+                                onClick={() => setShowPasswordModal(true)} 
+                                className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition group text-left"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-100 transition">
+                                        <FaKey />
+                                    </div>
+                                    <div>
+                                        <span className="block text-sm font-bold text-gray-800">비밀번호 변경</span>
+                                        <span className="block text-xs text-gray-500">보안을 위해 주기적으로 변경하세요</span>
+                                    </div>
+                                </div>
+                                <FaChevronRight className="text-gray-300 group-hover:text-gray-500" />
+                            </button>
+
+                            {isAdmin && (
+                                <button 
+                                    onClick={() => setShowUniversityModal(true)} 
+                                    className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition group text-left"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition">
+                                            <FaUniversity />
+                                        </div>
+                                        <div>
+                                            <span className="block text-sm font-bold text-gray-800">대학교 변경</span>
+                                            <span className="block text-xs text-gray-500">관리자 전용 기능입니다</span>
+                                        </div>
+                                    </div>
+                                    <FaChevronRight className="text-gray-300 group-hover:text-gray-500" />
+                                </button>
+                            )}
+
+                            <div className="my-2 border-t border-gray-100"></div>
+
+                            <button 
+                                onClick={handleLogout} 
+                                className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-red-50 transition group text-left"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-red-100 group-hover:text-red-500 transition">
+                                        <FaSignOutAlt />
+                                    </div>
+                                    <span className="block text-sm font-bold text-gray-600 group-hover:text-red-600">로그아웃</span>
+                                </div>
+                            </button>
+
+                            <button 
+                                onClick={() => setShowDeleteModal(true)} 
+                                className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-red-50 transition group text-left"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-red-100 group-hover:text-red-500 transition">
+                                        <FaUserSlash />
+                                    </div>
+                                    <span className="block text-sm font-bold text-gray-600 group-hover:text-red-600">회원 탈퇴</span>
+                                </div>
+                            </button>
                         </div>
-                    </section>
+                    </aside>
                 </div>
 
+                {/* Modals */}
                 <ChangeNicknameModal
                     isOpen={showNicknameModal}
                     onClose={() => setShowNicknameModal(false)}

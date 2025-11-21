@@ -69,45 +69,62 @@ export default function SubmissionModal({ isOpen, onClose, user, onShowAlert }) 
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold">우리 학교 맛집 제보하기</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">&times;</button>
+        <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={onClose}
+        >
+            <style>{`
+                @keyframes scaleUp {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-scaleUp {
+                    animation: scaleUp 0.2s ease-out forwards;
+                }
+            `}</style>
+            <div 
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-scaleUp"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="text-xl font-extrabold text-gray-900">맛집 제보하기</h3>
+                    <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"><i className="fas fa-times"></i></button>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">가게 이름 *</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full border p-2 rounded-lg" />
+                <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">가게 이름 <span className="text-red-500">*</span></label>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-black transition-all font-medium" placeholder="맛집 이름을 알려주세요" />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">위치 <span className="text-red-500">*</span></label>
+                        <input type="text" value={location} onChange={e => setLocation(e.target.value)} required className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-black transition-all" placeholder="예: 정문 앞 GS25 골목" />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">설명</label>
+                        <textarea value={description} onChange={e => setDescription(e.target.value)} rows="3" className="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-black resize-none transition-all" placeholder="이 맛집만의 특징이나 추천 메뉴를 적어주세요!"></textarea>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">위치 *</label>
-                        <input type="text" value={location} onChange={e => setLocation(e.target.value)} required className="w-full border p-2 rounded-lg" placeholder="예: 정문 앞 GS25 편의점 골목" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
-                        <textarea value={description} onChange={e => setDescription(e.target.value)} rows="3" className="w-full border p-2 rounded-lg" placeholder="이 맛집의 특징을 알려주세요!"></textarea>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">사진 첨부</label>
-                        <div className="flex items-center gap-4">
-                            <button type="button" onClick={() => fileInputRef.current.click()} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
-                                <i className="fas fa-camera mr-2"></i> 사진 선택
+                        <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider mb-2 block">사진 첨부</label>
+                        <div className="flex items-start gap-3">
+                            <button type="button" onClick={() => fileInputRef.current.click()} className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-gray-400 transition">
+                                <i className="fas fa-camera mb-1"></i>
+                                <span className="text-[10px] font-bold">추가</span>
                             </button>
                             <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-                            <span className={`text-sm ${imageFile ? 'text-red-500 font-bold' : 'text-gray-500'}`}>{imageFile ? '1 / 1' : '0 / 1'}</span>
+                            
+                            {imagePreview && (
+                                <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
+                                    <Image src={imagePreview} alt="미리보기" layout="fill" objectFit="cover" />
+                                    <button type="button" onClick={() => { setImageFile(null); setImagePreview(""); fileInputRef.current.value = null; }}
+                                        className="absolute top-1 right-1 w-5 h-5 bg-black/50 text-white rounded-full flex items-center justify-center text-[10px] hover:bg-black/70 backdrop-blur-sm transition">
+                                        <i className="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            )}
                         </div>
-                        {imagePreview && (
-                            <div className="mt-4 relative w-32 h-32">
-                                <Image src={imagePreview} alt="제보 사진 미리보기" layout="fill" objectFit="cover" className="rounded-lg" />
-                                <button type="button" onClick={() => { setImageFile(null); setImagePreview(""); fileInputRef.current.value = null; }}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">&times;</button>
-                            </div>
-                        )}
                     </div>
-                    <div className="flex justify-end space-x-3 pt-4">
-                        <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg hover:bg-gray-50" disabled={isSubmitting}>취소</button>
-                        <button id="submit-submission-button" type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" disabled={isSubmitting}>
+                    <div className="pt-2">
+                        <button type="submit" className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 transition active:scale-95 disabled:opacity-50 disabled:scale-100">
                             {isSubmitting ? '제보 중...' : '제보하기'}
                         </button>
                     </div>

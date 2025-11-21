@@ -15,12 +15,12 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
     }, [onConfirm]);
 
     return (
-        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[50]">
-            <div className="modal-content bg-white rounded-xl shadow-lg p-8 text-center w-full max-w-sm">
-                <p className="text-lg mb-8">{message}</p>
-                <div className="flex gap-4">
-                    <button onClick={onCancel} className="bg-gray-200 text-gray-800 py-2 rounded-lg w-full">취소</button>
-                    <button onClick={onConfirm} className="bg-red-500 text-white py-2 rounded-lg w-full">확인</button>
+        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60]">
+            <div className="modal-content bg-white rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm transform transition-all scale-100">
+                <p className="text-gray-800 font-medium text-lg mb-8">{message}</p>
+                <div className="flex gap-3">
+                    <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
+                    <button onClick={onConfirm} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold text-sm hover:bg-red-600 transition">확인</button>
                 </div>
             </div>
         </div>
@@ -102,71 +102,133 @@ export default function MailboxModal() {
 
     return (
         <>
-            <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="modal-content bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl h-[70vh] flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-bold">쪽지함</h3>
-                        <button onClick={setShowMailboxModal} className="text-gray-400 hover:text-gray-600">&times;</button>
+            <div 
+                className="modal-overlay fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                onClick={setShowMailboxModal}
+            >
+                <div 
+                    className="modal-content bg-white rounded-3xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden border border-gray-100"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white">
+                        <h3 className="text-2xl font-extrabold text-gray-900">쪽지함</h3>
+                        <button onClick={setShowMailboxModal} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition">
+                            <i className="fas fa-times"></i>
+                        </button>
                     </div>
-                    <div className="border-b border-gray-200">
-                        <nav className="-mb-px flex space-x-4" aria-label="Tabs">
-                            <button onClick={() => setActiveTab('inbox')} className={`${activeTab === 'inbox' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}>받은 쪽지함</button>
-                            <button onClick={() => setActiveTab('sent')} className={`${activeTab === 'sent' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}>보낸 쪽지함</button>
-                        </nav>
+                    
+                    <div className="px-6 pt-4 bg-white">
+                        <div className="flex p-1 bg-gray-100 rounded-xl">
+                            <button 
+                                onClick={() => setActiveTab('inbox')} 
+                                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'inbox' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                받은 쪽지함
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('sent')} 
+                                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'sent' ? 'bg-white text-black shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                보낸 쪽지함
+                            </button>
+                        </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto mt-4">
-                        {isLoading ? <p className="text-center pt-10">로딩 중...</p> : messages.length === 0 ? <p className="text-center text-gray-500 pt-10">쪽지가 없습니다.</p> : (
-                            <ul className="divide-y divide-gray-200">
-                                {messages.map(msg => {
-                                    const partner = activeTab === 'inbox' ? msg.sender : msg.recipient;
-                                    const partnerIsAdmin = partner?.role === 'super_admin' || partner?.role === 'sub_admin';
-                                    
-                                    let recipientNickname = partner?.nickname || '(알수없음)';
-                                    if (activeTab === 'sent' && msg.isRecipientAnonymous) {
-                                        recipientNickname = '익명';
-                                    }
 
-                                    return (
-                                        <li key={msg.id} className="p-3 group hover:bg-gray-50">
-                                            <div className="flex justify-between items-start">
+                    <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-3">
+                        {isLoading ? (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
+                                <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+                                <p className="text-sm">로딩 중...</p>
+                            </div>
+                        ) : messages.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
+                                <i className="far fa-envelope-open text-4xl opacity-50"></i>
+                                <p className="text-sm">쪽지가 없습니다.</p>
+                            </div>
+                        ) : (
+                            messages.map(msg => {
+                                const partner = activeTab === 'inbox' ? msg.sender : msg.recipient;
+                                const partnerIsAdmin = partner?.role === 'super_admin' || partner?.role === 'sub_admin';
+                                
+                                let recipientNickname = partner?.nickname || '(알수없음)';
+                                if (activeTab === 'sent' && msg.isRecipientAnonymous) {
+                                    recipientNickname = '익명';
+                                }
+
+                                return (
+                                    <div key={msg.id} className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${activeTab === 'inbox' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                                                    <i className={`fas fa-${activeTab === 'inbox' ? 'arrow-down' : 'arrow-up'}`}></i>
+                                                </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-gray-800">
-                                                        {activeTab === 'inbox' ? 
-                                                            `${partner?.nickname || '(알수없음)'} 님으로부터` : 
-                                                            `${recipientNickname} 님에게`
-                                                        }
-                                                    </p>
-                                                    {msg.sourcePostTitle && (<p className="text-xs text-gray-500 mt-1">(게시글: {msg.sourcePostTitle})</p>)}
-                                                </div>
-                                                <p className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(msg.createdAt)}</p>
-                                            </div>
-                                            <p className="mt-2 text-sm text-gray-600">{msg.content}</p>
-                                            
-                                            <div className="text-right mt-2 h-5">
-                                                <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition">
-                                                    {activeTab === 'inbox' && !partnerIsAdmin && (
-                                                        <button onClick={() => handleReply(msg)} className="text-xs text-blue-500 font-semibold hover:underline">답장하기</button>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-gray-900 text-sm">
+                                                            {activeTab === 'inbox' ? `${partner?.nickname || '(알수없음)'}` : `${recipientNickname}`}
+                                                        </span>
+                                                        <span className="text-xs text-gray-400 font-normal">
+                                                            {activeTab === 'inbox' ? '에게서 받음' : '에게 보냄'}
+                                                        </span>
+                                                    </div>
+                                                    {msg.sourcePostTitle && (
+                                                        <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                                                            <i className="far fa-file-alt"></i> {msg.sourcePostTitle}
+                                                        </div>
                                                     )}
-                                                    <button onClick={() => setMessageToDelete(msg)} className="text-xs text-red-500 font-semibold hover:underline">삭제</button>
                                                 </div>
                                             </div>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
+                                            <span className="text-xs text-gray-400 font-medium whitespace-nowrap ml-2 bg-gray-50 px-2 py-1 rounded-md">
+                                                {formatDate(msg.createdAt)}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="pl-10">
+                                            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                            
+                                            <div className="flex justify-end gap-3 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {activeTab === 'inbox' && !partnerIsAdmin && (
+                                                    <button 
+                                                        onClick={() => handleReply(msg)} 
+                                                        className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
+                                                    >
+                                                        <i className="fas fa-reply mr-1"></i> 답장
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={() => setMessageToDelete(msg)} 
+                                                    className="text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition"
+                                                >
+                                                    <i className="far fa-trash-alt mr-1"></i> 삭제
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
-                    <div className="pt-4 mt-auto flex justify-between items-center">
-                        <p className="text-xs text-gray-400"><i className="fa-solid fa-database mr-1.5"></i>모든 쪽지는 30일 후 자동 삭제됩니다.</p>
-                        <button onClick={() => setShowConfirm(true)} className="text-sm text-red-500 hover:underline">
-                            {activeTab === 'inbox' ? '받은 쪽지함 비우기' : '보낸 쪽지함 비우기'}
-                        </button>
+
+                    <div className="p-4 border-t border-gray-100 bg-white flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
+                        <div className="flex items-center text-gray-400 bg-gray-50 px-3 py-2 rounded-lg w-full sm:w-auto justify-center sm:justify-start">
+                            <i className="fas fa-info-circle mr-2"></i>
+                            <span>모든 쪽지는 30일 후 자동 삭제됩니다.</span>
+                        </div>
+                        {messages.length > 0 && (
+                            <button 
+                                onClick={() => setShowConfirm(true)} 
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 w-full sm:w-auto justify-center"
+                            >
+                                <i className="fas fa-trash"></i>
+                                <span>{activeTab === 'inbox' ? '받은 쪽지함 비우기' : '보낸 쪽지함 비우기'}</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
+            
             {showConfirm && (<ConfirmModal message={`정말로 '${activeTab === 'inbox' ? '받은' : '보낸'}' 쪽지함을 모두 비우시겠습니까?`} onConfirm={executeClearMailbox} onCancel={() => setShowConfirm(false)} />)}
             {messageToDelete && (<ConfirmModal message="이 쪽지를 삭제하시겠습니까?" onConfirm={() => handleDeleteMessage(messageToDelete.id)} onCancel={() => setMessageToDelete(null)} />)}
         </>
     );
 }
-

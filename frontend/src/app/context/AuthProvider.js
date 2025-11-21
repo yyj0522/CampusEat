@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import apiClient from '@/lib/api'; 
-import '../styles/style.css';
 
 const AuthContext = createContext();
 

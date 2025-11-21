@@ -50,7 +50,6 @@ const LinkModal = ({ isOpen, onClose, onConfirm }) => {
     );
 };
 
-
 export default function TextEditor({ initialContent, onContentChange }) {
     const editorRef = useRef(null);
     const selectionRef = useRef(null);
@@ -129,7 +128,6 @@ export default function TextEditor({ initialContent, onContentChange }) {
                     console.error("이미지 업로드 실패:", error);
                     uploadingMessage.textContent = `[${file.name} 업로드 실패]`;
                     uploadingMessage.style.color = 'red';
-                    console.error("이미지 업로드에 실패했습니다.");
                 }
             }
         }
@@ -138,14 +136,24 @@ export default function TextEditor({ initialContent, onContentChange }) {
 
     return (
         <div>
-            <div className="border border-gray-300 rounded-t-lg bg-gray-50 px-4 py-2 flex items-center space-x-2">
+            <div className="border border-gray-300 rounded-t-lg bg-gray-50 px-4 py-2 flex items-center space-x-2 flex-wrap gap-y-2">
                 <button type="button" onClick={() => formatText('bold')} className="editor-btn p-2 hover:bg-gray-200 rounded" title="굵게"><i className="fas fa-bold"></i></button>
                 <button type="button" onClick={() => formatText('italic')} className="editor-btn p-2 hover:bg-gray-200 rounded" title="기울임"><i className="fas fa-italic"></i></button>
                 <button type="button" onClick={() => formatText('underline')} className="editor-btn p-2 hover:bg-gray-200 rounded" title="밑줄"><i className="fas fa-underline"></i></button>
+                
                 <div className="border-l border-gray-300 h-6 mx-2"></div>
+                
+                <button type="button" onClick={() => formatText('justifyLeft')} className="editor-btn p-2 hover:bg-gray-200 rounded" title="왼쪽 정렬"><i className="fas fa-align-left"></i></button>
+                <button type="button" onClick={() => formatText('justifyCenter')} className="editor-btn p-2 hover:bg-gray-200 rounded" title="가운데 정렬"><i className="fas fa-align-center"></i></button>
+                <button type="button" onClick={() => formatText('justifyRight')} className="editor-btn p-2 hover:bg-gray-200 rounded" title="오른쪽 정렬"><i className="fas fa-align-right"></i></button>
+
+                <div className="border-l border-gray-300 h-6 mx-2"></div>
+
                 <button type="button" onClick={() => formatText('insertUnorderedList')} className="editor-btn p-2 hover:bg-gray-200 rounded" title="목록"><i className="fas fa-list-ul"></i></button>
                 <button type="button" onClick={openLinkModal} className="editor-btn p-2 hover:bg-gray-200 rounded" title="링크"><i className="fas fa-link"></i></button>
+                
                 <div className="border-l border-gray-300 h-6 mx-2"></div>
+                
                 <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" id="imageEditorInput" />
                 <button type="button" onClick={() => document.getElementById('imageEditorInput').click()} className="editor-btn p-2 hover:bg-gray-200 rounded" title="이미지"><i className="fas fa-image"></i></button>
             </div>

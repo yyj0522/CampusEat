@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import UserDisplay from '../../components/UserDisplay';
 
 const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
   const R = 6371; 
@@ -18,8 +17,8 @@ const WalkingDistance = ({ uniLocation, restLocation }) => {
   const distanceKm = getDistanceFromLatLonInKm(uniLocation.latitude, uniLocation.longitude, restLocation.latitude, restLocation.longitude);
   const walkingSpeedKmh = 4.5;
   const timeMinutes = Math.round((distanceKm / walkingSpeedKmh) * 60);
-  if (timeMinutes < 1) return <span className="ml-2 text-xs font-semibold text-blue-600">(바로 앞)</span>;
-  return <span className="ml-2 text-xs font-semibold text-blue-600">(도보 {timeMinutes}분)</span>;
+  if (timeMinutes < 1) return <span className="ml-2 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">바로 앞</span>;
+  return <span className="ml-2 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">도보 {timeMinutes}분</span>;
 };
 
 export default function RestaurantCard({
@@ -31,6 +30,7 @@ export default function RestaurantCard({
   const [showMenu, setShowMenu] = useState(false);
   const [showReviewImage, setShowReviewImage] = useState({});
   const menuRef = useRef(null);
+  
   const restaurantReviews = Array.isArray(reviewsByRestaurant[restaurant.id]) ? reviewsByRestaurant[restaurant.id] : [];
   const isExpanded = expandedReviews.has(restaurant.id);
   const isLiked = userLikes.has(restaurant.id);
@@ -89,136 +89,195 @@ export default function RestaurantCard({
   };
   const pageNumbers = generatePageNumbers();
 
+  const handleOpenNaverSearch = () => {
+    const query = encodeURIComponent(restaurant.name);
+    if (restaurant.latitude && restaurant.longitude) {
+      const url = `https://map.naver.com/p/search/${query}?c=17.00,${restaurant.longitude},${restaurant.latitude},0,0,0,dh`;
+      window.open(url, '_blank');
+    } else {
+      const url = `https://map.naver.com/p/search/${query}`;
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleFindRoute = () => {
+    if (!navigator.geolocation) {
+      alert("브라우저가 위치 정보를 지원하지 않습니다.");
+      return;
+    }
+    const destLat = restaurant.latitude;
+    const destLng = restaurant.longitude;
+    const destName = encodeURIComponent(restaurant.name);
+
+    if (!destLat || !destLng) {
+      alert("음식점의 위치 정보가 없어 길찾기를 할 수 없습니다.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude: startLat, longitude: startLng } = position.coords;
+        const url = `https://map.naver.com/p/directions/${startLng},${startLat},내위치/${destLng},${destLat},${destName}/-/transit`;
+        window.open(url, '_blank');
+      },
+      (error) => {
+        console.error("위치 정보 오류:", error);
+        alert("현재 위치를 가져올 수 없습니다. 위치 정보 접근을 허용해주세요.");
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
   return (
-    <div className="restaurant-card bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg">
-      <div className="relative">
-        <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-          <span className="text-gray-500 font-semibold">이미지 준비중</span>
+    <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-full flex flex-col">
+      <div className="relative h-52 w-full bg-gray-200 flex-shrink-0">
+        {restaurant.photoUrl ? (
+           <Image 
+             src={restaurant.photoUrl} 
+             alt={restaurant.name} 
+             fill 
+             className="object-cover"
+           />
+        ) : (
+           <div className="flex items-center justify-center h-full text-gray-400 bg-gray-100">
+             <i className="fas fa-image text-4xl"></i>
+           </div>
+        )}
+        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-bold text-gray-700 shadow-sm flex items-center gap-1">
+            <i className="fas fa-star text-yellow-400"></i> {restaurant.rating || "0.0"}
         </div>
       </div>
-      <div className="p-4">
-        <div className="flex justify-between items-start">
-          <h3 className="text-lg font-semibold mb-2 pr-2">{restaurant.name}</h3>
-          <div className="relative" ref={menuRef}>
-            <button onClick={() => setShowMenu(!showMenu)} className="text-gray-500 hover:text-gray-800 p-1">
-              <i className="fas fa-ellipsis-v"></i>
-            </button>
-            {showMenu && (
-              <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg z-10">
-                <button
-                  onClick={() => {
-                    openReportModal(restaurant);
-                    setShowMenu(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  신고하기
+
+      <div className="p-5 flex flex-col flex-grow">
+        <div className="flex justify-between items-start mb-3">
+            <div className="min-w-0">
+                <h3 className="text-xl font-extrabold text-gray-900 leading-tight mb-1 truncate pr-2">{restaurant.name}</h3>
+                <p className="text-sm text-gray-500 font-medium">{restaurant.category || "음식점"}</p>
+            </div>
+            
+            <div className="relative flex-shrink-0" ref={menuRef}>
+                <button onClick={() => setShowMenu(!showMenu)} className="text-gray-400 hover:text-gray-800 transition p-1">
+                    <i className="fas fa-ellipsis-v"></i>
                 </button>
-              </div>
-            )}
-          </div>
+                {showMenu && (
+                    <div className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-10 animate-fadeIn">
+                        <button
+                            onClick={() => { openReportModal(restaurant); setShowMenu(false); }}
+                            className="w-full text-left px-4 py-3 text-xs font-bold text-gray-700 hover:bg-gray-50 transition"
+                        >
+                            신고하기
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
-        <div className="flex items-center text-sm text-gray-500 mb-3">
-          <i className="fas fa-map-marker-alt mr-1"></i>
-          <span>{restaurant.vicinity}</span>
+
+        <div className="flex items-center text-sm text-gray-600 mb-4 min-h-[20px]">
+          <i className="fas fa-map-marker-alt mr-2 text-rose-500 flex-shrink-0"></i>
+          <span className="truncate mr-1">{restaurant.vicinity}</span>
           <WalkingDistance uniLocation={universityLocation} restLocation={restaurant} />
         </div>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4 text-sm">
-            <span className="flex items-center cursor-pointer" onClick={() => handleLikeToggle(restaurant.id, isLiked)}>
-              <i className={`${isLiked ? 'fas text-red-500' : 'far'} fa-heart mr-1`}></i>
-              {restaurant.likeCount || 0}
-            </span>
-            <span className="flex items-center">
-              <i className="fas fa-comment text-blue-400 mr-1"></i>
-              {reviewCount}
-            </span>
-          </div>
+
+        <div className="flex items-center justify-between mb-5 pb-5 border-b border-gray-100 mt-auto">
+            <div className="flex gap-4">
+                <button onClick={() => handleLikeToggle(restaurant.id)} className={`flex items-center gap-1.5 transition ${isLiked ? 'text-rose-500' : 'text-gray-400 hover:text-rose-500'}`}>
+                    <i className={`${isLiked ? 'fas' : 'far'} fa-heart text-lg`}></i>
+                    <span className="text-sm font-bold">{restaurant.likeCount || 0}</span>
+                </button>
+                <div className="flex items-center gap-1.5 text-gray-400">
+                    <i className="far fa-comment text-lg"></i>
+                    <span className="text-sm font-bold">{reviewCount}</span>
+                </div>
+            </div>
+            <div className="flex gap-2">
+                <button onClick={handleOpenNaverSearch} className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600 hover:bg-green-100 transition" title="상세정보">
+                    <i className="fas fa-search text-sm"></i>
+                </button>
+                <button onClick={handleFindRoute} className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 hover:bg-blue-100 transition" title="길찾기">
+                    <i className="fas fa-route text-sm"></i>
+                </button>
+            </div>
         </div>
-        <div className="flex space-x-2">
-          <button onClick={() => handleToggleReviews(restaurant.id)} className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition text-sm">리뷰보기</button>
-          <button onClick={() => openReviewModal(restaurant)} className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition text-sm">리뷰작성</button>
+
+        <div className="flex gap-2">
+             <button onClick={() => handleToggleReviews(restaurant.id)} className={`flex-1 py-3 rounded-xl text-sm font-bold transition ${isExpanded ? 'bg-gray-100 text-gray-700' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
+                {isExpanded ? '리뷰 닫기' : '리뷰 보기'}
+            </button>
+            <button onClick={() => openReviewModal(restaurant)} className="flex-1 py-3 rounded-xl text-sm font-bold bg-black text-white hover:bg-gray-800 transition shadow-md">
+                리뷰 작성
+            </button>
         </div>
       </div>
+
       {isExpanded && (
-        <div className="bg-gray-50 p-4 border-t">
-          <h4 className="font-semibold mb-3">리뷰 ({reviewCount}개)</h4>
-          <div className="space-y-3 max-h-[500px] overflow-y-auto">
+        <div className="bg-gray-50 p-5 border-t border-gray-100">
+            <div className="space-y-4">
             {currentReviews.length > 0 ? currentReviews.map(review => {
               const author = review.author;
               const isAuthorAdmin = author?.role === 'super_admin' || author?.role === 'sub_admin';
 
               return (
-                <div key={review.id} className="relative group p-3 border rounded-lg bg-white">
-                  <div className="flex items-center mb-2">
-                    <div className="text-sm mr-2 text-yellow-400">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</div>
-                    <UserDisplay
-                      userTarget={{ id: author?.id, nickname: author?.nickname }}
-                      context={{ type: 'review', id: review.id, restaurantId: restaurant.id }}
-                    >
-                      <span className="text-xs text-gray-500 cursor-pointer hover:underline">
-                        {formatDate(review.createdAt)} by {' '}
-                        {isAuthorAdmin && <span className="font-bold text-blue-500">[관리자] </span>}
-                        {author?.nickname || '탈퇴한 사용자'}
-                      </span>
-                    </UserDisplay>
+                <div key={review.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-500">
+                            {author?.nickname?.[0] || '익'}
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-1">
+                                <span className="text-sm font-bold text-gray-900">{author?.nickname || '탈퇴한 사용자'}</span>
+                                {isAuthorAdmin && <i className="fas fa-check-circle text-blue-500 text-xs"></i>}
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                                <span className="text-yellow-400">{'★'.repeat(review.rating)}</span>
+                                <span className="text-gray-300">{'★'.repeat(5 - review.rating)}</span>
+                                <span className="mx-1">·</span>
+                                <span>{formatDate(review.createdAt)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {(user && (user.id === author?.id || isAdmin)) && (
+                        <button onClick={() => handleDeleteReview(review.id, restaurant.id)} className="text-gray-300 hover:text-red-500 transition px-2">
+                             <i className="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-700 pr-8 mb-2">{review.content}</p>
+                  
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap pl-10">{review.content}</p>
 
                   {review.imageUrl && (
-                    <div className="mt-2">
-                      <button
-                        onClick={() => toggleReviewImage(review.id)}
-                        className="text-blue-500 hover:underline text-sm mb-2"
-                      >
-                        {showReviewImage[review.id] ? '사진 숨기기' : '사진 보기'}
+                    <div className="mt-3 pl-10">
+                      <button onClick={() => toggleReviewImage(review.id)} className="text-xs font-bold text-blue-500 hover:underline mb-2 flex items-center gap-1">
+                        <i className="fas fa-image"></i> {showReviewImage[review.id] ? '사진 접기' : '사진 보기'}
                       </button>
                       {showReviewImage[review.id] && (
-                        <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                          <Image
-                            src={review.imageUrl}
-                            alt="리뷰 사진"
-                            layout="fill"
-                            objectFit="contain"
-                            className="bg-gray-100"
-                          />
+                        <div className="relative w-full h-48 rounded-xl overflow-hidden border border-gray-100">
+                          <Image src={review.imageUrl} alt="리뷰 사진" fill className="object-contain bg-gray-50" />
                         </div>
                       )}
                     </div>
                   )}
-
-                  {/* [수정] 관리자이거나 작성자 본인이면 삭제 버튼 표시 */}
-                  {(user && (user.id === author?.id || isAdmin)) && (
-                    <button
-                      onClick={() => handleDeleteReview(review.id, restaurant.id)}
-                      className="absolute top-3 right-3 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="삭제"
-                    >
-                      <i className="fas fa-trash-alt fa-sm"></i>
-                    </button>
-                  )}
                 </div>
               );
-            }) : <p className="text-gray-500 text-sm text-center py-4">리뷰가 없습니다.</p>}
+            }) : <div className="text-center py-8 text-gray-400 text-sm font-medium">아직 작성된 리뷰가 없습니다.</div>}
           </div>
           {totalReviewPages > 1 && (
-            <div className="flex justify-center items-center mt-4 space-x-1 sm:space-x-2">
+            <div className="flex justify-center items-center mt-6 gap-1">
               <button
                 onClick={() => onReviewPageChange(restaurant.id, reviewCurrentPage - 1)}
                 disabled={reviewCurrentPage === 1}
-                className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-full text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Previous Page"
+                className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-700 disabled:opacity-50 transition"
               >
-                <i className="fas fa-chevron-left fa-sm"></i>
+                <i className="fas fa-chevron-left text-xs"></i>
               </button>
               {pageNumbers.map((page, index) =>
                 page === '...' ? (
-                  <span key={`ellipsis-${index}`} className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 text-gray-500">...</span>
+                  <span key={`ellipsis-${index}`} className="w-8 h-8 flex items-center justify-center text-gray-300 font-bold text-xs">...</span>
                 ) : (
                   <button
                     key={page}
                     onClick={() => onReviewPageChange(restaurant.id, page)}
-                    className={`flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-full text-sm font-medium border transition-colors duration-200 ${reviewCurrentPage === page ? 'bg-blue-600 text-white border-blue-600 shadow-md cursor-default' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}
+                    className={`w-8 h-8 rounded-full text-xs font-bold transition ${reviewCurrentPage === page ? 'bg-black text-white' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}
                   >
                     {page}
                   </button>
@@ -227,10 +286,9 @@ export default function RestaurantCard({
               <button
                 onClick={() => onReviewPageChange(restaurant.id, reviewCurrentPage + 1)}
                 disabled={reviewCurrentPage === totalReviewPages}
-                className="flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-full text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Next Page"
+                className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-700 disabled:opacity-50 transition"
               >
-                <i className="fas fa-chevron-right fa-sm"></i>
+                <i className="fas fa-chevron-right text-xs"></i>
               </button>
             </div>
           )}
