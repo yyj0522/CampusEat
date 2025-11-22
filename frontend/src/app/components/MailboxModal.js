@@ -15,7 +15,7 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
     }, [onConfirm]);
 
     return (
-        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60]">
+        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[60]">
             <div className="modal-content bg-white rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm transform transition-all scale-100">
                 <p className="text-gray-800 font-medium text-lg mb-8">{message}</p>
                 <div className="flex gap-3">
@@ -47,7 +47,7 @@ export default function MailboxModal() {
             const response = await apiClient.get(endpoint);
             setMessages(response.data);
         } catch (error) {
-            console.error("쪽지 목록 로딩 오류:", error);
+            console.error(error);
             setMessages([]);
         } finally {
             setIsLoading(false);
@@ -73,7 +73,7 @@ export default function MailboxModal() {
             setMessages(prev => prev.filter(msg => msg.id !== messageId));
             showAlert("쪽지를 삭제했습니다.");
         } catch (error) {
-            console.error("쪽지 삭제 오류:", error);
+            console.error(error);
             showAlert("쪽지 삭제 중 오류가 발생했습니다.");
         } finally {
             setMessageToDelete(null);
@@ -89,7 +89,7 @@ export default function MailboxModal() {
             setMessages([]);
             showAlert("쪽지함을 비웠습니다.");
         } catch (error) {
-            console.error("쪽지함 비우기 오류:", error);
+            console.error(error);
             showAlert("쪽지함을 비우는 중 오류가 발생했습니다.");
         }
     };
@@ -103,7 +103,7 @@ export default function MailboxModal() {
     return (
         <>
             <div 
-                className="modal-overlay fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                className="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4"
                 onClick={setShowMailboxModal}
             >
                 <div 
