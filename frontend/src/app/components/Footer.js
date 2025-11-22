@@ -21,7 +21,7 @@ export default function Footer() {
         { name: "맛집 추천", path: "/restaurant" },
         { name: "번개모임", path: "/meeting" },
         { name: "자유게시판", path: "/community" },
-        { name: "시간표", path: "/timetable" },
+        { name: "시간표", path: "/time" },
         { name: "교재거래", path: "/book" },
       ]
     },
