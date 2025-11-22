@@ -49,7 +49,7 @@ const ChatView = ({ user, trade, socket, onKickUser, onLeaveTrade, onCompleteTra
         };
     }, [socket, trade]);
 
-    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [messages]);
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
