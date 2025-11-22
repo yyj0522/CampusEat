@@ -15,8 +15,8 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
     }, [onConfirm]);
 
     return (
-        <div className="modal-overlay fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[60]">
-            <div className="modal-content bg-white rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm transform transition-all scale-100">
+        <div className="modal-overlay fixed inset-0 flex items-center justify-center z-[60]">
+            <div className="modal-content bg-white rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm transform transition-all scale-100 border border-gray-100">
                 <p className="text-gray-800 font-medium text-lg mb-8">{message}</p>
                 <div className="flex gap-3">
                     <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition">취소</button>

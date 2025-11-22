@@ -54,7 +54,7 @@ const ChatView = ({ user, meeting, socket, onKickUser, onLeaveMeeting, onAcknowl
         return () => { socket.off("newMessage", handleMsg); socket.emit("leaveRoom", meeting.id); };
     }, [socket, meeting, isKicked, isDeletedByAdmin]);
 
-    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [messages]);
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
