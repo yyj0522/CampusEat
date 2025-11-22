@@ -274,7 +274,7 @@ export default function MeetingPage() {
 
     useEffect(() => {
         if (!authLoading && user) {
-            const s = io("http://localhost:3000/gatherings", { query: { userId: user.id } });
+            const s = io("http://158.180.68.205:3000/gatherings", { query: { userId: user.id } });
             setSocket(s);
             s.on("updateGathering", (u) => {
                 setMyGatherings(p => p.map(g => g.id === u.id ? u : g).filter(g => g.status === "deleted_by_admin" || new Date(g.datetime) > new Date()));

@@ -126,7 +126,7 @@ export default function TimetableAdminPage() {
     formData.append('universityId', selectedPdfParser.id);
 
     try {
-      const response = await fetch('http://localhost:3000/api/timetable/preview/pdf', {
+      const response = await fetch('http://158.180.68.205:3000/api/timetable/preview/pdf', {
         method: 'POST',
         body: formData,
       });
@@ -166,7 +166,7 @@ export default function TimetableAdminPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/timetable/save', {
+      const response = await fetch('http://158.180.68.205:3000/api/timetable/save', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ export default function TimetableAdminPage() {
     resetPreview();
 
     try {
-      const response = await fetch('http://localhost:3000/api/timetable/preview/scrape', {
+      const response = await fetch('http://158.180.68.205:3000/api/timetable/preview/scrape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ export default function TimetableAdminPage() {
     resetPreview();
 
     try {
-      const response = await fetch('http://localhost:3000/api/timetable/preview/scrape-dynamic', {
+      const response = await fetch('http://158.180.68.205:3000/api/timetable/preview/scrape-dynamic', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

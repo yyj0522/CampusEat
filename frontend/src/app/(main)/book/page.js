@@ -350,7 +350,7 @@ export default function BookPage() {
 
     useEffect(() => {
         if (!authLoading && user) {
-            const newSocket = io('http://localhost:3000/trades', { query: { userId: user.id } });
+            const newSocket = io('http://158.180.68.205:3000/trades', { query: { userId: user.id } });
             setSocket(newSocket);
             newSocket.on('updateTrade', (updatedTrade) => {
                 setAllTrades(prev => prev.map(t => t.id === updatedTrade.id ? updatedTrade : t));
