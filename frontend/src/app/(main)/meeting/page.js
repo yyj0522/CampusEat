@@ -382,7 +382,7 @@ export default function MeetingPage() {
                             )}
                         </div>
                     </div>
-                    <p className="text-lg opacity-90">오늘 뭐 하지? 고민될 땐, 캠퍼시트 번개모임! 같은 학교 학우들과 다양한 취미, 카풀을 즐겨보세요.</p>
+                    <p className="text-lg opacity-90">오늘 뭐 하지? 고민될 땐, 캠퍼스잇 번개모임! 같은 학교 학우들과 다양한 취미, 모임을 즐겨보세요.</p>
                 </div>
 
                 <div className="flex justify-center mb-8">

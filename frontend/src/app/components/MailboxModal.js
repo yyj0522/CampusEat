@@ -5,6 +5,25 @@ import { useUserInteraction } from "../context/UserInteractionProvider";
 import { useAuth } from "../context/AuthProvider";
 import apiClient from "@/lib/api";
 
+const AlertModal = ({ message, onClose }) => {
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Enter') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    return (
+        <div className="fixed inset-0 flex items-center justify-center z-[70]">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm transform transition-all scale-100 border border-gray-100">
+                <p className="text-gray-800 font-medium text-lg mb-8">{message}</p>
+                <button onClick={onClose} className="bg-black text-white w-full py-3 rounded-xl font-bold text-sm hover:bg-gray-800 transition">확인</button>
+            </div>
+        </div>
+    );
+};
+
 const ConfirmModal = ({ message, onConfirm, onCancel }) => {
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -15,8 +34,8 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
     }, [onConfirm]);
 
     return (
-        <div className="modal-overlay fixed inset-0 flex items-center justify-center z-[60]">
-            <div className="modal-content bg-white rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm transform transition-all scale-100 border border-gray-100">
+        <div className="fixed inset-0 flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 text-center w-full max-w-sm transform transition-all scale-100 border border-gray-100">
                 <p className="text-gray-800 font-medium text-lg mb-8">{message}</p>
                 <div className="flex gap-3">
                     <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
@@ -28,13 +47,14 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => {
 };
 
 export default function MailboxModal() {
-    const { showMailboxModal, setShowMailboxModal, openDmModal, showAlert } = useUserInteraction();
+    const { showMailboxModal, setShowMailboxModal, openDmModal } = useUserInteraction();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('inbox');
     const [messages, setMessages] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [messageToDelete, setMessageToDelete] = useState(null);
+    const [localAlert, setLocalAlert] = useState(null);
 
     const fetchMessages = useCallback(async () => {
         if (!showMailboxModal || !user) {
@@ -71,10 +91,10 @@ export default function MailboxModal() {
         try {
             await apiClient.delete(`/messages/${messageId}`);
             setMessages(prev => prev.filter(msg => msg.id !== messageId));
-            showAlert("쪽지를 삭제했습니다.");
+            setLocalAlert("쪽지를 삭제했습니다.");
         } catch (error) {
             console.error(error);
-            showAlert("쪽지 삭제 중 오류가 발생했습니다.");
+            setLocalAlert("쪽지 삭제 중 오류가 발생했습니다.");
         } finally {
             setMessageToDelete(null);
         }
@@ -87,10 +107,10 @@ export default function MailboxModal() {
         try {
             await apiClient.post('/messages/clear-mailbox', { type: activeTab });
             setMessages([]);
-            showAlert("쪽지함을 비웠습니다.");
+            setLocalAlert("쪽지함을 비웠습니다.");
         } catch (error) {
             console.error(error);
-            showAlert("쪽지함을 비우는 중 오류가 발생했습니다.");
+            setLocalAlert("쪽지함을 비우는 중 오류가 발생했습니다.");
         }
     };
 
@@ -103,11 +123,11 @@ export default function MailboxModal() {
     return (
         <>
             <div 
-                className="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 flex items-center justify-center z-50 p-4"
                 onClick={setShowMailboxModal}
             >
                 <div 
-                    className="modal-content bg-white rounded-3xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden border border-gray-100"
+                    className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden border border-gray-100"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white">
@@ -229,6 +249,7 @@ export default function MailboxModal() {
             
             {showConfirm && (<ConfirmModal message={`정말로 '${activeTab === 'inbox' ? '받은' : '보낸'}' 쪽지함을 모두 비우시겠습니까?`} onConfirm={executeClearMailbox} onCancel={() => setShowConfirm(false)} />)}
             {messageToDelete && (<ConfirmModal message="이 쪽지를 삭제하시겠습니까?" onConfirm={() => handleDeleteMessage(messageToDelete.id)} onCancel={() => setMessageToDelete(null)} />)}
+            {localAlert && (<AlertModal message={localAlert} onClose={() => setLocalAlert(null)} />)}
         </>
     );
 }
