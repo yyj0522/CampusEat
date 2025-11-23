@@ -71,3 +71,10 @@ frontend/.env
 frontend/.env.local
 frontend/.env.development
 frontend/.env.production
+
+# Block secrets and build artifacts
+*.zip
+*.env
+key.json
+*.env.*
+credentials.json
