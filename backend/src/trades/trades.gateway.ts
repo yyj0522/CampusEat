@@ -1,6 +1,11 @@
 import {
-  WebSocketGateway, SubscribeMessage, MessageBody,
-  ConnectedSocket, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect,
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { TradesService } from './trades.service';
@@ -9,7 +14,13 @@ import { forwardRef, Inject, Logger } from '@nestjs/common';
 @WebSocketGateway({
   namespace: 'trades',
   cors: {
-    origin: ['http://localhost:3001', 'https://campuseat.shop'],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://campuseat.shop',
+      'https://www.campuseat.shop',
+      'https://www.campuseat.shop/'
+    ],
     methods: ['GET', 'POST'],
     credentials: true,
   },

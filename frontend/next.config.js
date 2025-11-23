@@ -4,7 +4,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'campuseat-assets.s3.ap-northeast-2.amazonaws.com',
+        hostname: 'objectstorage.ap-chuncheon-1.oraclecloud.com',
         port: '',
         pathname: '/**', 
       },

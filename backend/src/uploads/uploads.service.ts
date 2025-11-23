@@ -1,54 +1,74 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import * as fs from 'fs';
+import * as common from 'oci-common';
+import * as os from 'oci-objectstorage';
 
 @Injectable()
 export class UploadsService {
-  private readonly s3Client: S3Client;
-  public readonly S3_BUCKET_NAME: string;
-  private readonly logger = new Logger(UploadsService.name);
+  private provider: common.SimpleAuthenticationDetailsProvider;
+  private client: os.ObjectStorageClient;
+  private namespace: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.s3Client = new S3Client({
-      region: this.configService.get('AWS_REGION'),
-      credentials: {
-        accessKeyId: this.configService.get('AWS_ACCESS_KEY_ID'),
-        secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY'),
-      },
+    const configuration = {
+      tenancy: this.configService.get<string>('OCI_TENANCY_ID'),
+      user: this.configService.get<string>('OCI_USER_ID'),
+      fingerprint: this.configService.get<string>('OCI_FINGERPRINT'),
+      privateKey: fs.readFileSync(
+        this.configService.get<string>('OCI_KEY_FILE_PATH'),
+        'utf8',
+      ),
+      region: common.Region.AP_CHUNCHEON_1, 
+    };
+
+    this.provider = new common.SimpleAuthenticationDetailsProvider(
+      configuration.tenancy,
+      configuration.user,
+      configuration.fingerprint,
+      configuration.privateKey,
+      null,
+      configuration.region,
+    );
+
+    this.client = new os.ObjectStorageClient({
+      authenticationDetailsProvider: this.provider,
     });
-    this.S3_BUCKET_NAME = this.configService.get('AWS_S3_BUCKET_NAME') as string;
   }
 
-  async uploadFileToS3(
+  async uploadFile(
     folder: string,
     file: Express.Multer.File,
-  ): Promise<{ key: string; s3Object: any; contentType: string }> {
+  ): Promise<{ key: string; url: string }> {
     try {
-      const originalName = Buffer.from(file.originalname, 'latin1').toString(
-        'utf8',
-      );
+      if (!this.namespace) {
+        const request: os.requests.GetNamespaceRequest = {};
+        const response = await this.client.getNamespace(request);
+        this.namespace = response.value;
+      }
 
-      const key = `${folder}/${Date.now()}_${originalName}`;
+      const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      const objectName = `${folder}/${Date.now()}_${originalName}`;
+      const bucketName = this.configService.get<string>('OCI_BUCKET_NAME');
 
-      const command = new PutObjectCommand({
-        Bucket: this.S3_BUCKET_NAME,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      });
+      const putObjectRequest: os.requests.PutObjectRequest = {
+        namespaceName: this.namespace,
+        bucketName: bucketName,
+        objectName: objectName,
+        putObjectBody: file.buffer,
+        contentType: file.mimetype,
+      };
 
-      const s3Object = await this.s3Client.send(command);
+      await this.client.putObject(putObjectRequest);
 
-      return { key, s3Object, contentType: file.mimetype };
+      const region = this.configService.get<string>('OCI_REGION');
+      const encodedName = encodeURIComponent(objectName);
+      const url = `https://objectstorage.${region}.oraclecloud.com/n/${this.namespace}/b/${bucketName}/o/${encodedName}`;
+
+      return { key: objectName, url };
     } catch (error) {
-      this.logger.error('S3 upload error:', error);
-      throw error;
+      console.error('OCI Upload Error:', error);
+      throw new InternalServerErrorException('File upload failed');
     }
-  }
-
-  public getAwsS3FileUrl(objectKey: string) {
-    return `https://${this.S3_BUCKET_NAME}.s3.${this.configService.get(
-      'AWS_REGION',
-    )}.amazonaws.com/${objectKey}`;
   }
 }

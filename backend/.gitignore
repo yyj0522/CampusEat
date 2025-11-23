@@ -55,8 +55,28 @@ pids
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+# Config files (Sensitive)
 backend/config/*.json
 config/*.json
+
+# --- [SECURITY & SECRETS] (중요: 절대 지우지 마세요) ---
+# 1. Oracle Cloud Key
+oci_api_key.pem
+*.pem
+
+# 2. Google Cloud Credentials
+google-credentials.json
 *.service-account.json
 *.key.json
 *.secret.json
+
+# 3. Archives (압축 파일 업로드 방지 - 이번 사고 원인 차단)
+*.zip
+*.tar
+*.gz
+backend_deploy.zip
+
+# 4. Other Secrets
+private.key
+public.key
+credentials.json

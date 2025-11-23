@@ -9,8 +9,7 @@ export class UploadsController {
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    const uploadedFile = await this.uploadsService.uploadFileToS3('posts', file);
-    const fileUrl = this.uploadsService.getAwsS3FileUrl(uploadedFile.key);
-    return { imageUrl: fileUrl };
+    const result = await this.uploadsService.uploadFile('posts', file);
+    return { imageUrl: result.url };
   }
 }

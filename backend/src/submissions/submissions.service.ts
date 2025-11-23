@@ -15,8 +15,8 @@ export class SubmissionsService {
   ): Promise<Submission> {
     let imageUrl: string | undefined = undefined;
     if (file) {
-      const uploadedFile = await this.uploadsService.uploadFileToS3('submissions', file);
-      imageUrl = this.uploadsService.getAwsS3FileUrl(uploadedFile.key);
+      const result = await this.uploadsService.uploadFile('submissions', file);
+      imageUrl = result.url;
     }
 
     const submission = Submission.create({

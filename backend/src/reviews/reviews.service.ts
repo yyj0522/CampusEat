@@ -40,8 +40,8 @@ export class ReviewsService {
             
             let imageUrl: string | undefined = undefined;
             if (file) {
-                const uploadedFile = await this.uploadsService.uploadFileToS3('reviews', file);
-                imageUrl = this.uploadsService.getAwsS3FileUrl(uploadedFile.key);
+                const result = await this.uploadsService.uploadFile('reviews', file);
+                imageUrl = result.url;
             }
             
             const review = manager.create(Review, { 

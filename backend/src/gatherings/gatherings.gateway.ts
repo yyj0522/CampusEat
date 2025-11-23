@@ -14,7 +14,14 @@ import { forwardRef, Inject } from '@nestjs/common';
 @WebSocketGateway({
   namespace: 'gatherings',
   cors: {
-    origin: '*',
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://campuseat.shop',
+      'https://www.campuseat.shop',
+      'https://www.campuseat.shop/'
+    ],
+    credentials: true,
   },
 })
 export class GatheringsGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -55,7 +62,7 @@ export class GatheringsGateway implements OnGatewayConnection, OnGatewayDisconne
     @ConnectedSocket() client: Socket,
   ) {
     client.leave(`gathering-${gatheringId}`);
-  }
+}
 
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
@@ -82,7 +89,7 @@ export class GatheringsGateway implements OnGatewayConnection, OnGatewayDisconne
         payload.targetUserId,
         payload.creatorId,
       );
-      
+
       const systemMessage = await this.gatheringsService.createSystemMessage(
         payload.gatheringId,
         `**${result.kickedUserNickname}**님이 강퇴당했습니다.`,
@@ -95,7 +102,7 @@ export class GatheringsGateway implements OnGatewayConnection, OnGatewayDisconne
       if (targetSocketId) {
         this.server.to(targetSocketId).emit('kicked', { title: '모임' });
       }
-      
+
       const updatedGathering = await this.gatheringsService.findOne(
         payload.gatheringId,
       );
@@ -133,7 +140,7 @@ export class GatheringsGateway implements OnGatewayConnection, OnGatewayDisconne
     this.server
       .to(`gathering-${gatheringId}`)
       .emit('newMessage', systemMessage);
-    
+
     const targetSocketId = this.clients.get(userId);
     if (targetSocketId) {
         this.server.to(targetSocketId).emit('leftMeeting', { title: '모임' });

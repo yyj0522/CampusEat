@@ -47,11 +47,8 @@ export class PostsService {
     let imageUrl: string | undefined = undefined;
 
     if (file) {
-      const uploadedFile = await this.uploadsService.uploadFileToS3(
-        'posts',
-        file,
-      );
-      imageUrl = this.uploadsService.getAwsS3FileUrl(uploadedFile.key);
+      const result = await this.uploadsService.uploadFile('posts', file);
+      imageUrl = result.url;
     }
 
     const post = this.postRepository.create({

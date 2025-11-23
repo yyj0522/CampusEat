@@ -15,7 +15,7 @@
 
 # next.js
 /.next/
- /out/
+/out/
 
 # production
 /build
@@ -30,8 +30,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (Secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +45,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# --- [SECURITY & SAFETY ADDITIONS] ---
+# 1. Archives (실수로 압축파일 업로드 방지)
+*.zip
+*.tar
+*.gz
+*.rar
+
+# 2. Cloud Keys (혹시 모를 유입 방지)
+oci_api_key.pem
+google-credentials.json
+credentials.json
+*.key
+*.secret.json
+
+# 3. IDE Settings
+.vscode/*
+!.vscode/extensions.json
+.idea/

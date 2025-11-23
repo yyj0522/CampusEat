@@ -20,7 +20,6 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.922.0",
     "@aws-sdk/s3-request-presigner": "^3.922.0",
     "@google-cloud/documentai": "^9.5.0",
     "@nestjs/common": "^11.0.1",
@@ -43,6 +42,8 @@
     "iconv-lite": "^0.7.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.9",
+    "oci-common": "^2.122.0",
+    "oci-objectstorage": "^2.122.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.16.3",
@@ -65,7 +66,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.0.0",
-    "@types/node": "^22.10.7",
+    "@types/node": "^22.19.1",
     "@types/nodemailer": "^7.0.2",
     "@types/passport-jwt": "^4.0.1",
     "@types/puppeteer": "^5.4.7",
