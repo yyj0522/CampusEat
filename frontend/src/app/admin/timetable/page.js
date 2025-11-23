@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import apiClient from "@/lib/api";
 
 const Toast = ({ message, show, onClose }) => {
@@ -183,7 +183,9 @@ export default function TimetableAdminPage() {
                 throw new Error(data.message || 'DB 저장에 실패했습니다.');
             }
 
-            showToast(`저장 완료: ${data.lectureCount}개의 강의가 저장되었습니다.`);
+            const savedCount = data.lectureCount || data.count || lectureCount;
+            showToast(`저장 완료: ${savedCount}개의 강의가 저장되었습니다.`);
+            
             resetPreview();
             setFile(null);
             setFileName('파일을 선택하세요');
