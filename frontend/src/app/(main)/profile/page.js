@@ -602,7 +602,7 @@ export default function ProfilePage() {
                                     )}
                                 </div>
                             </div>
-                            <div className="text-center md:text-left flex-1 mb-2 md:mb-4">
+                            <div className="text-center md:text-left flex-1 mb-2 md:mb-4 mt-8">
                                 <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-1 tracking-tight">{user.nickname}</h1>
                                 <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-gray-500 font-medium text-sm">
                                     <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
