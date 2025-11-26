@@ -145,13 +145,13 @@ const AlertModal = ({ message, onClose }) => {
     );
 };
 
-const ConfirmModal = ({ message, onConfirm, onCancel, confirmText = "삭제" }) => {
+const ConfirmModal = ({ message, onConfirm, onCancel, confirmText = "네" }) => {
     return (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl p-6 text-center w-full max-w-sm">
                 <p className="text-gray-800 font-medium mb-6">{message}</p>
                 <div className="flex gap-3">
-                    <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-full text-sm font-medium hover:bg-gray-200 transition">취소</button>
+                    <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-full text-sm font-medium hover:bg-gray-200 transition">아니요</button>
                     <button onClick={onConfirm} className={`flex-1 text-white py-2.5 rounded-full text-sm font-medium transition ${confirmText === "삭제" || confirmText === "거래 취소" ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}>{confirmText}</button>
                 </div>
             </div>
@@ -244,8 +244,8 @@ const CreateTradeModal = ({ user, onCreate, show, onClose }) => {
 
     if (!show) return null;
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
-            <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => onClose(false)}>
+            <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white">
                     <h3 className="text-xl font-bold text-gray-900">교재 판매하기</h3>
                     <button type="button" onClick={() => onClose(false)} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition"><i className="fas fa-times text-gray-500"></i></button>
@@ -424,8 +424,8 @@ export default function BookPage() {
 
     const handleComplete = (trade) => { setTradeToComplete(trade); };
     const handleCancel = (trade) => { setTradeToCancel(trade); };
-    const executeComplete = async () => { if (!tradeToComplete) return; try { await apiClient.post(`/trades/${tradeToComplete.id}/complete`); showAlert('거래 완료'); } catch (e) { showAlert("오류"); } finally { setTradeToComplete(null); } };
-    const executeCancel = async () => { if (!tradeToCancel) return; try { await apiClient.post(`/trades/${tradeToCancel.id}/complete`); showAlert('거래 취소됨'); } catch (e) { showAlert("오류"); } finally { setTradeToCancel(null); } };
+    const executeComplete = async () => { if (!tradeToComplete) return; try { await apiClient.post(`/trades/${tradeToComplete.id}/complete`); showAlert('거래가 완료되었습니다'); } catch (e) { showAlert("오류"); } finally { setTradeToComplete(null); } };
+    const executeCancel = async () => { if (!tradeToCancel) return; try { await apiClient.post(`/trades/${tradeToCancel.id}/complete`); showAlert('거래가 최소되었습니다'); } catch (e) { showAlert("오류"); } finally { setTradeToCancel(null); } };
     const handleKickUser = (targetUser) => { if (!socket || !selectedTrade || !user) return; socket.emit('kickUser', { tradeId: selectedTrade.id, targetUserId: targetUser.id, creatorId: user.id }); };
     const calculateDiscount = (original, selling) => { if (!original || original === 0) return 0; return Math.round(((original - selling) / original) * 100); };
 
@@ -629,8 +629,8 @@ export default function BookPage() {
 
             {showSuccessModal && <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-4 rounded-full shadow-2xl z-50 animate-bounce text-sm font-bold">완료되었습니다!</div>}
             {user && <CreateTradeModal show={showCreateModal} onCreate={handleCreateTrade} onClose={() => setShowCreateModal(false)} user={user} />}
-            {tradeToComplete && <ConfirmModal message="거래를 완료하시겠습니까?" onConfirm={executeComplete} onCancel={() => setTradeToComplete(null)} confirmText="완료" />}
-            {tradeToCancel && <ConfirmModal message="거래를 취소하시겠습니까?" onConfirm={executeCancel} onCancel={() => setTradeToCancel(null)} confirmText="취소" />}
+            {tradeToComplete && <ConfirmModal message="거래를 완료하시겠습니까?" onConfirm={executeComplete} onCancel={() => setTradeToComplete(null)} confirmText="네" />}
+            {tradeToCancel && <ConfirmModal message="거래를 취소하시겠습니까?" onConfirm={executeCancel} onCancel={() => setTradeToCancel(null)} confirmText="네" />}
             {alertModal.show && <AlertModal message={alertModal.message} onClose={() => setAlertModal({ show: false, message: "" })} />}
         </div>
     );

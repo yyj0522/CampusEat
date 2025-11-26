@@ -63,7 +63,7 @@ export default function Footer() {
               </h2>
               <p className="mt-4 text-sm text-gray-500 leading-relaxed">
                 대학생을 위한 올인원 라이프 스타일 플랫폼.<br />
-                맛집부터 시간표, 중고거래까지 캠퍼스잇과 함께하세요.
+                점심추천부터 시간표, 중고거래까지 캠퍼스잇과 함께하세요.
               </p>
             </div>
             <div className="flex gap-4">
@@ -103,15 +103,15 @@ export default function Footer() {
         <div className="border-t border-gray-100 pt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="text-xs text-gray-400 space-y-1.5">
-              <p className="font-bold text-gray-600 mb-2">{companyInfo.name}</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {/* <p className="font-bold text-gray-600 mb-2">{companyInfo.name}</p> */}
+              {/* <div className="flex flex-wrap gap-x-4 gap-y-1">
                 <span>대표: {companyInfo.ceo}</span>
                 <span>사업자등록번호: {companyInfo.registrationNumber}</span>
-              </div>
-              <p>{companyInfo.address}</p>
+              </div> */}
+              {/* <p>{companyInfo.address}</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1">
                 <span>직업정보제공사업 신고번호: {companyInfo.reportNumber}</span>
-              </div>
+              </div> */}
             </div>
             <div className="text-xs text-gray-400 md:text-right space-y-1.5">
               <div className="flex md:justify-end gap-4">

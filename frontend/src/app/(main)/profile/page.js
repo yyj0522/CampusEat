@@ -4,8 +4,18 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthProvider";
 import apiClient from "@/lib/api";
-import { FaUserEdit, FaKey, FaUniversity, FaSignOutAlt, FaUserSlash, FaChevronRight, FaPen, FaCommentDots, FaStar } from "react-icons/fa";
+import { FaUserEdit, FaKey, FaUniversity, FaSignOutAlt, FaUserSlash, FaChevronRight, FaPen, FaCommentDots, FaStar, FaExclamationTriangle, FaCog } from "react-icons/fa";
 
+const ModalOverlay = ({ children, onClose }) => (
+    <div 
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300"
+        onClick={onClose}
+    >
+        <div onClick={e => e.stopPropagation()} className="w-full max-w-md">
+            {children}
+        </div>
+    </div>
+);
 
 const AlertModal = ({ message, onClose }) => {
     useEffect(() => {
@@ -15,48 +25,20 @@ const AlertModal = ({ message, onClose }) => {
     }, [onClose]);
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center z-[200] p-4" onClick={onClose}>
-             <style>{`
-                @keyframes scaleUp {
-                    from { opacity: 0; transform: scale(0.95); }
-                    to { opacity: 1; transform: scale(1); }
-                }
-                .animate-scaleUp {
-                    animation: scaleUp 0.2s ease-out forwards;
-                }
-            `}</style>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-scaleUp border border-gray-100" onClick={(e) => e.stopPropagation()}>
-                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
+        <ModalOverlay onClose={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-scaleUp border border-gray-100 transform transition-all">
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
                     <i className="fas fa-info text-2xl text-blue-500"></i>
                 </div>
-                <p className="text-gray-800 font-medium text-lg mb-8 break-keep">{message}</p>
-                <button onClick={onClose} className="w-full py-3.5 bg-black text-white rounded-2xl font-bold text-sm shadow-md hover:bg-gray-800 transition active:scale-95">확인</button>
+                <p className="text-gray-800 font-bold text-lg mb-8 break-keep leading-relaxed">{message}</p>
+                <button 
+                    onClick={onClose} 
+                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-black transition-all active:scale-[0.98]"
+                >
+                    확인
+                </button>
             </div>
-        </div>
-    );
-};
-
-const ConfirmModal = ({ message, onConfirm, onCancel, isDestructive = false }) => {
-    return (
-        <div className="fixed inset-0 flex items-center justify-center z-[200] p-4">
-            <style>{`
-                @keyframes scaleUp {
-                    from { opacity: 0; transform: scale(0.95); }
-                    to { opacity: 1; transform: scale(1); }
-                }
-                .animate-scaleUp {
-                    animation: scaleUp 0.2s ease-out forwards;
-                }
-            `}</style>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-scaleUp border border-gray-100">
-                <h3 className="text-xl font-extrabold text-gray-900 mb-4">확인</h3>
-                <p className="text-gray-600 font-medium mb-8 break-keep">{message}</p>
-                <div className="flex gap-3">
-                    <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
-                    <button onClick={onConfirm} className={`flex-1 text-white py-3.5 rounded-2xl font-bold text-sm transition shadow-md ${isDestructive ? 'bg-red-500 hover:bg-red-600' : 'bg-black hover:bg-gray-800'}`}>확인</button>
-                </div>
-            </div>
-        </div>
+        </ModalOverlay>
     );
 };
 
@@ -79,24 +61,32 @@ const ChangeNicknameModal = ({ isOpen, onClose, currentNickname, onSave, showAle
 
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-scaleUp border border-gray-100">
-                <h3 className="text-xl font-extrabold text-gray-900 mb-6">닉네임 변경</h3>
+        <ModalOverlay onClose={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100">
+                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">닉네임 변경</h3>
+                <p className="text-gray-500 text-sm mb-8">새로운 닉네임을 입력해주세요.</p>
+                
                 <input 
                     type="text" 
                     value={newNickname} 
                     onChange={(e) => setNewNickname(e.target.value)} 
-                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all font-medium mb-6" 
-                    placeholder="새 닉네임을 입력하세요" 
+                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-base font-medium focus:bg-white focus:border-blue-500 focus:outline-none transition-all mb-8 placeholder-gray-400" 
+                    placeholder="새 닉네임 입력" 
+                    autoFocus
                 />
-                <div className="flex justify-end gap-3">
-                    <button onClick={onClose} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition">취소</button>
-                    <button onClick={handleSave} disabled={isSaving} className="flex-[2] py-3.5 bg-black text-white rounded-xl font-bold text-sm shadow-lg hover:bg-gray-800 transition disabled:opacity-70">
-                        {isSaving ? '저장 중...' : '저장'}
+                
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
+                    <button 
+                        onClick={handleSave} 
+                        disabled={isSaving} 
+                        className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-blue-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
+                    >
+                        {isSaving ? '저장 중...' : '변경하기'}
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 
@@ -119,27 +109,39 @@ const ChangePasswordModal = ({ isOpen, onClose, showAlert, onSave }) => {
         setIsSaving(true);
         const isSaved = await onSave(currentPassword, newPassword);
         setIsSaving(false);
-        if (isSaved) onClose();
+        if (isSaved) {
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            onClose();
+        }
     };
 
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-scaleUp border border-gray-100">
-                <h3 className="text-xl font-extrabold text-gray-900 mb-6">비밀번호 변경</h3>
+        <ModalOverlay onClose={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100">
+                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">비밀번호 변경</h3>
+                <p className="text-gray-500 text-sm mb-8">안전한 비밀번호로 변경해주세요.</p>
+
                 <div className="space-y-4 mb-8">
-                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all" placeholder="현재 비밀번호" />
-                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all" placeholder="새 비밀번호 (4자 이상)" />
-                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all" placeholder="새 비밀번호 확인" />
+                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-medium focus:bg-white focus:border-purple-500 focus:outline-none transition-all" placeholder="현재 비밀번호" />
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-medium focus:bg-white focus:border-purple-500 focus:outline-none transition-all" placeholder="새 비밀번호 (4자 이상)" />
+                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-medium focus:bg-white focus:border-purple-500 focus:outline-none transition-all" placeholder="새 비밀번호 확인" />
                 </div>
-                <div className="flex justify-end gap-3">
-                    <button onClick={onClose} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition">취소</button>
-                    <button onClick={handleSave} disabled={isSaving} className="flex-[2] py-3.5 bg-black text-white rounded-xl font-bold text-sm shadow-lg hover:bg-gray-800 transition disabled:opacity-70">
+
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
+                    <button 
+                        onClick={handleSave} 
+                        disabled={isSaving} 
+                        className="flex-[2] py-4 bg-purple-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-purple-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
+                    >
                         {isSaving ? '변경 중...' : '변경하기'}
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 
@@ -210,25 +212,30 @@ const ChangeUniversityModal = ({ isOpen, onClose, onSave, showAlert }) => {
 
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-scaleUp overflow-visible border border-gray-100">
-                <h3 className="text-xl font-extrabold text-gray-900 mb-6">대학교 변경</h3>
+        <ModalOverlay onClose={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100 overflow-visible">
+                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">대학교 변경</h3>
+                <p className="text-gray-500 text-sm mb-8">새로운 소속 대학교를 검색하세요.</p>
+
                 <div className="relative mb-8">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i className="fas fa-search text-gray-400"></i>
+                    </div>
                     <input
                         type="text"
                         value={searchTerm}
                         onChange={handleSearchChange}
-                        className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-black transition-all"
-                        placeholder="대학교 이름을 검색하세요"
+                        className="w-full pl-11 p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-base font-medium focus:bg-white focus:border-emerald-500 focus:outline-none transition-all"
+                        placeholder="대학교 검색"
                         disabled={isLoading}
                     />
                     {searchTerm && filteredUniversities.length > 0 && !selectedUniversity && (
-                        <div className="absolute z-[9999] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl max-h-80 overflow-y-auto">
+                        <div className="absolute z-[1000] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
                             {filteredUniversities.map(uni => (
                                 <div
                                     key={uni}
                                     onClick={() => handleSelectUniversity(uni)}
-                                    className="p-3 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-50 last:border-none"
+                                    className="p-4 hover:bg-emerald-50 cursor-pointer text-sm font-medium text-gray-700 border-b border-gray-50 last:border-none transition-colors"
                                 >
                                     {uni}
                                 </div>
@@ -236,19 +243,24 @@ const ChangeUniversityModal = ({ isOpen, onClose, onSave, showAlert }) => {
                         </div>
                     )}
                     {searchTerm && filteredUniversities.length === 0 && !selectedUniversity && (
-                         <div className="absolute z-[9999] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl p-3 text-center text-sm text-gray-500">
+                         <div className="absolute z-[1000] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl p-4 text-center text-sm text-gray-500">
                             검색 결과가 없습니다.
                         </div>
                     )}
                 </div>
-                <div className="flex justify-end gap-3">
-                    <button onClick={onClose} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition">취소</button>
-                    <button onClick={handleSave} disabled={isSaving || !selectedUniversity} className="flex-[2] py-3.5 bg-black text-white rounded-xl font-bold text-sm shadow-lg hover:bg-gray-800 transition disabled:opacity-70">
-                        {isSaving ? '저장 중...' : '저장'}
+
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
+                    <button 
+                        onClick={handleSave} 
+                        disabled={isSaving || !selectedUniversity} 
+                        className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-emerald-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
+                    >
+                        {isSaving ? '저장 중...' : '변경하기'}
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 
@@ -263,43 +275,47 @@ const DeleteAccountModal = ({ isOpen, onClose, onDelete }) => {
     };
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 animate-scaleUp border border-gray-100">
+        <ModalOverlay onClose={onClose}>
+            <div className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100">
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i className="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                        <FaExclamationTriangle className="text-3xl text-red-500" />
                     </div>
-                    <h3 className="text-xl font-extrabold text-red-600">회원 탈퇴</h3>
+                    <h3 className="text-2xl font-extrabold text-red-600">회원 탈퇴</h3>
                 </div>
                 
-                <div className="bg-gray-50 p-4 rounded-xl mb-6 text-sm text-gray-600 leading-relaxed">
-                    <p className="font-bold mb-2 text-gray-800">다음 데이터가 모두 삭제되며 복구할 수 없습니다.</p>
-                    <ul className="list-disc list-inside space-y-1 text-gray-500">
-                        <li>계정 정보 (닉네임, 이메일 등)</li>
-                        <li>작성한 모든 게시글 및 댓글</li>
-                        <li>활동 내역 및 포인트</li>
+                <div className="bg-red-50 p-5 rounded-2xl mb-6 border border-red-100">
+                    <p className="font-bold text-red-800 mb-2 text-sm text-center">⚠️ 주의: 복구가 불가능합니다</p>
+                    <ul className="space-y-1.5 text-xs text-red-700/80 list-disc list-inside">
+                        <li>계정 정보 및 개인 프로필 삭제</li>
+                        <li>작성한 모든 게시글 및 댓글 삭제</li>
+                        <li>활동 포인트 및 내역 영구 소실</li>
                     </ul>
                 </div>
 
                 <p className="text-sm text-gray-600 mb-3 text-center">
-                    탈퇴를 원하시면, 아래 입력창에 <strong className="text-gray-900 select-all">"{requiredText}"</strong>를 정확히 입력해주세요.
+                    아래 문구를 똑같이 입력해주세요.
                 </p>
                 <input 
                     type="text" 
                     value={confirmationText} 
                     onChange={(e) => setConfirmationText(e.target.value)} 
-                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all mb-8 text-center font-bold" 
+                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-bold focus:bg-white focus:border-red-500 focus:outline-none transition-all mb-8 text-center placeholder-gray-300" 
                     placeholder={requiredText}
                 />
 
-                <div className="flex justify-end gap-3">
-                    <button onClick={onClose} className="flex-1 py-3.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition">취소</button>
-                    <button onClick={handleDelete} disabled={confirmationText !== requiredText || isDeleting} className="flex-[2] py-3.5 bg-red-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        {isDeleting ? '탈퇴 처리 중...' : '회원 탈퇴'}
+                <div className="flex gap-3">
+                    <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
+                    <button 
+                        onClick={handleDelete} 
+                        disabled={confirmationText !== requiredText || isDeleting} 
+                        className="flex-[2] py-4 bg-red-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                    >
+                        {isDeleting ? '처리 중...' : '탈퇴하기'}
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 
@@ -311,20 +327,27 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
         setCurrentPage(1);
     }, [filter]);
 
+    const processContent = (content) => {
+        if (!content) return "";
+        let processed = content.replace(/<img[^>]*>/g, '');
+        processed = processed.replace(/<[^>]+>/g, ''); 
+        return processed;
+    };
+
     if (isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
-                <p>활동 내역을 불러오는 중...</p>
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                <div className="w-10 h-10 border-4 border-gray-100 border-t-gray-900 rounded-full animate-spin mb-4"></div>
+                <p className="text-sm font-medium">활동 내역을 불러오는 중...</p>
             </div>
         );
     }
 
     if (!data || data.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                <i className="far fa-folder-open text-4xl mb-3 opacity-50"></i>
-                <p>활동 내역이 없습니다.</p>
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-200">
+                <i className="far fa-folder-open text-4xl mb-3 opacity-30"></i>
+                <p className="text-sm font-medium">활동 내역이 없습니다.</p>
             </div>
         );
     }
@@ -342,53 +365,52 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
             case "my-posts":
                 return (
                     <div
-                        className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+                        className="group bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer duration-300"
                         onClick={() => router.push(`/community/${item.id}`)}
                     >
                         <div className="flex justify-between items-start mb-2">
-                            <span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded-full font-bold">게시글</span>
-                            <span className="text-xs text-gray-400">{new Date(item.createdAt).toLocaleDateString("ko-KR")}</span>
+                            <h3 className="font-bold text-lg text-gray-900 line-clamp-1 group-hover:text-indigo-600 transition-colors mr-4">
+                                {item.title}
+                            </h3>
+                            <span className="text-xs font-medium text-gray-400 whitespace-nowrap pt-1">{new Date(item.createdAt).toLocaleDateString("ko-KR")}</span>
                         </div>
-                        <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                            {item.title}
-                        </h3>
-                        <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">{item.content}</p>
+                        <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed font-medium">{processContent(item.content)}</p>
                     </div>
                 );
 
             case "my-comments":
                 return (
                     <div
-                        className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+                        className="group bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer duration-300"
                         onClick={() => router.push(`/community/${item.post?.id}`)}
                     >
-                         <div className="flex justify-between items-start mb-2">
-                            <span className="bg-blue-50 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold">댓글</span>
-                            <span className="text-xs text-gray-400">{new Date(item.createdAt).toLocaleDateString("ko-KR")}</span>
+                         <div className="flex justify-between items-center mb-2">
+                            <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide uppercase">COMMENT</span>
+                            <span className="text-xs font-medium text-gray-400">{new Date(item.createdAt).toLocaleDateString("ko-KR")}</span>
                         </div>
-                        <p className="text-gray-800 text-sm mb-3 line-clamp-2 leading-relaxed font-medium">“{item.content}”</p>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
-                            <span className="font-bold text-gray-400 shrink-0">원문</span>
-                            <span className="truncate">{item.post?.title || "삭제된 게시글"}</span>
+                        <p className="text-gray-800 text-sm mb-3 line-clamp-2 leading-relaxed font-semibold">"{processContent(item.content)}"</p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-xl">
+                            <span className="font-bold text-gray-400 shrink-0 uppercase">Original Post</span>
+                            <span className="truncate font-medium">{item.post?.title || "삭제된 게시글"}</span>
                         </div>
                     </div>
                 );
 
             case "my-reviews":
                 return (
-                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all">
-                         <div className="flex justify-between items-start mb-3">
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300">
+                         <div className="flex justify-between items-center mb-2">
                             <div className="flex items-center gap-2">
-                                <span className="bg-orange-50 text-orange-600 text-[10px] px-2 py-1 rounded-full font-bold">리뷰</span>
-                                <span className="font-bold text-gray-800 text-sm">{item.restaurant?.name || "알 수 없음"}</span>
+                                <span className="bg-orange-50 text-orange-600 text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide uppercase">REVIEW</span>
+                                <span className="font-extrabold text-gray-900 text-sm">{item.restaurant?.name || "알 수 없음"}</span>
                             </div>
-                            <div className="flex items-center gap-0.5 text-xs">
-                                <i className="fas fa-star text-yellow-400"></i>
-                                <span className="font-bold text-gray-700">{item.rating}</span>
+                            <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg">
+                                <FaStar className="text-yellow-400 text-xs" />
+                                <span className="font-bold text-yellow-600 text-xs">{item.rating}</span>
                             </div>
                         </div>
-                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed mb-2">{item.content}</p>
-                        <p className="text-xs text-gray-400 text-right">{new Date(item.createdAt).toLocaleDateString("ko-KR")}</p>
+                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed mb-2 font-medium">{processContent(item.content)}</p>
+                        <p className="text-xs font-medium text-gray-300 text-right">{new Date(item.createdAt).toLocaleDateString("ko-KR")}</p>
                     </div>
                 );
 
@@ -404,21 +426,21 @@ const ActivityFeed = ({ filter, data, isLoading, router }) => {
             ))}
 
             {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-4 pt-6">
+                <div className="flex justify-center items-center gap-4 pt-8 pb-4">
                     <button
                         onClick={handlePrev}
                         disabled={currentPage === 1}
-                        className={`w-10 h-10 rounded-full border flex items-center justify-center transition ${currentPage === 1 ? "text-gray-300 border-gray-200 cursor-not-allowed" : "text-indigo-600 border-indigo-200 hover:bg-indigo-50 shadow-sm"}`}
+                        className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${currentPage === 1 ? "text-gray-300 border-gray-100 cursor-not-allowed" : "text-black border-gray-200 hover:bg-black hover:text-white hover:border-black shadow-sm"}`}
                     >
                         <i className="fas fa-chevron-left text-xs"></i>
                     </button>
-                    <span className="text-gray-600 text-sm font-medium font-mono">
+                    <span className="text-gray-900 text-sm font-bold font-mono">
                         {currentPage} / {totalPages}
                     </span>
                     <button
                         onClick={handleNext}
                         disabled={currentPage === totalPages}
-                        className={`w-10 h-10 rounded-full border flex items-center justify-center transition ${currentPage === totalPages ? "text-gray-300 border-gray-200 cursor-not-allowed" : "text-indigo-600 border-indigo-200 hover:bg-indigo-50 shadow-sm"}`}
+                        className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${currentPage === totalPages ? "text-gray-300 border-gray-100 cursor-not-allowed" : "text-black border-gray-200 hover:bg-black hover:text-white hover:border-black shadow-sm"}`}
                     >
                         <i className="fas fa-chevron-right text-xs"></i>
                     </button>
@@ -440,7 +462,6 @@ export default function ProfilePage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showUniversityModal, setShowUniversityModal] = useState(false);
     const [alertInfo, setAlertInfo] = useState({ show: false, message: "" });
-    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     const showAlert = (message) => setAlertInfo({ show: true, message });
 
@@ -475,8 +496,11 @@ export default function ProfilePage() {
         fetchData();
     }, [user, activityFilter]);
 
-    const handleLogout = () => setShowLogoutConfirm(true);
-    const executeLogout = () => { logout(); setShowLogoutConfirm(false); };
+    const handleLogout = () => {
+        if(window.confirm("정말 로그아웃 하시겠습니까?")) {
+            logout();
+        }
+    };
 
     const handleUpdateNickname = async (newNickname) => {
         if (newNickname === user?.nickname) {
@@ -541,47 +565,60 @@ export default function ProfilePage() {
     const isAdmin = user.role === 'super_admin' || user.role === 'sub_admin';
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans">
+        <div className="min-h-screen bg-[#FAFAFA] font-sans">
             <style>{`
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
-                .animate-fadeIn {
-                    animation: fadeIn 0.4s ease-out forwards;
+                @keyframes scaleUp {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
                 }
+                .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+                .animate-scaleUp { animation: scaleUp 0.2s ease-out forwards; }
+                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #E5E7EB; border-radius: 10px; }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
             
-            <main className="max-w-5xl mx-auto py-12 px-4 animate-fadeIn">
-                {/* Profile Header Card */}
-                <section className="bg-white rounded-3xl shadow-xl overflow-visible mb-8">
-                    <div className="h-32 bg-gradient-to-r from-violet-600 to-fuchsia-600 relative rounded-t-3xl md:hidden"></div>
-                    <div className="px-8 py-8">
-                        <div className="flex flex-col md:flex-row items-center gap-6 md:items-center">
-                            <div className="relative -mt-16 md:mt-0">
-                                <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center shadow-lg p-1">
-                                    <div className="w-full h-full bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-                                        <i className="fas fa-user text-5xl"></i>
+            <main className="max-w-6xl mx-auto py-8 md:py-12 px-4 animate-fadeIn">
+                <section className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden mb-8 border border-gray-100 relative">
+                    <div className="h-48 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-black/10"></div>
+                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
+                    </div>
+                    <div className="px-8 pb-10">
+                        <div className="flex flex-col md:flex-row items-center md:items-end gap-6 relative">
+                            <div className="relative -mt-20 md:-mt-24">
+                                <div className="w-36 h-36 bg-white rounded-[2rem] flex items-center justify-center shadow-2xl p-2 relative z-10">
+                                    <div className="w-full h-full bg-gray-50 rounded-[1.5rem] flex items-center justify-center text-gray-300 border border-gray-100 overflow-hidden">
+                                        <i className="fas fa-user text-6xl"></i>
                                     </div>
+                                    {isAdmin && (
+                                        <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-md border-2 border-white tracking-wider">ADMIN</span>
+                                    )}
                                 </div>
-                                {isAdmin && (
-                                    <span className="absolute bottom-1 right-1 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm border-2 border-white">ADMIN</span>
-                                )}
                             </div>
-                            <div className="text-center md:text-left flex-1">
-                                <h1 className="text-3xl font-extrabold text-gray-900 mb-1">{user.nickname}</h1>
-                                <p className="text-gray-500 font-medium flex items-center justify-center md:justify-start gap-2">
-                                    <i className="fas fa-university text-gray-400"></i> {user.university}
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">{user.universityEmail || user.email}</p>
+                            <div className="text-center md:text-left flex-1 mb-2 md:mb-4">
+                                <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-1 tracking-tight">{user.nickname}</h1>
+                                <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-gray-500 font-medium text-sm">
+                                    <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
+                                        <FaUniversity className="text-gray-400" />
+                                        {user.university}
+                                    </span>
+                                    <span className="text-gray-400">{user.universityEmail || user.email}</span>
+                                </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="mb-4">
                                 {isAdmin && (
                                     <button
                                         onClick={() => router.push('/admin/timetable')}
-                                        className="px-5 py-2.5 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-gray-800 transition shadow-md flex items-center gap-2"
+                                        className="px-6 py-3 bg-gray-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition shadow-lg hover:shadow-xl flex items-center gap-2 active:scale-95"
                                     >
-                                        <i className="fas fa-cog"></i> 관리자 페이지
+                                        <FaCog /> 관리자 페이지
                                     </button>
                                 )}
                             </div>
@@ -590,18 +627,17 @@ export default function ProfilePage() {
                 </section>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Activity Feed Section */}
                     <section className="lg:col-span-2 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-extrabold text-gray-900">나의 활동</h2>
+                        <div className="flex items-center justify-between px-2">
+                            <h2 className="text-2xl font-extrabold text-gray-900">나의 활동</h2>
                         </div>
                         
-                        <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 inline-flex w-full md:w-auto overflow-x-auto">
+                        <div className="bg-white p-2 rounded-3xl shadow-sm border border-gray-100 inline-flex w-full md:w-auto overflow-x-auto no-scrollbar">
                              {activityTags.map(tag => (
                                 <button
                                     key={tag.key}
                                     onClick={() => setActivityFilter(tag.key)}
-                                    className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap ${activityFilter === tag.key ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                                    className={`flex-1 md:flex-none px-6 py-3.5 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2.5 whitespace-nowrap ${activityFilter === tag.key ? 'bg-gray-900 text-white shadow-lg shadow-gray-200' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
                                 >
                                     {tag.icon} {tag.label}
                                 </button>
@@ -613,90 +649,96 @@ export default function ProfilePage() {
                         </div>
                     </section>
 
-                    {/* Settings Sidebar */}
                     <aside className="space-y-6">
-                        <h2 className="text-xl font-extrabold text-gray-900">계정 설정</h2>
-                        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden p-4 space-y-2">
+                        <div className="px-2">
+                            <h2 className="text-2xl font-extrabold text-gray-900">계정 설정</h2>
+                        </div>
+                        <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden p-6 space-y-3">
                             <button 
                                 onClick={() => setShowNicknameModal(true)} 
-                                className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition group text-left"
+                                className="w-full flex items-center justify-between p-4 rounded-3xl hover:bg-gray-50 transition group text-left border border-transparent hover:border-gray-100"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-100 transition">
-                                        <FaUserEdit />
+                                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-100 transition shadow-sm">
+                                        <FaUserEdit className="text-lg" />
                                     </div>
                                     <div>
-                                        <span className="block text-sm font-bold text-gray-800">닉네임 변경</span>
-                                        <span className="block text-xs text-gray-500">활동명을 수정합니다</span>
+                                        <span className="block text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors">닉네임 변경</span>
+                                        <span className="block text-xs font-medium text-gray-400 mt-0.5">활동명을 수정합니다</span>
                                     </div>
                                 </div>
-                                <FaChevronRight className="text-gray-300 group-hover:text-gray-500" />
+                                <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-blue-500 group-hover:border-blue-100 transition-all">
+                                    <FaChevronRight className="text-xs" />
+                                </div>
                             </button>
 
                             <button 
                                 onClick={() => setShowPasswordModal(true)} 
-                                className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition group text-left"
+                                className="w-full flex items-center justify-between p-4 rounded-3xl hover:bg-gray-50 transition group text-left border border-transparent hover:border-gray-100"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-100 transition">
-                                        <FaKey />
+                                    <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-100 transition shadow-sm">
+                                        <FaKey className="text-lg" />
                                     </div>
                                     <div>
-                                        <span className="block text-sm font-bold text-gray-800">비밀번호 변경</span>
-                                        <span className="block text-xs text-gray-500">보안을 위해 주기적으로 변경하세요</span>
+                                        <span className="block text-base font-bold text-gray-900 group-hover:text-purple-600 transition-colors">비밀번호 변경</span>
+                                        <span className="block text-xs font-medium text-gray-400 mt-0.5">보안을 위해 주기적으로 변경</span>
                                     </div>
                                 </div>
-                                <FaChevronRight className="text-gray-300 group-hover:text-gray-500" />
+                                <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-purple-500 group-hover:border-purple-100 transition-all">
+                                    <FaChevronRight className="text-xs" />
+                                </div>
                             </button>
 
                             {isAdmin && (
                                 <button 
                                     onClick={() => setShowUniversityModal(true)} 
-                                    className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition group text-left"
+                                    className="w-full flex items-center justify-between p-4 rounded-3xl hover:bg-gray-50 transition group text-left border border-transparent hover:border-gray-100"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition">
-                                            <FaUniversity />
+                                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-100 transition shadow-sm">
+                                            <FaUniversity className="text-lg" />
                                         </div>
                                         <div>
-                                            <span className="block text-sm font-bold text-gray-800">대학교 변경</span>
-                                            <span className="block text-xs text-gray-500">관리자 전용 기능입니다</span>
+                                            <span className="block text-base font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">대학교 변경</span>
+                                            <span className="block text-xs font-medium text-gray-400 mt-0.5">관리자 전용 기능입니다</span>
                                         </div>
                                     </div>
-                                    <FaChevronRight className="text-gray-300 group-hover:text-gray-500" />
+                                    <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-emerald-500 group-hover:border-emerald-100 transition-all">
+                                        <FaChevronRight className="text-xs" />
+                                    </div>
                                 </button>
                             )}
 
-                            <div className="my-2 border-t border-gray-100"></div>
+                            <div className="h-px bg-gray-100 my-2 mx-4"></div>
 
                             <button 
                                 onClick={handleLogout} 
-                                className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-red-50 transition group text-left"
+                                className="w-full flex items-center justify-between p-4 rounded-3xl hover:bg-red-50 transition group text-left border border-transparent hover:border-red-100"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-red-100 group-hover:text-red-500 transition">
-                                        <FaSignOutAlt />
+                                    <div className="w-12 h-12 rounded-2xl bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-red-100 group-hover:text-red-500 transition shadow-sm">
+                                        <FaSignOutAlt className="text-lg" />
                                     </div>
-                                    <span className="block text-sm font-bold text-gray-600 group-hover:text-red-600">로그아웃</span>
+                                    <span className="block text-base font-bold text-gray-600 group-hover:text-red-600 transition-colors">로그아웃</span>
                                 </div>
                             </button>
 
                             <button 
                                 onClick={() => setShowDeleteModal(true)} 
-                                className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-red-50 transition group text-left"
+                                className="w-full flex items-center justify-between p-4 rounded-3xl hover:bg-red-50 transition group text-left border border-transparent hover:border-red-100"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-red-100 group-hover:text-red-500 transition">
-                                        <FaUserSlash />
+                                    <div className="w-12 h-12 rounded-2xl bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-red-100 group-hover:text-red-500 transition shadow-sm">
+                                        <FaUserSlash className="text-lg" />
                                     </div>
-                                    <span className="block text-sm font-bold text-gray-600 group-hover:text-red-600">회원 탈퇴</span>
+                                    <span className="block text-base font-bold text-gray-600 group-hover:text-red-600 transition-colors">회원 탈퇴</span>
                                 </div>
                             </button>
                         </div>
                     </aside>
                 </div>
 
-                {/* Modals */}
                 <ChangeNicknameModal
                     isOpen={showNicknameModal}
                     onClose={() => setShowNicknameModal(false)}
@@ -722,7 +764,6 @@ export default function ProfilePage() {
                     onDelete={handleDeleteAccount}
                 />
                 {alertInfo.show && <AlertModal message={alertInfo.message} onClose={() => setAlertInfo({ show: false, message: "" })} />}
-                {showLogoutConfirm && <ConfirmModal message="정말 로그아웃 하시겠습니까?" onConfirm={executeLogout} onCancel={() => setShowLogoutConfirm(false)} />}
             </main>
         </div>
     );

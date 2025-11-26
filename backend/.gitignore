@@ -74,6 +74,8 @@ google-credentials.json
 *.zip
 *.tar
 *.gz
+*.sql
+*.deb
 backend_deploy.zip
 
 # 4. Other Secrets
