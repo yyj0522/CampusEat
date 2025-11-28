@@ -38,6 +38,7 @@ import { TimetableModule } from './timetable/timetable.module';
 import { Lecture } from './timetable/lecture.entity';
 import { Timetable } from './timetable/timetable.entity';
 import { TimetableLecture } from './timetable/timetable-lecture.entity';
+import { LectureReview } from './timetable/lecture-review.entity';
 import { TradesModule } from './trades/trades.module';
 import { Trade } from './trades/entities/trade.entity';
 import { TradeParticipant } from './trades/entities/trade-participant.entity';
@@ -81,6 +82,7 @@ import { Book } from './trades/entities/book.entity';
           Lecture,
           Timetable,
           TimetableLecture,
+          LectureReview,
           Trade,
           TradeParticipant,
           TradeMessage,

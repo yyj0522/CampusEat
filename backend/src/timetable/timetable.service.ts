@@ -1,13 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Timetable } from './timetable.entity';
 import { TimetableLecture } from './timetable-lecture.entity';
 import { Lecture } from './lecture.entity';
+import { LectureReview } from './lecture-review.entity';
 import { User } from '../users/user.entity';
+import { RedisManagerService } from '../common/redis/redis-manager.service';
 
 @Injectable()
 export class TimetableService {
+  private readonly logger = new Logger(TimetableService.name);
+
   constructor(
     @InjectRepository(Timetable)
     private timetableRepository: Repository<Timetable>,
@@ -15,6 +19,9 @@ export class TimetableService {
     private timetableLectureRepository: Repository<TimetableLecture>,
     @InjectRepository(Lecture)
     private lectureRepository: Repository<Lecture>,
+    @InjectRepository(LectureReview)
+    private reviewRepository: Repository<LectureReview>,
+    private readonly redisManager: RedisManagerService,
   ) {}
 
   async getMyTimetables(user: User, year: number, semester: string) {
@@ -38,13 +45,33 @@ export class TimetableService {
   async deleteTimetable(user: User, id: number) {
     const timetable = await this.timetableRepository.findOne({
       where: { id, user: { id: user.id } },
+      relations: ['lectures'],
     });
 
     if (!timetable) {
       throw new NotFoundException('시간표를 찾을 수 없습니다.');
     }
 
-    return this.timetableRepository.remove(timetable);
+    const lectureIds = timetable.lectures
+      .filter(l => l.lectureId)
+      .map(l => l.lectureId);
+
+    await this.timetableRepository.remove(timetable);
+
+    for (const lectureId of lectureIds) {
+      const count = await this.timetableLectureRepository.count({
+        where: {
+          timetable: { user: { id: user.id } },
+          lectureId,
+        },
+      });
+
+      if (count === 0) {
+        await this.redisManager.removeUserFromLecture(lectureId, user.id);
+      }
+    }
+
+    return { message: '삭제되었습니다.' };
   }
 
   async addLecture(user: User, timetableId: number, lectureId: number) {
@@ -62,11 +89,16 @@ export class TimetableService {
       courseName: lecture.courseName,
       professor: lecture.professor,
       courseCode: lecture.courseCode,
-      schedule: lecture.schedule,
+      credits: lecture.credits, 
+      schedule: JSON.parse(JSON.stringify(lecture.schedule)), 
       color: this.getRandomColor(),
     });
 
-    return this.timetableLectureRepository.save(newLecture);
+    const savedLecture = await this.timetableLectureRepository.save(newLecture);
+
+    await this.redisManager.addUserToLecture(lecture.id, user.id);
+
+    return savedLecture;
   }
 
   async addCustomLecture(user: User, timetableId: number, data: any) {
@@ -81,6 +113,7 @@ export class TimetableService {
       courseName: data.courseName,
       professor: data.professor,
       courseCode: 'CUSTOM',
+      credits: data.credits || 0,
       schedule: data.schedule,
       color: this.getRandomColor(),
     });
@@ -89,16 +122,114 @@ export class TimetableService {
   }
   
   async deleteLecture(user: User, lectureId: number) {
-    const lecture = await this.timetableLectureRepository.findOne({
+    const timetableLecture = await this.timetableLectureRepository.findOne({
         where: { id: lectureId },
         relations: ['timetable', 'timetable.user']
     });
     
-    if (!lecture || lecture.timetable.user.id !== user.id) {
+    if (!timetableLecture || timetableLecture.timetable.user.id !== user.id) {
         throw new NotFoundException('강의를 찾을 수 없거나 권한이 없습니다.');
     }
 
-    return this.timetableLectureRepository.remove(lecture);
+    const originalLectureId = timetableLecture.lectureId;
+
+    await this.timetableLectureRepository.remove(timetableLecture);
+
+    if (originalLectureId) {
+      const count = await this.timetableLectureRepository.count({
+        where: {
+          timetable: { user: { id: user.id } },
+          lectureId: originalLectureId,
+        },
+      });
+
+      if (count === 0) {
+        await this.redisManager.removeUserFromLecture(originalLectureId, user.id);
+      }
+    }
+
+    return { message: '삭제되었습니다.' };
+  }
+
+  async getLectureStats(lectureIds: number[]) {
+    const counts = await this.redisManager.getMultipleLectureCounts(lectureIds);
+    
+    const lectures = await this.lectureRepository.find({
+      where: { id: In(lectureIds) },
+      select: ['id', 'capacity']
+    });
+
+    return counts.map(c => {
+      const lecture = lectures.find(l => l.id === c.id);
+      const capacity = lecture ? lecture.capacity : 0;
+      const competitionRate = capacity > 0 ? (c.count / capacity).toFixed(2) : '0.00';
+      
+      return {
+        id: c.id,
+        savedCount: c.count,
+        capacity,
+        competitionRate
+      };
+    });
+  }
+
+  async createReview(user: User, lectureId: number, content: string, rating: number, year: number, semester: string, isAnonymous: boolean) {
+    const review = this.reviewRepository.create({
+      user,
+      lectureId,
+      content,
+      rating,
+      year,
+      semester,
+      isAnonymous,
+    });
+    return this.reviewRepository.save(review);
+  }
+
+  async getReviews(lectureId: number, currentUser: User) {
+    const reviews = await this.reviewRepository.find({
+      where: { lectureId },
+      relations: ['user'],
+      order: { createdAt: 'ASC' },
+    });
+
+    const kstFormatter = new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    return reviews.map(review => {
+      const dateObj = new Date(review.createdAt);
+      
+      const parts = kstFormatter.formatToParts(dateObj);
+      const getPart = (type: string) => parts.find(p => p.type === type)?.value;
+      
+      const formattedDate = `${getPart('year')}.${getPart('month')}.${getPart('day')} ${getPart('hour')}:${getPart('minute')}`;
+
+      return {
+        id: review.id,
+        content: review.content,
+        rating: review.rating,
+        year: review.year,
+        semester: review.semester,
+        createdAt: formattedDate, 
+        isMine: review.userId === currentUser.id,
+        writer: review.isAnonymous ? '익명' : review.user.nickname,
+      };
+    });
+  }
+
+  async deleteReview(user: User, reviewId: number) {
+    const review = await this.reviewRepository.findOne({ where: { id: reviewId } });
+    if (!review) throw new NotFoundException('리뷰를 찾을 수 없습니다.');
+    if (review.userId !== user.id) throw new ForbiddenException('삭제 권한이 없습니다.');
+
+    return this.reviewRepository.remove(review);
   }
 
   private getRandomColor() {

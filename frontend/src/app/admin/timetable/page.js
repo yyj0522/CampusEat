@@ -9,13 +9,23 @@ const Toast = ({ message, show, onClose }) => {
     return <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] animate-fade-in-down"><div className="bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg text-sm font-medium flex items-center gap-2"><i className="fas fa-info-circle"></i>{message}</div></div>;
 };
 
-const LoadingModal = ({ isOpen, message }) => {
+const LoadingModal = ({ isOpen, message, progress }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 flex items-center justify-center z-[200]">
             <div className="bg-white rounded-3xl p-8 flex flex-col items-center shadow-2xl animate-scale-up border border-gray-100">
                 <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-800 font-bold">{message}</p>
+                <p className="text-gray-800 font-bold mb-2">{message}</p>
+                {progress !== null && (
+                    <div className="w-64">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1 overflow-hidden">
+                            <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                        </div>
+                        <div className="text-center">
+                            <span className="text-xs text-gray-500 font-medium">{Math.round(progress)}% 완료</span>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -55,8 +65,12 @@ export default function TimetableAdminPage() {
     const [previewText, setPreviewText] = useState('');
     const [lectureCount, setLectureCount] = useState(0);
 
+    const [validationIssues, setValidationIssues] = useState([]);
+    const [currentIssueIndex, setCurrentIssueIndex] = useState(0);
+
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
+    const [progress, setProgress] = useState(null);
     const [toast, setToast] = useState({ show: false, message: "" });
 
     const [searchText, setSearchText] = useState('');
@@ -104,7 +118,96 @@ export default function TimetableAdminPage() {
         setPreviewData(null);
         setPreviewText('');
         setLectureCount(0);
+        setValidationIssues([]);
+        setCurrentIssueIndex(0);
         resetSearch();
+    };
+
+    const runStrictValidation = (lectures, backendValidation) => {
+        const issues = [];
+        lectures.forEach((lec, index) => {
+            const addError = (field, msg) => {
+                issues.push({
+                    index,
+                    courseCode: lec.courseCode,
+                    courseName: lec.courseName,
+                    field,
+                    message: msg,
+                    type: 'CLIENT_STRICT'
+                });
+            };
+
+            if (!/^[a-zA-Z0-9]+$/.test(lec.courseCode)) {
+                addError('courseCode', `과목코드 특수문자 포함 불가: ${lec.courseCode}`);
+            }
+
+            if (/[!@#$%^&*=+{}[\]:;"'<>?,.~]/.test(lec.courseName)) {
+                addError('courseName', `강의명 특수문자 포함 불가: ${lec.courseName}`);
+            }
+
+            if (lec.hours >= 10 || !/^\d+$/.test(String(lec.hours))) {
+                addError('hours', `시수 오류 (두자리 불가, 숫자만): ${lec.hours}`);
+            }
+
+            if (lec.credits >= 10 || !/^\d+$/.test(String(lec.credits))) {
+                addError('credits', `학점 오류 (두자리 불가, 숫자만): ${lec.credits}`);
+            }
+
+            if (!/^\d+$/.test(String(lec.capacity))) {
+                addError('capacity', `정원 오류 (숫자만 가능): ${lec.capacity}`);
+            }
+
+            if (!/^[a-zA-Z가-힣\s]+$/.test(lec.professor)) {
+                addError('professor', `교수명 오류 (한글/영어만 가능): ${lec.professor}`);
+            }
+
+            const isCyber = lec.classroom?.includes('사이버') || lec.classroom?.includes('Cyber') || lec.schedule?.some(s => s.day === '사이버' || s.day === 'Cyber');
+            if (!isCyber) {
+                if (!lec.schedule || lec.schedule.length === 0) {
+                    addError('schedule', '시간표 데이터 누락 (사이버 강의 아님)');
+                } else {
+                    const hasEmptyPeriod = lec.schedule.some(s => !s.periods || s.periods.length === 0);
+                    if (hasEmptyPeriod) {
+                        addError('schedule', '시간표 교시 데이터 누락');
+                    }
+                }
+            }
+        });
+
+        if (backendValidation && backendValidation.issues) {
+            backendValidation.issues.forEach(issue => {
+                issues.push({
+                    index: issue.lectureIndex,
+                    courseCode: issue.courseName, 
+                    field: issue.field,
+                    message: `[Server/AI] ${issue.message}`,
+                    type: issue.type
+                });
+            });
+        }
+        return issues;
+    };
+
+    const processResponseData = (apiResponse) => {
+        const rawData = apiResponse.data || apiResponse; 
+        const backendValidation = apiResponse.validation || null;
+
+        if (!rawData || !rawData.lectures) {
+            throw new Error('데이터 형식이 올바르지 않습니다.');
+        }
+
+        const strictIssues = runStrictValidation(rawData.lectures, backendValidation);
+
+        setPreviewData(rawData);
+        setPreviewText(JSON.stringify(rawData, null, 2));
+        setLectureCount(rawData.lectures.length);
+        setValidationIssues(strictIssues);
+        
+        if (strictIssues.length > 0) {
+            showToast(`총 ${rawData.lectures.length}개 중 ${strictIssues.length}건의 오류 의심이 발견되었습니다.`);
+        } else {
+            showToast(`분석 완료: ${rawData.lectures.length}개 강의 정상 추출.`);
+        }
     };
 
     const handlePreview = async () => {
@@ -117,8 +220,9 @@ export default function TimetableAdminPage() {
             return;
         }
 
-        setLoadingMessage('AI가 PDF를 분석 중입니다...');
+        setLoadingMessage('AI가 PDF를 분석 및 검증 중입니다...');
         setIsLoading(true);
+        setProgress(null);
         resetPreview();
 
         const formData = new FormData();
@@ -126,6 +230,7 @@ export default function TimetableAdminPage() {
         formData.append('year', year);
         formData.append('semester', semester);
         formData.append('universityId', selectedPdfParser.id);
+        formData.append('useAi', 'true');
 
         try {
             const response = await fetch('https://api.campuseat.shop/api/timetable/preview/pdf', {
@@ -139,10 +244,7 @@ export default function TimetableAdminPage() {
                 throw new Error(data.message || '미리보기 생성에 실패했습니다.');
             }
 
-            setPreviewData(data);
-            setPreviewText(JSON.stringify(data, null, 2));
-            setLectureCount(data.lectures.length);
-            showToast(`분석 완료: ${data.lectures.length}개 강의가 감지되었습니다.`);
+            processResponseData(data);
         } catch (error) {
             showToast(`오류: ${error.message}`);
         } finally {
@@ -156,8 +258,15 @@ export default function TimetableAdminPage() {
             return;
         }
 
-        setLoadingMessage('데이터를 DB에 저장 중입니다...');
+        if (validationIssues.length > 0) {
+            if (!confirm(`${validationIssues.length}건의 오류 의심 데이터가 있습니다. 무시하고 저장하시겠습니까?`)) {
+                return;
+            }
+        }
+
+        setLoadingMessage('데이터 저장 준비 중...');
         setIsLoading(true);
+        setProgress(0);
 
         let dataToSave;
         try {
@@ -168,23 +277,40 @@ export default function TimetableAdminPage() {
             return;
         }
 
+        const lectures = dataToSave.lectures;
+        const totalLectures = lectures.length;
+        const chunkSize = 500;
+        let savedCount = 0;
+
         try {
-            const response = await fetch('https://api.campuseat.shop/api/timetable/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(dataToSave),
-            });
+            for (let i = 0; i < totalLectures; i += chunkSize) {
+                const chunk = lectures.slice(i, i + chunkSize);
+                
+                const payload = {
+                    ...dataToSave,
+                    lectures: chunk
+                };
 
-            const data = await response.json();
+                setLoadingMessage(`${i + 1} ~ ${Math.min(i + chunkSize, totalLectures)}번째 강의 저장 중...`);
+                
+                const response = await fetch('https://api.campuseat.shop/api/timetable/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
 
-            if (!response.ok) {
-                throw new Error(data.message || 'DB 저장에 실패했습니다.');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || '중간 저장 실패');
+                }
+
+                savedCount += chunk.length;
+                setProgress((savedCount / totalLectures) * 100);
             }
 
-            const savedCount = data.lectureCount || data.count || lectureCount;
-            showToast(`저장 완료: ${savedCount}개의 강의가 저장되었습니다.`);
+            showToast(`모두 저장 완료: 총 ${savedCount}개의 강의가 저장되었습니다.`);
             
             resetPreview();
             setFile(null);
@@ -193,6 +319,7 @@ export default function TimetableAdminPage() {
             showToast(`오류: ${error.message}`);
         } finally {
             setIsLoading(false);
+            setProgress(null);
         }
     };
 
@@ -206,8 +333,9 @@ export default function TimetableAdminPage() {
             return;
         }
         
-        setLoadingMessage('웹 스크래핑을 시작합니다...');
+        setLoadingMessage('웹 스크래핑 및 검증을 시작합니다...');
         setIsLoading(true);
+        setProgress(null);
         resetPreview();
 
         try {
@@ -230,10 +358,7 @@ export default function TimetableAdminPage() {
                 throw new Error(data.message || '스크래핑에 실패했습니다.');
             }
 
-            setPreviewData(data);
-            setPreviewText(JSON.stringify(data, null, 2));
-            setLectureCount(data.lectures.length);
-            showToast(`스크래핑 성공: ${data.lectures.length}개 강의가 감지되었습니다.`);
+            processResponseData(data);
         } catch (error) {
             showToast(`오류: ${error.message}`);
         } finally {
@@ -251,8 +376,9 @@ export default function TimetableAdminPage() {
             return;
         }
         
-        setLoadingMessage('동적 웹 스크래핑을 시작합니다...');
+        setLoadingMessage('동적 웹 스크래핑(대용량) 시작... 잠시만 기다려주세요.');
         setIsLoading(true);
+        setProgress(null);
         resetPreview();
 
         try {
@@ -275,10 +401,7 @@ export default function TimetableAdminPage() {
                 throw new Error(data.message || '동적 스크래핑에 실패했습니다.');
             }
 
-            setPreviewData(data);
-            setPreviewText(JSON.stringify(data, null, 2));
-            setLectureCount(data.lectures.length);
-            showToast(`동적 스크래핑 성공: ${data.lectures.length}개 강의가 감지되었습니다.`);
+            processResponseData(data);
         } catch (error) {
             showToast(`오류: ${error.message}`);
         } finally {
@@ -296,9 +419,10 @@ export default function TimetableAdminPage() {
         textarea.focus();
         textarea.setSelectionRange(startIndex, endIndex);
         
-        const lines = textarea.value.substring(0, startIndex).split('\n').length;
+        const textBefore = textarea.value.substring(0, startIndex);
+        const lines = textBefore.split('\n').length;
         const avgLineHeight = 16; 
-        textarea.scrollTop = (lines - 5) * avgLineHeight; 
+        textarea.scrollTop = (lines - 10) * avgLineHeight; 
 
         setCurrentMatchIndex(index);
     };
@@ -349,6 +473,40 @@ export default function TimetableAdminPage() {
         setPreviewText(e.target.value);
         resetSearch();
     };
+
+    const handleJumpToIssue = (direction) => {
+        if (validationIssues.length === 0) return;
+
+        let newIndex;
+        if (direction === 'next') {
+            newIndex = (currentIssueIndex + 1) % validationIssues.length;
+        } else {
+            newIndex = (currentIssueIndex - 1 + validationIssues.length) % validationIssues.length;
+        }
+
+        setCurrentIssueIndex(newIndex);
+        const issue = validationIssues[newIndex];
+        
+        setSearchText(issue.courseCode);
+        showToast(`이동: ${issue.message} (${newIndex + 1}/${validationIssues.length})`);
+    };
+
+    useEffect(() => {
+        if (searchText && previewText) {
+             const text = previewText;
+             const query = searchText;
+             const matches = [];
+             let index = text.indexOf(query);
+             while (index !== -1) {
+                 matches.push(index);
+                 index = text.indexOf(query, index + 1);
+             }
+             setSearchMatches(matches);
+             if (matches.length > 0) {
+                 navigateToMatch(0, matches);
+             }
+        }
+    }, [searchText, previewText]);
 
     const handlePdfParserSearchChange = (e) => {
         const query = e.target.value;
@@ -565,19 +723,49 @@ export default function TimetableAdminPage() {
                     </div>
                 </div>
 
-                {(previewText) && (
+                {previewText && (
                     <div className="animate-fade-in-up border-t border-gray-100 pt-8">
                         <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                             <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs">2</span>
                             데이터 검수 및 저장
                         </h3>
 
-                        <div className="flex justify-between items-center mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm font-bold text-blue-800">
-                            <span>총 감지된 강의 수: </span>
-                            <span className="text-lg">{lectureCount}개</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex justify-between items-center">
+                                <span className="text-sm font-bold text-blue-800">추출된 강의 수</span>
+                                <span className="text-2xl font-extrabold text-blue-900">{lectureCount}개</span>
+                            </div>
+
+                            <div className={`p-4 border rounded-xl flex flex-col justify-center ${validationIssues.length > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className={`text-sm font-bold ${validationIssues.length > 0 ? 'text-red-800' : 'text-green-800'}`}>
+                                        {validationIssues.length > 0 ? '⚠️ 데이터 오류 의심' : '✅ 데이터 무결성 확인'}
+                                    </span>
+                                    <span className={`text-2xl font-extrabold ${validationIssues.length > 0 ? 'text-red-900' : 'text-green-900'}`}>
+                                        {validationIssues.length}건
+                                    </span>
+                                </div>
+                                
+                                {validationIssues.length > 0 && (
+                                    <div className="flex items-center justify-between text-xs bg-white bg-opacity-60 p-2 rounded-lg">
+                                        <button onClick={() => handleJumpToIssue('prev')} className="px-2 py-1 hover:bg-red-100 rounded font-bold text-red-700">{'< 이전 오류'}</button>
+                                        <span className="text-red-600 font-medium">
+                                            {currentIssueIndex + 1} / {validationIssues.length} (이동)
+                                        </span>
+                                        <button onClick={() => handleJumpToIssue('next')} className="px-2 py-1 hover:bg-red-100 rounded font-bold text-red-700">{'다음 오류 >'}</button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         
-                        <div className="bg-gray-900 rounded-xl p-4 mb-4 overflow-hidden">
+                        {validationIssues.length > 0 && (
+                            <div className="mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 text-sm">
+                                <strong>[오류 상세]</strong> {validationIssues[currentIssueIndex].message} <br/>
+                                <span className="text-xs text-red-500">Field: {validationIssues[currentIssueIndex].field} | Code: {validationIssues[currentIssueIndex].courseCode}</span>
+                            </div>
+                        )}
+                        
+                        <div className="bg-gray-900 rounded-xl p-4 mb-4 overflow-hidden relative">
                             <div className="flex justify-between items-center mb-2 text-gray-400 text-xs">
                                 <span>JSON Preview</span>
                                 <div className="flex gap-2 items-center">
@@ -598,7 +786,7 @@ export default function TimetableAdminPage() {
                                 ref={textareaRef}
                                 value={previewText}
                                 onChange={handlePreviewTextChange}
-                                className="w-full h-96 bg-transparent text-green-400 font-mono text-xs outline-none resize-none"
+                                className="w-full h-96 bg-transparent text-green-400 font-mono text-xs outline-none resize-none focus:bg-gray-800 transition-colors p-2 rounded"
                                 spellCheck={false}
                             />
                         </div>
@@ -607,16 +795,16 @@ export default function TimetableAdminPage() {
                             <button 
                                 onClick={handleSave}
                                 disabled={isLoading}
-                                className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-green-700 transition transform active:scale-95 disabled:opacity-50"
+                                className={`px-8 py-3 rounded-xl font-bold text-sm shadow-lg transition transform active:scale-95 disabled:opacity-50 ${validationIssues.length > 0 ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
                             >
-                                DB에 저장하기
+                                {validationIssues.length > 0 ? '오류 무시하고 DB 저장' : 'DB에 저장하기'}
                             </button>
                         </div>
                     </div>
                 )}
             </div>
 
-            <LoadingModal isOpen={isLoading} message={loadingMessage} />
+            <LoadingModal isOpen={isLoading} message={loadingMessage} progress={progress} />
             {toast.show && <Toast message={toast.message} show={toast.show} onClose={() => setToast({show: false, message: ''})} />}
         </div>
     );

@@ -24,6 +24,8 @@ import { StandardizedTimetable } from './timetable.interface';
 import { HtmlScraperService } from './html-scraper.service';
 import { DynamicScraperService } from './dynamic-scraper.service';
 import { TimetableService } from './timetable.service';
+import { DataValidatorService } from './validation/data-validator.service';
+import { AiValidatorService } from './validation/ai-validator.service';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../auth/get-user.decorator';
 import { User } from '../users/user.entity';
@@ -39,6 +41,8 @@ export class TimetableController {
     private readonly htmlScraper: HtmlScraperService,
     private readonly dynamicScraper: DynamicScraperService,
     private readonly timetableService: TimetableService,
+    private readonly dataValidator: DataValidatorService,
+    private readonly aiValidator: AiValidatorService,
     @InjectRepository(Lecture)
     private readonly lectureRepository: Repository<Lecture>,
   ) {}
@@ -47,81 +51,74 @@ export class TimetableController {
   @UseGuards(AuthGuard())
   async findAllLectures(@GetUser() user: User): Promise<Lecture[]> {
     if (!user.university) {
-      this.logger.warn('GET /lectures - university 정보 없음');
       return [];
     }
-
     const baseUniversity = user.university.replace(/\(.*\)/, '').trim();
+    return this.lectureRepository.find({ where: { university: baseUniversity } });
+  }
+  
+  @Post('lectures/stats')
+  @UseGuards(AuthGuard())
+  async getLectureStats(@Body() body: { ids: number[] }) {
+    return this.timetableService.getLectureStats(body.ids);
+  }
 
-    return this.lectureRepository.find({
-      where: { university: baseUniversity },
-    });
+  @Post('lectures/:id/reviews')
+  @UseGuards(AuthGuard())
+  async createReview(@GetUser() user: User, @Param('id') lectureId: number, @Body() body: { content: string; rating: number; year: number; semester: string; isAnonymous: boolean }) {
+    return this.timetableService.createReview(user, lectureId, body.content, body.rating, body.year, body.semester, body.isAnonymous);
+  }
+
+  @Get('lectures/:id/reviews')
+  @UseGuards(AuthGuard())
+  async getReviews(@GetUser() user: User, @Param('id') lectureId: number) {
+    return this.timetableService.getReviews(lectureId, user);
+  }
+
+  @Delete('reviews/:id')
+  @UseGuards(AuthGuard())
+  async deleteReview(@GetUser() user: User, @Param('id') reviewId: number) {
+    return this.timetableService.deleteReview(user, reviewId);
   }
 
   @Post('preview/pdf')
   @UseInterceptors(FileInterceptor('file'))
-  async previewPdfTimetable(
-    @UploadedFile() file: Express.Multer.File,
-    @Body('year') year: string,
-    @Body('semester') semester: string,
-    @Body('universityId') universityId: string,
-  ): Promise<StandardizedTimetable | { message: string }> {
-    if (!file) {
-      return { message: '파일이 필요합니다.' };
-    }
-
+  async previewPdfTimetable(@UploadedFile() file: Express.Multer.File, @Body('year') year: string, @Body('semester') semester: string, @Body('universityId') universityId: string, @Body('useAi') useAi: string) {
+    if (!file) return { message: '파일이 필요합니다.' };
     const yearNum = parseInt(year) || new Date().getFullYear();
     const semesterStr = semester || 'N/A';
-
-    const standardJson = await this.pdfParser.parsePdf(
-      file.buffer,
-      yearNum,
-      semesterStr,
-      universityId,
-    );
-
-    return standardJson;
+    const standardJson = await this.pdfParser.parsePdf(file.buffer, yearNum, semesterStr, universityId);
+    const validationResult = this.dataValidator.validate(standardJson);
+    if (useAi === 'true') {
+      await this.aiValidator.validate(standardJson, validationResult);
+    }
+    return { data: standardJson, validation: validationResult };
   }
 
   @Post('preview/scrape')
-  async previewScrapeTimetable(
-    @Body('url') url: string,
-    @Body('year') year: string,
-    @Body('semester') semester: string,
-    @Body('universityId') universityId: string,
-  ): Promise<StandardizedTimetable | { message: string }> {
-    if (!url) {
-      return { message: 'URL이 필요합니다.' };
-    }
+  async previewScrapeTimetable(@Body('url') url: string, @Body('year') year: string, @Body('semester') semester: string, @Body('universityId') universityId: string) {
+    if (!url) return { message: 'URL이 필요합니다.' };
     const yearNum = parseInt(year) || new Date().getFullYear();
     const semesterStr = semester || 'N/A';
-
-    return this.htmlScraper.parseUrl(url, yearNum, semesterStr, universityId);
+    const result = await this.htmlScraper.parseUrl(url, yearNum, semesterStr, universityId);
+    const validation = this.dataValidator.validate(result);
+    return { data: result, validation };
   }
 
   @Post('preview/scrape-dynamic')
-  async previewDynamicScrapeTimetable(
-    @Body('url') url: string,
-    @Body('year') year: string,
-    @Body('semester') semester: string,
-    @Body('universityId') universityId: string,
-  ): Promise<StandardizedTimetable | { message: string }> {
-    if (!url) {
-      return { message: 'URL이 필요합니다.' };
-    }
+  async previewDynamicScrapeTimetable(@Body('url') url: string, @Body('year') year: string, @Body('semester') semester: string, @Body('universityId') universityId: string) {
+    if (!url) return { message: 'URL이 필요합니다.' };
     const yearNum = parseInt(year) || new Date().getFullYear();
     const semesterStr = semester || 'N/A';
-
-    return this.dynamicScraper.parseUrl(
-      url,
-      yearNum,
-      semesterStr,
-      universityId,
-    );
+    const result = await this.dynamicScraper.parseUrl(url, yearNum, semesterStr, universityId);
+    const validation = this.dataValidator.validate(result);
+    return { data: result, validation };
   }
 
   @Post('save')
   async saveTimetable(@Body() dto: TimetableSaveDto) {
+    this.logger.log(`[저장 시작] ${dto.lectures.length}개 강의`);
+
     const lecturesToSave: Lecture[] = [];
     let updateCount = 0;
     let insertCount = 0;
@@ -134,6 +131,7 @@ export class TimetableController {
             year: dto.year,
             semester: dto.semester,
             courseCode: lec.courseCode,
+            campus: lec.campus,
           },
         });
 
@@ -164,9 +162,11 @@ export class TimetableController {
     );
 
     await this.lectureRepository.save(lecturesToSave);
+    
+    this.logger.log(`[저장 완료] 신규: ${insertCount}, 업데이트: ${updateCount}`);
 
     return {
-      message: 'DB 저장/업데이트 성공',
+      message: '성공',
       totalCount: lecturesToSave.length,
       insertedCount: insertCount,
       updatedCount: updateCount,
@@ -175,11 +175,7 @@ export class TimetableController {
 
   @Get('my')
   @UseGuards(AuthGuard())
-  async getMyTimetables(
-    @GetUser() user: User,
-    @Query('year') year: string,
-    @Query('semester') semester: string,
-  ) {
+  async getMyTimetables(@GetUser() user: User, @Query('year') year: string, @Query('semester') semester: string) {
     const y = parseInt(year) || 2025;
     const s = semester || '1학기';
     return this.timetableService.getMyTimetables(user, y, s);
@@ -187,44 +183,25 @@ export class TimetableController {
 
   @Post('my')
   @UseGuards(AuthGuard())
-  async createTimetable(
-    @GetUser() user: User,
-    @Body() body: { name: string; year: number; semester: string },
-  ) {
-    return this.timetableService.createTimetable(
-      user,
-      body.name,
-      body.year,
-      body.semester,
-    );
+  async createTimetable(@GetUser() user: User, @Body() body: { name: string; year: number; semester: string }) {
+    return this.timetableService.createTimetable(user, body.name, body.year, body.semester);
   }
 
   @Delete('my/:id')
   @UseGuards(AuthGuard())
-  async deleteTimetable(
-    @GetUser() user: User, 
-    @Param('id') id: number
-  ) {
+  async deleteTimetable(@GetUser() user: User, @Param('id') id: number) {
     return this.timetableService.deleteTimetable(user, id);
   }
 
   @Post('my/:id/lecture')
   @UseGuards(AuthGuard())
-  async addLectureToTimetable(
-    @GetUser() user: User,
-    @Param('id') timetableId: number,
-    @Body('lectureId') lectureId: number,
-  ) {
+  async addLectureToTimetable(@GetUser() user: User, @Param('id') timetableId: number, @Body('lectureId') lectureId: number) {
     return this.timetableService.addLecture(user, timetableId, lectureId);
   }
 
   @Post('my/:id/custom-lecture')
   @UseGuards(AuthGuard())
-  async addCustomLecture(
-    @GetUser() user: User,
-    @Param('id') timetableId: number,
-    @Body() body: any,
-  ) {
+  async addCustomLecture(@GetUser() user: User, @Param('id') timetableId: number, @Body() body: any) {
     return this.timetableService.addCustomLecture(user, timetableId, body);
   }
 

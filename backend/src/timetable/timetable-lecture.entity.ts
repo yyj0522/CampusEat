@@ -1,13 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Timetable } from './timetable.entity';
-import { ScheduleItem } from './lecture.entity';
 
-@Entity()
+@Entity('timetable_lectures')
 export class TimetableLecture {
   @PrimaryGeneratedColumn()
   id: number;
 
   @ManyToOne(() => Timetable, (timetable) => timetable.lectures, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'timetableId' })
   timetable: Timetable;
 
   @Column({ nullable: true })
@@ -19,11 +19,14 @@ export class TimetableLecture {
   @Column()
   professor: string;
 
-  @Column()
+  @Column({ nullable: true })
   courseCode: string;
 
-  @Column('jsonb')
-  schedule: ScheduleItem[];
+  @Column({ default: 0 })
+  credits: number;
+
+  @Column('jsonb', { nullable: true })
+  schedule: any;
 
   @Column({ nullable: true })
   color: string;
