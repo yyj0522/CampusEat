@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import apiClient from "@/lib/api";
 import TextEditor from "../../(main)/community/TextEditor";
 
@@ -55,7 +56,7 @@ export default function NoticeAdminPage() {
         .filter((post) => post.category === "notice")
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setNotices(noticePosts);
-    } catch (error) {
+    } catch {
       showToast("목록을 불러오지 못했습니다.");
     } finally {
       setIsListLoading(false);
@@ -126,7 +127,7 @@ export default function NoticeAdminPage() {
       }
       resetForm();
       fetchNotices();
-    } catch (error) {
+    } catch {
       showToast("오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
@@ -223,7 +224,14 @@ export default function NoticeAdminPage() {
                                 <h2 className="text-2xl font-extrabold text-gray-900 mb-1">{slideCaption}</h2>
                                 <p className="text-gray-600 font-medium">{slideCaptionSmall}</p>
                             </div>
-                            <img src={bannerPreview} alt="Preview" className="absolute right-0 top-0 h-full w-1/2 object-cover mask-image-gradient" />
+                            <div className="absolute right-0 top-0 h-full w-1/2 mask-image-gradient">
+                                <Image
+                                    src={bannerPreview}
+                                    alt="Preview"
+                                    fill
+                                    className="object-cover"
+                                />
+                            </div>
                         </div>
                     )}
 

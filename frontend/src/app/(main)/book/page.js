@@ -3,10 +3,13 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "../../context/AuthProvider";
 import apiClient from "../../../lib/api";
 import io from 'socket.io-client';
 import UserDisplay from '../../components/UserDisplay';
+
+const bookItemTemplate = { bookTitle: '', courseName: '', originalPrice: '', sellingPrice: '' };
 
 const ChatContextMenu = ({ x, y, targetUser, onKick, onClose }) => {
     if (!targetUser) return null;
@@ -167,8 +170,6 @@ const CreateTradeModal = ({ user, onCreate, show, onClose }) => {
     const [imagePreview, setImagePreview] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
-    const bookItemTemplate = { bookTitle: '', courseName: '', originalPrice: '', sellingPrice: '' };
-
     useEffect(() => {
         if (show) {
             setTitle("");
@@ -257,7 +258,17 @@ const CreateTradeModal = ({ user, onCreate, show, onClose }) => {
                     <div className="bg-gray-50 p-4 rounded-xl">
                         <label className="block text-sm font-bold text-gray-700 mb-2">교재 사진</label>
                         <input type="file" accept="image/*" onChange={handleImageChange} required className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-black file:text-white hover:file:bg-gray-800 transition" />
-                        {imagePreview && <div className="mt-3"><img src={imagePreview} alt="미리보기" className="w-full max-h-48 object-contain rounded-lg border border-gray-200" /></div>}
+                        {imagePreview && (
+                            <div className="mt-3 relative w-full h-48">
+                                <Image 
+                                    src={imagePreview} 
+                                    alt="미리보기" 
+                                    fill
+                                    className="object-contain rounded-lg border border-gray-200"
+                                    unoptimized
+                                />
+                            </div>
+                        )}
                     </div>
                     <div className="space-y-4">
                         {books.map((book, index) => (
@@ -304,7 +315,6 @@ export default function BookPage() {
     const [tradeToComplete, setTradeToComplete] = useState(null);
     const [tradeToCancel, setTradeToCancel] = useState(null);
     const [alertModal, setAlertModal] = useState({ show: false, message: "" });
-    const [expandedCardId, setExpandedCardId] = useState(null);
     const [showHelp, setShowHelp] = useState(false);
     const helpRef = useRef(null);
     const [selectedTrade, setSelectedTrade] = useState(null);
@@ -316,8 +326,7 @@ export default function BookPage() {
     const itemsPerPage = 10;
 
     const showAlert = (message) => setAlertModal({ show: true, message });
-    const handleToggleDetails = (cardId) => { setExpandedCardId(prevId => (prevId === cardId ? null : cardId)); };
-
+    
     useEffect(() => { if (!authLoading && !user) router.push("/login"); }, [user, authLoading, router]);
 
     useEffect(() => {
@@ -424,8 +433,28 @@ export default function BookPage() {
 
     const handleComplete = (trade) => { setTradeToComplete(trade); };
     const handleCancel = (trade) => { setTradeToCancel(trade); };
-    const executeComplete = async () => { if (!tradeToComplete) return; try { await apiClient.post(`/trades/${tradeToComplete.id}/complete`); showAlert('거래가 완료되었습니다'); } catch (e) { showAlert("오류"); } finally { setTradeToComplete(null); } };
-    const executeCancel = async () => { if (!tradeToCancel) return; try { await apiClient.post(`/trades/${tradeToCancel.id}/complete`); showAlert('거래가 최소되었습니다'); } catch (e) { showAlert("오류"); } finally { setTradeToCancel(null); } };
+    const executeComplete = async () => { 
+        if (!tradeToComplete) return; 
+        try { 
+            await apiClient.post(`/trades/${tradeToComplete.id}/complete`); 
+            showAlert('거래가 완료되었습니다'); 
+        } catch { 
+            showAlert("오류"); 
+        } finally { 
+            setTradeToComplete(null); 
+        } 
+    };
+    const executeCancel = async () => { 
+        if (!tradeToCancel) return; 
+        try { 
+            await apiClient.post(`/trades/${tradeToCancel.id}/complete`); 
+            showAlert('거래가 최소되었습니다'); 
+        } catch { 
+            showAlert("오류"); 
+        } finally { 
+            setTradeToCancel(null); 
+        } 
+    };
     const handleKickUser = (targetUser) => { if (!socket || !selectedTrade || !user) return; socket.emit('kickUser', { tradeId: selectedTrade.id, targetUserId: targetUser.id, creatorId: user.id }); };
     const calculateDiscount = (original, selling) => { if (!original || original === 0) return 0; return Math.round(((original - selling) / original) * 100); };
 
@@ -540,7 +569,13 @@ export default function BookPage() {
                                     return (
                                         <div key={t.id} className="group relative bg-white rounded-[2rem] flex flex-col h-full overflow-hidden hover:-translate-y-2 transition-transform duration-300 shadow-sm hover:shadow-2xl border border-gray-100">
                                             <div className="relative aspect-square bg-gray-100 overflow-hidden">
-                                                <img src={t.imageUrl} alt={t.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                                <Image 
+                                                    src={t.imageUrl} 
+                                                    alt={t.title} 
+                                                    fill
+                                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    unoptimized
+                                                />
                                                 {isTrading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><span className="text-white font-bold px-4 py-1 border-2 border-white rounded-full">거래중</span></div>}
                                                 {discount > 0 && <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">-{discount}%</span>}
                                             </div>

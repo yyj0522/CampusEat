@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthProvider";
 import apiClient from "@/lib/api";
@@ -359,7 +359,6 @@ export default function ContactPage() {
             }
         `}</style>
       <main className="max-w-4xl mx-auto px-4 py-10 animate-fadeIn">
-        {/* Header Section */}
         <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg text-center relative overflow-hidden">
              <div className="relative z-10">
                 <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
@@ -374,7 +373,6 @@ export default function ContactPage() {
             <div className="absolute bottom-0 right-0 w-40 h-40 bg-indigo-500/30 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl"></div>
         </div>
 
-        {/* Navigation Tabs */}
         <div className="flex justify-center mb-8">
             <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 inline-flex">
                 {[
@@ -393,7 +391,6 @@ export default function ContactPage() {
             </div>
         </div>
 
-        {/* Content Area */}
         <div className="bg-white border border-gray-100 rounded-3xl shadow-sm min-h-[500px] overflow-hidden">
             
             {mode === 'faq' && (
@@ -420,7 +417,7 @@ export default function ContactPage() {
             {mode === 'myInquiries' && user && (
                 <div className="p-6 md:p-8 animate-fadeIn">
                     <div className="flex justify-between items-center mb-6">
-                         <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                          <h2 className="text-2xl font-bold text-gray-800 flex items-center">
                             <span className="w-2 h-8 bg-indigo-500 rounded-full mr-3"></span>
                             내 문의 내역
                         </h2>
@@ -458,7 +455,7 @@ export default function ContactPage() {
 
             {mode === 'form' && user && (
                 <div className="p-6 md:p-8 animate-fadeIn">
-                     <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center">
+                      <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center">
                         <span className="w-2 h-8 bg-indigo-500 rounded-full mr-3"></span>
                         1:1 문의 작성
                     </h2>

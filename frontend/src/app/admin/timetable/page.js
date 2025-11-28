@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import apiClient from "@/lib/api";
 
 const Toast = ({ message, show, onClose }) => {
     useEffect(() => { if (show) { const timer = setTimeout(onClose, 3000); return () => clearTimeout(timer); } }, [show, onClose]);
@@ -61,7 +60,6 @@ export default function TimetableAdminPage() {
     const [year, setYear] = useState('2025');
     const [semester, setSemester] = useState('1학기');
 
-    const [previewData, setPreviewData] = useState(null);
     const [previewText, setPreviewText] = useState('');
     const [lectureCount, setLectureCount] = useState(0);
 
@@ -115,7 +113,6 @@ export default function TimetableAdminPage() {
     };
 
     const resetPreview = () => {
-        setPreviewData(null);
         setPreviewText('');
         setLectureCount(0);
         setValidationIssues([]);
@@ -198,7 +195,6 @@ export default function TimetableAdminPage() {
 
         const strictIssues = runStrictValidation(rawData.lectures, backendValidation);
 
-        setPreviewData(rawData);
         setPreviewText(JSON.stringify(rawData, null, 2));
         setLectureCount(rawData.lectures.length);
         setValidationIssues(strictIssues);
@@ -271,7 +267,7 @@ export default function TimetableAdminPage() {
         let dataToSave;
         try {
             dataToSave = JSON.parse(previewText);
-        } catch (jsonError) {
+        } catch {
             showToast(`오류: JSON 형식이 올바르지 않습니다.`);
             setIsLoading(false);
             return;
@@ -409,7 +405,7 @@ export default function TimetableAdminPage() {
         }
     };
 
-    const navigateToMatch = (index, matches) => {
+    const navigateToMatch = useCallback((index, matches) => {
         if (!textareaRef.current || !matches || matches.length === 0) return;
 
         const textarea = textareaRef.current;
@@ -425,7 +421,7 @@ export default function TimetableAdminPage() {
         textarea.scrollTop = (lines - 10) * avgLineHeight; 
 
         setCurrentMatchIndex(index);
-    };
+    }, [searchText]);
     
     const handleSearch = () => {
         if (!searchText || !textareaRef.current) {
@@ -506,7 +502,7 @@ export default function TimetableAdminPage() {
                  navigateToMatch(0, matches);
              }
         }
-    }, [searchText, previewText]);
+    }, [searchText, previewText, navigateToMatch]);
 
     const handlePdfParserSearchChange = (e) => {
         const query = e.target.value;

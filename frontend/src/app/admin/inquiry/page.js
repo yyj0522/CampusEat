@@ -60,7 +60,7 @@ export default function InquiryAdminPage() {
             document.body.appendChild(link);
             link.click();
             link.remove();
-        } catch (error) {
+        } catch {
             showToast("파일을 다운로드할 수 없습니다.");
         }
     };
@@ -77,7 +77,7 @@ export default function InquiryAdminPage() {
             showToast("답변이 등록되었습니다.");
             setExpandedId(null);
             fetchInquiries();
-        } catch (error) {
+        } catch {
             showToast("답변 등록 중 오류가 발생했습니다.");
         } finally {
             setIsSubmitting(false);

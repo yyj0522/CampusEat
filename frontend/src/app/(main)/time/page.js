@@ -1,20 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthProvider";
 import apiClient from "@/lib/api";
 import TimetableGrid from "./TimetableGrid";
 import LectureReviewModal from "./LectureReviewModal";
 import html2canvas from "html2canvas";
-
-const Toast = ({ message, show, onClose }) => {
-    useEffect(() => {
-        if (show) { const timer = setTimeout(onClose, 2000); return () => clearTimeout(timer); }
-    }, [show, onClose]);
-    if (!show) return null;
-    return <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-lg text-sm z-[110]">{message}</div>;
-};
 
 const ConfirmModal = ({ isOpen, message, onConfirm, onCancel }) => {
     if (!isOpen) return null;
@@ -117,10 +109,30 @@ export default function TimetablePage() {
 
     useEffect(() => { if (!authLoading && !user) router.push("/login"); }, [user, authLoading, router]);
 
+    const createDefaultTimetable = useCallback(async () => {
+        try {
+            const res = await apiClient.post('/timetable/my', { name: "시간표 1", year, semester });
+            setTimetables([res.data]);
+            setActiveTimetableId(res.data.id);
+        } catch (err) { console.error(err); }
+    }, [year, semester]);
+
+    const fetchTimetables = useCallback(async () => {
+        try {
+            const res = await apiClient.get(`/timetable/my?year=${year}&semester=${encodeURIComponent(semester)}`);
+            if (res.data && res.data.length > 0) {
+                setTimetables(res.data);
+                if (!activeTimetableId) setActiveTimetableId(res.data[0].id);
+            } else {
+                createDefaultTimetable();
+            }
+        } catch (err) { console.error(err); }
+    }, [year, semester, activeTimetableId, createDefaultTimetable]);
+
     useEffect(() => {
         if (!user) return;
         fetchTimetables();
-    }, [user, year, semester]);
+    }, [user, year, semester, fetchTimetables]);
 
     useEffect(() => {
         if (timetables.length > 0 && activeTimetableId) {
@@ -132,31 +144,11 @@ export default function TimetablePage() {
         }
     }, [activeTimetableId, timetables]);
 
-    const fetchTimetables = async () => {
-        try {
-            const res = await apiClient.get(`/timetable/my?year=${year}&semester=${encodeURIComponent(semester)}`);
-            if (res.data && res.data.length > 0) {
-                setTimetables(res.data);
-                if (!activeTimetableId) setActiveTimetableId(res.data[0].id);
-            } else {
-                createDefaultTimetable();
-            }
-        } catch (err) { console.error(err); }
-    };
-
-    const createDefaultTimetable = async () => {
-        try {
-            const res = await apiClient.post('/timetable/my', { name: "시간표 1", year, semester });
-            setTimetables([res.data]);
-            setActiveTimetableId(res.data.id);
-        } catch (err) { console.error(err); }
-    };
-
     const createNewTimetable = async () => {
         try {
             await apiClient.post('/timetable/my', { name: `시간표 ${timetables.length + 1}`, year, semester });
             fetchTimetables();
-        } catch(err) { alert("생성 실패"); }
+        } catch { alert("생성 실패"); }
     };
 
     const handleDeleteTimetable = (e, id) => {
@@ -171,10 +163,20 @@ export default function TimetablePage() {
                     setTimetables(newTimetables);
                     if (id === activeTimetableId) setActiveTimetableId(newTimetables.length > 0 ? newTimetables[0].id : null);
                     fetchTimetables();
-                } catch (err) { alert("삭제 실패"); }
+                } catch { alert("삭제 실패"); }
                 setConfirmModal({ isOpen: false });
             }
         });
+    };
+
+    const fetchLectureStats = async (lectureIds) => {
+        if (!lectureIds || lectureIds.length === 0) return;
+        try {
+            const res = await apiClient.post('/timetable/lectures/stats', { ids: lectureIds });
+            const statsMap = {};
+            res.data.forEach(stat => statsMap[stat.id] = stat);
+            setLectureStats(prev => ({ ...prev, ...statsMap }));
+        } catch (err) { console.error(err); }
     };
 
     const handleDeleteLecture = async (lectureId) => {
@@ -190,16 +192,6 @@ export default function TimetablePage() {
                 setConfirmModal({ isOpen: false });
             }
         });
-    };
-
-    const fetchLectureStats = async (lectureIds) => {
-        if (!lectureIds || lectureIds.length === 0) return;
-        try {
-            const res = await apiClient.post('/timetable/lectures/stats', { ids: lectureIds });
-            const statsMap = {};
-            res.data.forEach(stat => statsMap[stat.id] = stat);
-            setLectureStats(prev => ({ ...prev, ...statsMap }));
-        } catch (err) { console.error(err); }
     };
 
     const fetchAllLectures = async () => {
@@ -270,7 +262,7 @@ export default function TimetablePage() {
             fetchTimetables();
             fetchLectureStats([lectureId]);
             setIsSearchOpen(false);
-        } catch (err) { alert("추가 실패"); }
+        } catch { alert("추가 실패"); }
     };
 
     const handleDirectAdd = async (formData) => {
@@ -279,7 +271,7 @@ export default function TimetablePage() {
             await apiClient.post(`/timetable/my/${activeTimetableId}/custom-lecture`, formData);
             fetchTimetables();
             setIsDirectAddOpen(false);
-        } catch (err) { alert("추가 실패"); }
+        } catch { alert("추가 실패"); }
     };
 
     const handleSaveImage = async () => {
@@ -310,7 +302,6 @@ export default function TimetablePage() {
     const renderLectureStats = (lecture) => {
         const stat = lectureStats[lecture.id];
         if (!stat) return null;
-        const rateColor = stat.savedCount >= stat.capacity ? 'text-red-500' : 'text-blue-500';
         return (
             <div className="flex items-center gap-1.5 text-xs mt-1.5 text-gray-600 bg-gray-50 px-2 py-1 rounded w-fit">
                 <span>정원 {stat.capacity}명</span>
@@ -432,7 +423,7 @@ export default function TimetablePage() {
                                         </div>
                                         {renderLectureStats(lec)}
                                     </div>
-                                    <button onClick={() => addLecture(lec.id)} className="bg-blue-50 text-blue-600 px-3 py-1 rounded text-sm font-bold">추가</button>
+                                    <button onClick={(e) => {e.stopPropagation(); addLecture(lec.id);}} className="bg-blue-50 text-blue-600 px-3 py-1 h-fit rounded text-xs font-bold">추가</button>
                                 </div>
                             ))}
                             {!searchQuery && Object.keys(lectureTree).map(dept => (
@@ -454,7 +445,7 @@ export default function TimetablePage() {
                                                                     <div>
                                                                         <div className="font-bold text-sm flex items-center gap-2">
                                                                             {lec.courseName}
-                                                                            <span className="text-[10px] font-normal text-gray-500 border px-1 rounded">
+                                                                            <span className="text--[10px] font-normal text-gray-500 border px-1 rounded">
                                                                                 {lec.credits}학점
                                                                             </span>
                                                                         </div>

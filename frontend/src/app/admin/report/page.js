@@ -105,7 +105,7 @@ export default function ReportAdminPage() {
             await apiClient.patch(`/reports/${reportId}/status`, { status: newStatus });
             showToast("처리 상태가 변경되었습니다.");
             fetchReports();
-        } catch (error) {
+        } catch {
             showToast("오류가 발생했습니다.");
         } finally {
             setConfirmInfo({ show: false, message: "", onConfirm: null });
@@ -117,7 +117,7 @@ export default function ReportAdminPage() {
             await apiClient.post('/users/admin/suspend', { userId, days });
             showToast("이용 제한이 적용되었습니다.");
             setBanModal({ isOpen: false, user: null });
-        } catch (error) {
+        } catch {
             showToast("제재 적용 중 오류가 발생했습니다.");
         }
     };

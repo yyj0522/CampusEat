@@ -144,7 +144,7 @@ const ConfirmModal = ({ message, onConfirm, onCancel }) => (
   </div>
 );
 
-const CreateMeetingModal = ({ user, onCreate, show, onClose }) => {
+const CreateMeetingModal = ({ onCreate, show, onClose }) => {
   const [title, setTitle] = useState(""); const [date, setDate] = useState(""); const [time, setTime] = useState("");
   const [maxParticipants, setMaxParticipants] = useState(4); const [location, setLocation] = useState("");
   const [purpose, setPurpose] = useState(""); const [description, setDescription] = useState(""); const [tags, setTags] = useState([]);
@@ -187,7 +187,7 @@ const CreateMeetingModal = ({ user, onCreate, show, onClose }) => {
   );
 };
 
-const CreateCarpoolModal = ({ user, onCreate, show, onClose }) => {
+const CreateCarpoolModal = ({ onCreate, show, onClose }) => {
   const [title, setTitle] = useState(""); const [time, setTime] = useState(""); const [maxParticipants, setMaxParticipants] = useState(4);
   const [departure, setDeparture] = useState(""); const [arrival, setArrival] = useState(""); const [description, setDescription] = useState("");
   useEffect(() => { if (show) { const n = new Date(); n.setMinutes(n.getMinutes() + 10); setTitle(""); setTime(n.toTimeString().slice(0, 5)); setMaxParticipants(4); setDeparture(""); setArrival(""); setDescription(""); } }, [show]);
@@ -305,18 +305,33 @@ export default function MeetingPage() {
     try { await apiClient.post("/gatherings", data); setShowCreateModal(false); setShowCarpoolModal(false); setShowSuccessModal(true); setTimeout(() => setShowSuccessModal(false), 2000); fetchGatherings(); }
     catch (e) { showAlert(e.response?.data?.message || "오류"); }
   };
+  
   const handleJoinLeave = async (g, isPart) => {
-    try { await apiClient.post(`/gatherings/${g.id}/${isPart ? 'leave' : 'join'}`); fetchGatherings(); }
-    catch (e) { showAlert("실패"); }
+    try { 
+        await apiClient.post(`/gatherings/${g.id}/${isPart ? 'leave' : 'join'}`); 
+        fetchGatherings(); 
+    } catch { 
+        showAlert("실패"); 
+    }
   };
+
   const handleDelete = (gatheringId) => {
     setGatheringToDelete(gatheringId);
   };
+
   const executeDelete = async () => {
     if (!gatheringToDelete) return;
-    try { await apiClient.delete(`/gatherings/${gatheringToDelete}`); fetchGatherings(); if (selectedMeeting?.id === gatheringToDelete) setSelectedMeeting(null); }
-    catch (e) { showAlert("삭제 실패"); } finally { setGatheringToDelete(null); }
+    try { 
+        await apiClient.delete(`/gatherings/${gatheringToDelete}`); 
+        fetchGatherings(); 
+        if (selectedMeeting?.id === gatheringToDelete) setSelectedMeeting(null); 
+    } catch { 
+        showAlert("삭제 실패"); 
+    } finally { 
+        setGatheringToDelete(null); 
+    }
   };
+
   const handleKickUser = (t) => socket?.emit("kickUser", { gatheringId: selectedMeeting.id, targetUserId: t.id, creatorId: user.id });
   const handleAcknowledgeKick = async (gid) => { try { await apiClient.post(`/gatherings/${gid}/acknowledge-kick`); fetchGatherings(); } catch { } };
   const handleAcknowledgeDelete = async (gid) => { try { await apiClient.post(`/gatherings/${gid}/leave`); fetchGatherings(); } catch { fetchGatherings(); } };
@@ -524,8 +539,8 @@ export default function MeetingPage() {
       </div>
 
       {showSuccessModal && <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-4 rounded-full shadow-2xl z-50 animate-bounce text-sm font-bold">완료되었습니다!</div>}
-      {user && <CreateMeetingModal show={showCreateModal} onCreate={handleCreateGathering} onClose={() => setShowCreateModal(false)} user={user} />}
-      {user && <CreateCarpoolModal show={showCarpoolModal} onCreate={handleCreateGathering} onClose={() => setShowCarpoolModal(false)} user={user} />}
+      {user && <CreateMeetingModal show={showCreateModal} onCreate={handleCreateGathering} onClose={() => setShowCreateModal(false)} />}
+      {user && <CreateCarpoolModal show={showCarpoolModal} onCreate={handleCreateGathering} onClose={() => setShowCarpoolModal(false)} />}
       {gatheringToDelete && <ConfirmModal message="정말 삭제하시겠습니까?" onConfirm={executeDelete} onCancel={() => setGatheringToDelete(null)} />}
       {alertModal.show && <AlertModal message={alertModal.message} onClose={() => setAlertModal({ show: false, message: "" })} />}
     </div>

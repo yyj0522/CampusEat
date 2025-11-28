@@ -1,7 +1,6 @@
 "use client";
 
 import { forwardRef } from "react";
-import html2canvas from "html2canvas";
 
 const TimetableGrid = forwardRef(({ currentTimetable, onDeleteLecture, onLectureClick }, ref) => {
     
@@ -114,5 +113,7 @@ const TimetableGrid = forwardRef(({ currentTimetable, onDeleteLecture, onLecture
         </div>
     );
 });
+
+TimetableGrid.displayName = "TimetableGrid";
 
 export default TimetableGrid;

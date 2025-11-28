@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import apiClient from "@/lib/api";
 
 export default function LectureReviewModal({ isOpen, onClose, lecture }) {
@@ -14,13 +14,8 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
     const scrollRef = useRef(null);
     const ratingRef = useRef(null);
 
-    useEffect(() => {
-        if (isOpen && lecture) {
-            fetchReviews();
-        }
-    }, [isOpen, lecture]);
-
-    const fetchReviews = async () => {
+    const fetchReviews = useCallback(async () => {
+        if (!lecture) return;
         try {
             const res = await apiClient.get(`/timetable/lectures/${lecture.id}/reviews`);
             setReviews(res.data);
@@ -32,7 +27,13 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
         } catch (err) {
             console.error("리뷰 로드 실패", err);
         }
-    };
+    }, [lecture]);
+
+    useEffect(() => {
+        if (isOpen && lecture) {
+            fetchReviews();
+        }
+    }, [isOpen, lecture, fetchReviews]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -48,7 +49,7 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
             });
             setContent("");
             fetchReviews();
-        } catch (err) {
+        } catch {
             alert("리뷰 등록 실패");
         }
     };
@@ -58,23 +59,19 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
         try {
             await apiClient.delete(`/timetable/reviews/${reviewId}`);
             fetchReviews();
-        } catch (err) {
+        } catch {
             alert("삭제 실패 (본인 글만 삭제 가능)");
         }
     };
 
-    // 별점 드래그 로직 개선: 고정 너비 대신 실제 요소 크기 기준 계산
     const handleRatingMove = (e) => {
         if (!ratingRef.current) return;
         const { left, width } = ratingRef.current.getBoundingClientRect();
-        // 터치/마우스 좌표 통일
         const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
         
         let percent = (clientX - left) / width;
-        // 범위 제한 (0~1)
         percent = Math.max(0, Math.min(1, percent)); 
 
-        // 0.5 단위 계산
         const newRating = Math.ceil(percent * 10) / 2;
         setRating(newRating);
     };
@@ -85,22 +82,12 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
         }
     };
 
-    // [시간 수정] 서버 시간을 무조건 UTC로 가정하고 9시간을 더함
     const formatKST = (dateString) => {
         if (!dateString) return "";
         const date = new Date(dateString);
         
-        // 유효하지 않은 날짜면 그대로 반환
         if (isNaN(date.getTime())) return dateString;
 
-        // DB 시간이 UTC라면 getHours()는 현지 시간으로 자동 변환되지만,
-        // 확실하게 하기 위해 UTC 메서드 기준으로 9시간을 더한 값을 추출합니다.
-        const kstOffset = 9 * 60 * 60 * 1000;
-        // UTC 시간으로 간주하고 오프셋 더하기
-        const kstDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000) + kstOffset); 
-        // 만약 서버가 이미 KST 문자열을 준다면 위 로직 대신 아래를 사용해야 하나,
-        // 현재 9시간 전으로 나온다면 이 로직이 맞습니다. (UTC -> KST 강제 변환)
-        // 더 단순하고 강력한 방법: 그냥 현재값에 9시간 더하기 (서버가 UTC라고 확신할 때)
         const targetDate = new Date(date.getTime() + (9 * 60 * 60 * 1000)); 
 
         const yyyy = targetDate.getUTCFullYear();
@@ -121,7 +108,6 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
         >
             <div className="bg-white w-full max-w-lg h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fadeIn relative">
                 
-                {/* Header */}
                 <div className="bg-white px-6 py-5 border-b flex justify-between items-start sticky top-0 z-10">
                     <div>
                         <h3 className="font-extrabold text-gray-900 text-xl leading-tight">{lecture.courseName}</h3>
@@ -132,7 +118,6 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
                     </button>
                 </div>
 
-                {/* Feed List */}
                 <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-4" ref={scrollRef}>
                     {reviews.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
@@ -168,7 +153,6 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
                                             </span>
                                         </div>
                                         <span className="text-[10px] text-gray-400">
-                                            {/* 강제 시간 보정 함수 사용 */}
                                             {formatKST(review.createdAt)}
                                         </span>
                                     </div>
@@ -191,7 +175,6 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
                     )}
                 </div>
 
-                {/* Input Area */}
                 <div className="bg-white p-4 border-t shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
                     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
@@ -204,7 +187,6 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
                                 </select>
                             </div>
                             
-                            {/* 별점 입력 UI 수정: w-fit과 inline-block으로 마우스 좌표 정확도 향상 */}
                             <div className="flex items-center gap-2">
                                 <div 
                                     className="relative inline-block cursor-pointer touch-none select-none"

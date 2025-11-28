@@ -543,7 +543,7 @@ export default function ProfilePage() {
             await apiClient.delete('/users/me');
             showAlert("회원 탈퇴 처리가 완료되었습니다. 이용해주셔서 감사합니다.");
             logout(); 
-        } catch (error) {
+        } catch {
             showAlert("회원 탈퇴 중 오류가 발생했습니다.");
         }
     };

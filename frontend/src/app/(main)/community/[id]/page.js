@@ -83,8 +83,8 @@ function ReplyInputForm({ authorNickname, onSubmit, onCancel }) {
           <span className="text-xs font-medium text-gray-600">익명</span>
         </div>
         <div className="flex gap-2">
-             {onCancel && <button onClick={onCancel} className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-200 rounded-lg transition">취소</button>}
-             <button
+              {onCancel && <button onClick={onCancel} className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-200 rounded-lg transition">취소</button>}
+              <button
               onClick={handleSubmit}
               className="bg-black text-white px-4 py-1.5 rounded-lg hover:bg-gray-800 transition text-xs font-bold"
             >
@@ -310,7 +310,7 @@ export default function PostDetailPage() {
       setComments(commentRes.data);
       setEditTitle(postRes.data.title);
       setEditContent(postRes.data.content);
-    } catch (error) {
+    } catch {
       window.alert("게시글을 불러올 수 없습니다.");
       setTimeout(() => router.back(), 1500);
     } finally {
@@ -474,7 +474,7 @@ export default function PostDetailPage() {
         try {
             await apiClient.delete(`/posts/${id}`);
             router.replace("/community");
-        } catch (error) {
+        } catch {
             window.alert("삭제 중 오류가 발생했습니다.");
         }
     }
@@ -490,7 +490,7 @@ export default function PostDetailPage() {
         setPost(prev => ({ ...prev, ...res.data }));
         setIsEditing(false);
         window.alert("수정되었습니다.");
-    } catch (error) {
+    } catch {
         window.alert("수정 중 오류가 발생했습니다.");
     }
   };
@@ -500,7 +500,7 @@ export default function PostDetailPage() {
         await apiClient.post(`/posts/${id}/report`, { reason });
         setShowReportModal(false);
         window.alert("신고가 접수되었습니다.");
-    } catch (error) {
+    } catch {
         window.alert("신고 중 오류가 발생했습니다.");
     }
   };
@@ -513,7 +513,7 @@ export default function PostDetailPage() {
         setIsCommentAnonymous(false);
         fetchComments();
         setPost(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }));
-    } catch (error) {
+    } catch {
         window.alert("댓글 작성 실패");
     }
   };
@@ -524,7 +524,7 @@ export default function PostDetailPage() {
           setReplyingTo(null);
           fetchComments(); 
           setPost(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }));
-      } catch(error) {
+      } catch {
           window.alert("답글 작성 실패");
       }
   };
@@ -534,7 +534,7 @@ export default function PostDetailPage() {
         try {
             await apiClient.delete(`/posts/${id}/comments/${commentId}`);
             fetchComments(); 
-        } catch (error) {
+        } catch {
             window.alert("댓글 삭제 실패");
         }
     }
@@ -545,7 +545,7 @@ export default function PostDetailPage() {
           await apiClient.post(`/posts/${id}/comments/${commentId}/like`);
           fetchComments(); 
       } catch (error) {
-          console.error("댓글 좋아요 실패", error);
+        console.error("댓글 좋아요 실패", error);
       }
   }
 

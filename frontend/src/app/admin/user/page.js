@@ -89,7 +89,7 @@ export default function UserAdminPage() {
             await apiClient.patch(`/users/admin/${userId}/unsuspend`);
             showToast("제재가 해제되었습니다.");
             fetchUsers();
-        } catch (error) {
+        } catch {
             showToast("오류가 발생했습니다.");
         } finally {
             setConfirmInfo({ show: false, message: "", onConfirm: null });
