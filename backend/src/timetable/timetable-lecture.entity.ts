@@ -22,7 +22,8 @@ export class TimetableLecture {
   @Column({ nullable: true })
   courseCode: string;
 
-  @Column({ default: 0 })
+  // [유지] 내 시간표에는 0.5학점이 들어갈 수 있어야 하므로 float 타입을 유지합니다.
+  @Column({ type: 'float', default: 0 })
   credits: number;
 
   @Column('jsonb', { nullable: true })

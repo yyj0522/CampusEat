@@ -11,17 +11,17 @@ export interface StandardizedLecture {
     periods: number[];
     classroom: string;
   }>;
-  campus?: string;
+  major?: string;      
+  campus?: string;     
   department?: string;
-  major?: string;
-  courseType?: string;
+  courseType?: string; 
 }
 
 export interface StandardizedTimetable {
   university: string;
   campus: string;
   department: string;
-  major: string;
+  major?: string;      
   year: number;
   semester: string;
   lectures: StandardizedLecture[];

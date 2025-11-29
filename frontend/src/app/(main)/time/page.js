@@ -32,10 +32,13 @@ function DirectAddModal({ onClose, onSubmit }) {
         const end = Number(form.endPeriod);
         if(start > end) { alert("시작 교시 오류"); return; }
         for (let i = start; i <= end; i++) periods.push(i);
+        
+        const parsedCredits = Number(form.credits) || 0;
+
         onSubmit({ 
             courseName: form.courseName, 
             professor: form.professor, 
-            credits: Number(form.credits),
+            credits: parsedCredits,
             schedule: [{ day: form.day, periods, classroom: form.classroom }] 
         });
     };
@@ -50,7 +53,7 @@ function DirectAddModal({ onClose, onSubmit }) {
                         <div className="flex gap-2">
                             <input placeholder="교수명" className="flex-1 border p-2.5 rounded-lg outline-none" value={form.professor} onChange={e=>setForm({...form, professor:e.target.value})} />
                             <div className="flex items-center gap-1 border p-2.5 rounded-lg w-24">
-                                <input type="number" className="w-full outline-none text-center" value={form.credits} onChange={e=>setForm({...form, credits:e.target.value})} />
+                                <input type="number" step="0.5" className="w-full outline-none text-center" value={form.credits} onChange={e=>setForm({...form, credits:e.target.value})} />
                                 <span className="text-xs text-gray-500 whitespace-nowrap">학점</span>
                             </div>
                         </div>
@@ -197,6 +200,11 @@ export default function TimetablePage() {
     const fetchAllLectures = async () => {
         try {
             const res = await apiClient.get('/timetable/lectures');
+            
+            if (res.data.length > 0) {
+                console.log("🔥 [강의 데이터 확인]", res.data[0]);
+            }
+
             setAllLectures(res.data);
             const tree = {};
             res.data.forEach(lec => {
@@ -320,6 +328,16 @@ export default function TimetablePage() {
         );
     };
 
+    const getCreditDisplay = (lecture) => {
+        const val = lecture.credits ?? lecture.credit ?? lecture.CREDITS ?? 0;
+        return Number(val);
+    };
+
+    const calculateTotalCredits = (lectures) => {
+        if (!lectures) return 0;
+        return lectures.reduce((acc, l) => acc + getCreditDisplay(l), 0);
+    };
+
     return (
         <div className="min-h-screen bg-white">
             <style>{`.animate-slideUp{animation:slideUp 0.3s ease-out forwards}.animate-fadeIn{animation:fadeIn 0.2s ease-out forwards}@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes fadeIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}`}</style>
@@ -377,7 +395,7 @@ export default function TimetablePage() {
                         <div className="p-4 border-b flex justify-between items-center bg-gray-50">
                             <h2 className="font-bold text-gray-700">{currentTimetable?.name || "시간표"}</h2>
                             <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">
-                                {currentTimetable?.lectures?.length || 0}과목 / {currentTimetable?.lectures?.reduce((acc, l) => acc + (Number(l.credits) || 0), 0)}학점
+                                {currentTimetable?.lectures?.length || 0}과목 / {calculateTotalCredits(currentTimetable?.lectures)}학점
                             </span>
                         </div>
                         <div className="p-4 relative">
@@ -415,7 +433,7 @@ export default function TimetablePage() {
                                         <div className="font-bold flex items-center gap-2">
                                             {lec.courseName}
                                             <span className="text-xs font-normal text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                                                {lec.credits}학점
+                                                {getCreditDisplay(lec)}학점
                                             </span>
                                         </div>
                                         <div className="text-sm text-gray-500">
@@ -446,7 +464,7 @@ export default function TimetablePage() {
                                                                         <div className="font-bold text-sm flex items-center gap-2">
                                                                             {lec.courseName}
                                                                             <span className="text--[10px] font-normal text-gray-500 border px-1 rounded">
-                                                                                {lec.credits}학점
+                                                                                {getCreditDisplay(lec)}학점
                                                                             </span>
                                                                         </div>
                                                                         <div className="text-xs text-gray-500">

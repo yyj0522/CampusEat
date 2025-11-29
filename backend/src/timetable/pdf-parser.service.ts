@@ -1,31 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v1 } from '@google-cloud/documentai';
-
-export interface StandardizedLecture {
-  group: string;
-  courseCode: string;
-  courseName: string;
-  hours: number;
-  credits: number;
-  capacity: number;
-  professor: string;
-  schedule: Array<{
-    day: string;
-    periods: number[];
-    classroom: string;
-  }>;
-}
-
-export interface StandardizedTimetable {
-  university: string;
-  campus: string;
-  department: string;
-  major: string;
-  year: number;
-  semester: string;
-  lectures: StandardizedLecture[];
-  courseType: string;
-}
+import { StandardizedLecture, StandardizedTimetable } from './timetable.interface';
 
 @Injectable()
 export class PdfParserService {
@@ -35,7 +10,7 @@ export class PdfParserService {
   private readonly processorEndpointMap = new Map<string, string>([
     [
       'baekseok-major',
-      'projects/804568381273/locations/us/processors/3105218432a64f1c',
+      'projects/804568381273/locations/us/processors/fc45c96d59552b9e',
     ],
   ]);
 
@@ -58,7 +33,10 @@ export class PdfParserService {
       );
     }
 
-    this.logger.log(`Document AI 분석 시작... (대학: ${universityId})`);
+    this.logger.warn(`===========================================================`);
+    this.logger.warn(`🚀 [1단계] Document AI 요청 시작`);
+    this.logger.warn(`👉 사용 중인 프로세서 주소: ${processorEndpoint}`);
+    this.logger.warn(`===========================================================`);
 
     const base64Pdf = pdfFileBuffer.toString('base64');
 
@@ -72,7 +50,7 @@ export class PdfParserService {
     };
 
     const [result] = await this.client.processDocument(request);
-    this.logger.log('Document AI 분석 완료.');
+    this.logger.log('Document AI 분석 완료. 데이터 매핑 시작...');
 
     const standardJson = this.transformToStandardFormat(
       result.document,
@@ -85,6 +63,96 @@ export class PdfParserService {
   }
 
   private transformToStandardFormat(
+    document: any,
+    universityId: string,
+    year: number,
+    semester: string,
+  ): StandardizedTimetable {
+    if (universityId.startsWith('baekseok')) {
+      return this.parseBaekseokFormat(document, universityId, year, semester);
+    }
+
+    return this.parseGeneralFormat(document, universityId, year, semester);
+  }
+
+  private parseBaekseokFormat(
+    document: any,
+    universityId: string,
+    year: number,
+    semester: string,
+  ): StandardizedTimetable {
+    const department =
+      document.entities.find((e: any) => e.type === 'department')
+        ?.mentionText || 'N/A';
+
+    const courseType = universityId.includes('general') ? 'General' : 'Major';
+
+    const standardJson: StandardizedTimetable = {
+      university: '백석대학교',
+      campus: '천안',
+      department: department,
+      year: year,
+      semester: semester,
+      lectures: [],
+      courseType: courseType,
+    };
+
+    const majorEntities = document.entities.filter((e: any) => e.type === 'major');
+    
+    this.logger.warn(`📋 [2단계] AI가 발견한 전공(Major) 목록 (총 ${majorEntities.length}개)`);
+    majorEntities.forEach((m: any, idx: number) => {
+        const text = m.mentionText ? m.mentionText.replace(/\n/g, '').trim() : 'NULL';
+        const pNum = m.pageAnchor?.pageRefs?.[0]?.page || 0;
+        this.logger.warn(`   🔹 [전공 #${idx + 1}] 텍스트: "${text}" | 발견 위치: ${pNum} 페이지`);
+    });
+
+    const lectureEntities = document.entities.filter(
+      (e: any) => e.type === 'lectures',
+    );
+
+    this.logger.warn(`📊 [3단계] 강의 테이블 처리 시작 (총 ${lectureEntities.length}개 테이블)`);
+
+    for (const [index, entity] of lectureEntities.entries()) {
+      const pageIndex = entity.pageAnchor?.pageRefs?.[0]?.page || 0;
+
+      const matchingMajor = majorEntities.find((m: any) => {
+        const majorPage = m.pageAnchor?.pageRefs?.[0]?.page || 0;
+        return majorPage === pageIndex;
+      });
+
+      const majorName = matchingMajor 
+        ? matchingMajor.mentionText.replace(/\n/g, '').trim() 
+        : '전공 미상';
+
+      this.logger.log(`   ➡️ [테이블 #${index + 1}] 위치: ${pageIndex} 페이지 | 매핑된 전공: "${majorName}"`);
+
+      const props = entity.properties;
+      const getString = (type: string) =>
+        props.find((p: any) => p.type === type)?.mentionText || '';
+
+      const rawSchedule = getString('schedule_raw');
+      const classroom = getString('classroom');
+
+      const schedule = this.parseBaekseokSchedule(rawSchedule, classroom);
+
+      standardJson.lectures.push({
+        group: getString('group_name'),
+        courseCode: getString('course_code'),
+        courseName: getString('course_name'),
+        hours: parseInt(getString('hours')) || 0,
+        credits: parseInt(getString('credits')) || 0,
+        capacity: parseInt(getString('capacity')) || 0,
+        professor: getString('professor'),
+        major: majorName,
+        schedule: schedule,
+      });
+    }
+
+    this.logger.log(`후처리 완료: ${standardJson.lectures.length}개 강의 처리`);
+    return standardJson;
+  }
+
+  private parseGeneralFormat(
     document: any,
     universityId: string,
     year: number,
@@ -104,7 +172,7 @@ export class PdfParserService {
       university: 'N/A',
       campus: 'N/A',
       department: department,
-      major: major,
+      major: major, 
       year: year,
       semester: semester,
       lectures: [],
@@ -123,15 +191,7 @@ export class PdfParserService {
       const rawSchedule = getString('schedule_raw');
       const classroom = getString('classroom');
 
-      let schedule: StandardizedLecture['schedule'] = [];
-
-      if (universityId.startsWith('baekseok')) {
-        standardJson.university = '백석대학교';
-        standardJson.campus = '천안';
-        schedule = this.parseBaekseokSchedule(rawSchedule, classroom);
-      } else {
-        schedule = this.parseBaekseokSchedule(rawSchedule, classroom);
-      }
+      const schedule = this.parseBaekseokSchedule(rawSchedule, classroom);
 
       standardJson.lectures.push({
         group: getString('group_name'),
@@ -141,11 +201,11 @@ export class PdfParserService {
         credits: parseInt(getString('credits')) || 0,
         capacity: parseInt(getString('capacity')) || 0,
         professor: getString('professor'),
+        major: major, 
         schedule: schedule,
       });
     }
 
-    this.logger.log(`후처리 완료: ${standardJson.lectures.length}개 강의 처리`);
     return standardJson;
   }
 

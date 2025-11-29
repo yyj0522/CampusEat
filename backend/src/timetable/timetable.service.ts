@@ -83,13 +83,16 @@ export class TimetableService {
     const lecture = await this.lectureRepository.findOne({ where: { id: lectureId } });
     if (!lecture) throw new NotFoundException('강의 정보를 찾을 수 없습니다.');
 
+    // DB에서 가져온 값이 있으면 쓰고, 없으면 0 (안전장치)
+    const credits = lecture.credits !== undefined ? Number(lecture.credits) : 0;
+
     const newLecture = this.timetableLectureRepository.create({
       timetable,
       lectureId: lecture.id,
       courseName: lecture.courseName,
       professor: lecture.professor,
       courseCode: lecture.courseCode,
-      credits: lecture.credits, 
+      credits: credits, 
       schedule: JSON.parse(JSON.stringify(lecture.schedule)), 
       color: this.getRandomColor(),
     });
@@ -107,13 +110,15 @@ export class TimetableService {
     });
     if (!timetable) throw new NotFoundException('시간표를 찾을 수 없습니다.');
 
+    const credits = data.credits !== undefined ? Number(data.credits) : 0;
+
     const newLecture = this.timetableLectureRepository.create({
       timetable,
       lectureId: null,
       courseName: data.courseName,
       professor: data.professor,
       courseCode: 'CUSTOM',
-      credits: data.credits || 0,
+      credits: credits,
       schedule: data.schedule,
       color: this.getRandomColor(),
     });
@@ -152,6 +157,25 @@ export class TimetableService {
   }
 
   async getLectureStats(lectureIds: number[]) {
+    // [🔥🔥🔥 진단 코드 시작]
+    // 강의 검색시 이 함수가 호출됩니다. 이때 실제 DB에 어떤 컬럼들이 있는지 날것 그대로 찍어봅니다.
+    if (lectureIds.length > 0) {
+        try {
+            // Raw Query를 통해 엔티티 매핑을 거치지 않은 순수 DB 데이터를 조회합니다.
+            const rawData = await this.lectureRepository.query(
+                `SELECT * FROM lectures WHERE id = ${lectureIds[0]}`
+            );
+            console.log('==================================================');
+            console.log('🔥 [DB 원본 데이터 확인 - 범인을 찾아라] 🔥');
+            console.log('검색된 강의 ID:', lectureIds[0]);
+            console.log('DB에서 가져온 실제 행 데이터:', rawData[0]);
+            console.log('==================================================');
+        } catch (e) {
+            console.error('진단 로그 출력 실패:', e);
+        }
+    }
+    // [🔥🔥🔥 진단 코드 끝]
+
     const counts = await this.redisManager.getMultipleLectureCounts(lectureIds);
     
     const lectures = await this.lectureRepository.find({
