@@ -360,7 +360,7 @@ export default function TimetablePage() {
                             )}
                         </div>
                     </div>
-                    <p className="text-lg opacity-90">필수 강의를 담고 나만의 시간표를 완성해보세요!</p>
+                    <p className="text-lg opacity-90">강의를 담고 나만의 시간표를 완성해보세요!</p>
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-6 h-auto items-start">
