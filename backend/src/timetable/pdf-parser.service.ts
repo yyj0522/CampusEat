@@ -33,11 +33,6 @@ export class PdfParserService {
       );
     }
 
-    this.logger.warn(`===========================================================`);
-    this.logger.warn(`🚀 [1단계] Document AI 요청 시작`);
-    this.logger.warn(`👉 사용 중인 프로세서 주소: ${processorEndpoint}`);
-    this.logger.warn(`===========================================================`);
-
     const base64Pdf = pdfFileBuffer.toString('base64');
 
     const request = {
@@ -50,7 +45,6 @@ export class PdfParserService {
     };
 
     const [result] = await this.client.processDocument(request);
-    this.logger.log('Document AI 분석 완료. 데이터 매핑 시작...');
 
     const standardJson = this.transformToStandardFormat(
       result.document,
@@ -99,32 +93,48 @@ export class PdfParserService {
 
     const majorEntities = document.entities.filter((e: any) => e.type === 'major');
     
-    this.logger.warn(`📋 [2단계] AI가 발견한 전공(Major) 목록 (총 ${majorEntities.length}개)`);
-    majorEntities.forEach((m: any, idx: number) => {
+    const majorMapByPage = new Map<number, string>();
+    
+    majorEntities.forEach((m: any) => {
         const text = m.mentionText ? m.mentionText.replace(/\n/g, '').trim() : 'NULL';
-        const pNum = m.pageAnchor?.pageRefs?.[0]?.page || 0;
-        this.logger.warn(`   🔹 [전공 #${idx + 1}] 텍스트: "${text}" | 발견 위치: ${pNum} 페이지`);
+        const rawPage = m.pageAnchor?.pageRefs?.[0]?.page;
+        const pNum = rawPage !== undefined ? Number(rawPage) : 0;
+        majorMapByPage.set(pNum, text);
     });
 
     const lectureEntities = document.entities.filter(
       (e: any) => e.type === 'lectures',
     );
 
-    this.logger.warn(`📊 [3단계] 강의 테이블 처리 시작 (총 ${lectureEntities.length}개 테이블)`);
+    for (const entity of lectureEntities) {
+      let pageIndex = entity.pageAnchor?.pageRefs?.[0]?.page;
 
-    for (const [index, entity] of lectureEntities.entries()) {
-      const pageIndex = entity.pageAnchor?.pageRefs?.[0]?.page || 0;
+      if (pageIndex === undefined || pageIndex === null) {
+          if (entity.properties && entity.properties.length > 0) {
+              for (const prop of entity.properties) {
+                  const propPage = prop.pageAnchor?.pageRefs?.[0]?.page;
+                  if (propPage !== undefined && propPage !== null) {
+                      pageIndex = propPage;
+                      break; 
+                  }
+              }
+          }
+      }
 
-      const matchingMajor = majorEntities.find((m: any) => {
-        const majorPage = m.pageAnchor?.pageRefs?.[0]?.page || 0;
-        return majorPage === pageIndex;
-      });
+      pageIndex = pageIndex !== undefined ? Number(pageIndex) : 0;
 
-      const majorName = matchingMajor 
-        ? matchingMajor.mentionText.replace(/\n/g, '').trim() 
-        : '전공 미상';
+      let majorName = majorMapByPage.get(pageIndex);
 
-      this.logger.log(`   ➡️ [테이블 #${index + 1}] 위치: ${pageIndex} 페이지 | 매핑된 전공: "${majorName}"`);
+      if (!majorName) {
+          for (let p = pageIndex - 1; p >= 0; p--) {
+              if (majorMapByPage.has(p)) {
+                  majorName = majorMapByPage.get(p);
+                  break;
+              }
+          }
+      }
+
+      majorName = majorName || '전공 미상';
 
       const props = entity.properties;
       const getString = (type: string) =>
@@ -148,7 +158,6 @@ export class PdfParserService {
       });
     }
 
-    this.logger.log(`후처리 완료: ${standardJson.lectures.length}개 강의 처리`);
     return standardJson;
   }
 
@@ -214,22 +223,23 @@ export class PdfParserService {
     classroom: string,
   ): StandardizedLecture['schedule'] {
     const results: StandardizedLecture['schedule'] = [];
-    if (!rawSchedule) return results;
+    
+    // [수정 핵심] 강의실 데이터가 없으면 사이버강의로 처리
+    const isCyberByClassroom = !classroom || classroom.trim() === '';
+
+    if (!rawSchedule) {
+        if (isCyberByClassroom) {
+             results.push({ day: '사이버', periods: [], classroom: '사이버강의' });
+        }
+        return results;
+    }
 
     const parts = rawSchedule.split('/');
 
     for (const part of parts) {
       const trimmedPart = part.trim();
 
-      if (trimmedPart === '사') {
-        results.push({
-          day: '사이버',
-          periods: [],
-          classroom: '사이버강의',
-        });
-        continue;
-      }
-
+      // 요일+교시 패턴 (예: 월1,2,3) 파싱 시도
       const match = trimmedPart.match(/^(월|화|수|목|금|토|일)([\d,]+)$/);
 
       if (match) {
@@ -239,10 +249,28 @@ export class PdfParserService {
         results.push({
           day: day,
           periods: periods,
-          classroom: classroom,
+          classroom: classroom || '강의실 미정',
         });
+      } else {
+        // [수정] 스케줄이 '사' 등이고, 강의실이 없을 때만 사이버로 추가
+        if (isCyberByClassroom) {
+            // 중복 방지를 위해 results가 비어있을 때만 추가하거나, 명시적 '사'인 경우 처리
+            if (trimmedPart === '사' || trimmedPart === '사이버' || results.length === 0) {
+                 // 이미 사이버가 들어가 있는지 확인 후 추가
+                 const hasCyber = results.some(r => r.day === '사이버');
+                 if (!hasCyber) {
+                    results.push({ day: '사이버', periods: [], classroom: '사이버강의' });
+                 }
+            }
+        }
       }
     }
+    
+    // 파싱 후 결과가 없는데 강의실이 비어있다면 사이버로 처리
+    if (results.length === 0 && isCyberByClassroom) {
+        results.push({ day: '사이버', periods: [], classroom: '사이버강의' });
+    }
+
     return results;
   }
 }

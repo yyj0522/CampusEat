@@ -15,6 +15,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const tabs = [
+    { label: "실시간현황", path: "/campus-status" },
     { label: "맛집추천", path: "/restaurant" },
     { label: "번개모임", path: "/meeting" },
     { label: "자유게시판", path: "/community" },

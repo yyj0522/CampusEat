@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
 import { User } from './users/user.entity';
 import { Post } from './posts/entities/post.entity';
 import { Comment } from './comments/entities/comment.entity';
@@ -44,13 +45,17 @@ import { Trade } from './trades/entities/trade.entity';
 import { TradeParticipant } from './trades/entities/trade-participant.entity';
 import { TradeMessage } from './trades/entities/trade-message.entity';
 import { Book } from './trades/entities/book.entity';
+import { CampusStatusModule } from './campus-status/campus-status.module';
+import { CampusStatusMessage } from './campus-status/entities/campus-status-message.entity';
+import { CampusStatusSummary } from './campus-status/entities/campus-status-summary.entity';
+import { CampusPrediction } from './campus-status/entities/campus-prediction.entity';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: process.env.NODE_ENV === 'production' 
-                      ? '.env.production' 
+      envFilePath: process.env.NODE_ENV === 'production'
+                      ? '.env.production'
                       : '.env',
     }),
     TypeOrmModule.forRootAsync({
@@ -87,9 +92,48 @@ import { Book } from './trades/entities/book.entity';
           TradeParticipant,
           TradeMessage,
           Book,
+          CampusStatusMessage,
+          CampusStatusSummary,
+          CampusPrediction,
         ],
         synchronize: true,
       }),
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        let connection: any = {
+          family: 4, 
+          maxRetriesPerRequest: null,
+          enableReadyCheck: false,
+          keepAlive: 10000, 
+          retryStrategy: (times) => Math.min(times * 100, 3000),
+        };
+
+        if (redisUrl) {
+          try {
+            const url = new URL(redisUrl);
+            connection.host = url.hostname === 'localhost' ? '127.0.0.1' : url.hostname;
+            connection.port = Number(url.port) || 6379;
+            if (url.password) connection.password = url.password;
+            if (url.username) connection.username = url.username;
+            
+            if (url.protocol === 'rediss:') {
+              connection.tls = { rejectUnauthorized: false };
+            }
+          } catch (e) {
+            connection.host = '127.0.0.1';
+            connection.port = 6379;
+          }
+        } else {
+          connection.host = configService.get('REDIS_HOST') || '127.0.0.1';
+          connection.port = +configService.get('REDIS_PORT') || 6379;
+        }
+
+        return { connection };
+      },
     }),
     ScheduleModule.forRoot(),
     TasksModule,
@@ -109,8 +153,9 @@ import { Book } from './trades/entities/book.entity';
     GatheringsModule,
     TimetableModule,
     TradesModule,
+    CampusStatusModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
