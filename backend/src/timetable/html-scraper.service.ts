@@ -56,7 +56,6 @@ export class HtmlScraperService {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 180000 });
       html = await page.content();
       
-      // IScraperStrategy의 parse 메서드 호출
       return strategy.parse(html, year, semester); 
     } catch (e) {
       this.logger.error(`Puppeteer 실행 오류: ${e.message}`);

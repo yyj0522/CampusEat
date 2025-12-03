@@ -41,7 +41,7 @@ export class Inquiry extends BaseEntity {
 
   @ManyToOne(() => User, (user) => user.inquiries, {
     eager: true,
-    onDelete: 'CASCADE', // 이 옵션을 추가합니다.
+    onDelete: 'CASCADE',
   })
   author: User;
 

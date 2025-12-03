@@ -224,7 +224,6 @@ export class PdfParserService {
   ): StandardizedLecture['schedule'] {
     const results: StandardizedLecture['schedule'] = [];
     
-    // [수정 핵심] 강의실 데이터가 없으면 사이버강의로 처리
     const isCyberByClassroom = !classroom || classroom.trim() === '';
 
     if (!rawSchedule) {
@@ -239,7 +238,6 @@ export class PdfParserService {
     for (const part of parts) {
       const trimmedPart = part.trim();
 
-      // 요일+교시 패턴 (예: 월1,2,3) 파싱 시도
       const match = trimmedPart.match(/^(월|화|수|목|금|토|일)([\d,]+)$/);
 
       if (match) {
@@ -252,11 +250,8 @@ export class PdfParserService {
           classroom: classroom || '강의실 미정',
         });
       } else {
-        // [수정] 스케줄이 '사' 등이고, 강의실이 없을 때만 사이버로 추가
         if (isCyberByClassroom) {
-            // 중복 방지를 위해 results가 비어있을 때만 추가하거나, 명시적 '사'인 경우 처리
             if (trimmedPart === '사' || trimmedPart === '사이버' || results.length === 0) {
-                 // 이미 사이버가 들어가 있는지 확인 후 추가
                  const hasCyber = results.some(r => r.day === '사이버');
                  if (!hasCyber) {
                     results.push({ day: '사이버', periods: [], classroom: '사이버강의' });
@@ -266,7 +261,6 @@ export class PdfParserService {
       }
     }
     
-    // 파싱 후 결과가 없는데 강의실이 비어있다면 사이버로 처리
     if (results.length === 0 && isCyberByClassroom) {
         results.push({ day: '사이버', periods: [], classroom: '사이버강의' });
     }

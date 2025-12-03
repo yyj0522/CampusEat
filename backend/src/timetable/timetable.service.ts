@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Timetable } from './timetable.entity';
@@ -7,6 +7,7 @@ import { Lecture } from './lecture.entity';
 import { LectureReview } from './lecture-review.entity';
 import { User } from '../users/user.entity';
 import { RedisManagerService } from '../common/redis/redis-manager.service';
+import { GenerateTimetableDto } from './dto/generate-timetable.dto';
 
 @Injectable()
 export class TimetableService {
@@ -83,7 +84,6 @@ export class TimetableService {
     const lecture = await this.lectureRepository.findOne({ where: { id: lectureId } });
     if (!lecture) throw new NotFoundException('강의 정보를 찾을 수 없습니다.');
 
-    // DB에서 가져온 값이 있으면 쓰고, 없으면 0 (안전장치)
     const credits = lecture.credits !== undefined ? Number(lecture.credits) : 0;
 
     const newLecture = this.timetableLectureRepository.create({
@@ -157,25 +157,6 @@ export class TimetableService {
   }
 
   async getLectureStats(lectureIds: number[]) {
-    // [🔥🔥🔥 진단 코드 시작]
-    // 강의 검색시 이 함수가 호출됩니다. 이때 실제 DB에 어떤 컬럼들이 있는지 날것 그대로 찍어봅니다.
-    if (lectureIds.length > 0) {
-        try {
-            // Raw Query를 통해 엔티티 매핑을 거치지 않은 순수 DB 데이터를 조회합니다.
-            const rawData = await this.lectureRepository.query(
-                `SELECT * FROM lectures WHERE id = ${lectureIds[0]}`
-            );
-            console.log('==================================================');
-            console.log('🔥 [DB 원본 데이터 확인 - 범인을 찾아라] 🔥');
-            console.log('검색된 강의 ID:', lectureIds[0]);
-            console.log('DB에서 가져온 실제 행 데이터:', rawData[0]);
-            console.log('==================================================');
-        } catch (e) {
-            console.error('진단 로그 출력 실패:', e);
-        }
-    }
-    // [🔥🔥🔥 진단 코드 끝]
-
     const counts = await this.redisManager.getMultipleLectureCounts(lectureIds);
     
     const lectures = await this.lectureRepository.find({
@@ -259,5 +240,231 @@ export class TimetableService {
   private getRandomColor() {
     const colors = ['#FFDDDD', '#DDEEFF', '#DDFFDD', '#FFFFAA', '#EEDDFF', '#FFDDEE', '#E0E0E0', '#F5F5DC'];
     return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  async generateTimetable(user: User, dto: GenerateTimetableDto) {
+    const { timetableId, targetDepartment, majorCount, geCount, minCredits, maxCredits, preferredDays, avoidLunch, includeCyber } = dto;
+
+    const currentTimetable = await this.timetableRepository.findOne({
+      where: { id: timetableId, user: { id: user.id } },
+      relations: ['lectures'],
+    });
+    if (!currentTimetable) throw new NotFoundException('시간표를 찾을 수 없습니다.');
+
+    const fixedLectures = currentTimetable.lectures;
+    const fixedCredits = fixedLectures.reduce((acc, l) => acc + (Number(l.credits) || 0), 0);
+    const existingNames = new Set(fixedLectures.map(l => l.courseName.trim()));
+    const existingIds = new Set(fixedLectures.map(l => l.lectureId));
+
+    const baseUniversity = user.university.replace(/\(.*\)/, '').trim();
+
+    const majorCandidatesRaw = await this.lectureRepository.find({
+      where: {
+        university: baseUniversity,
+        department: targetDepartment,
+        year: currentTimetable.year,
+        semester: currentTimetable.semester,
+      }
+    });
+    
+    const geCandidatesRaw = await this.lectureRepository.find({
+      where: {
+        university: baseUniversity,
+        department: '교양',
+        year: currentTimetable.year,
+        semester: currentTimetable.semester,
+      }
+    });
+
+    const isDayMatch = (lecture: Lecture) => {
+      if (!lecture.schedule || lecture.schedule.length === 0) return includeCyber;
+      
+      const isCyber = lecture.schedule.some(s => s.day === '사이버' || s.day === 'Cyber');
+      if (isCyber) return includeCyber;
+
+      if (avoidLunch) {
+        const hasLunch = lecture.schedule.some(s => s.periods.includes(4));
+        if (hasLunch) return false;
+      }
+
+      return lecture.schedule.every(s => preferredDays.includes(s.day));
+    };
+
+    const cleanMajorCandidates = this.shuffleArray(
+      majorCandidatesRaw.filter(l => !existingIds.has(l.id) && !existingNames.has(l.courseName.trim()) && isDayMatch(l))
+    );
+
+    const cleanGeCandidates = this.shuffleArray(
+      geCandidatesRaw.filter(l => !existingIds.has(l.id) && !existingNames.has(l.courseName.trim()) && isDayMatch(l))
+    );
+
+    const allFoundCombinations: Lecture[][] = [];
+    const MAX_SEARCH = 500; 
+
+    const search = (
+      currentSet: Lecture[],
+      mCount: number,
+      gCount: number,
+      currentCreds: number,
+      mIndex: number,
+      gIndex: number
+    ) => {
+      if (allFoundCombinations.length >= MAX_SEARCH) return;
+
+      if (mCount === majorCount && gCount === geCount) {
+        if (currentCreds >= minCredits && currentCreds <= maxCredits) {
+          allFoundCombinations.push([...currentSet]);
+        }
+        return;
+      }
+
+      if (currentCreds > maxCredits) return;
+
+      if (mCount < majorCount) {
+        for (let i = mIndex; i < cleanMajorCandidates.length; i++) {
+          const candidate = cleanMajorCandidates[i];
+          
+          if (this.hasDuplicateName(currentSet, candidate)) continue;
+
+          if (!this.checkConflict([...fixedLectures, ...currentSet], candidate)) {
+             search(
+               [...currentSet, candidate],
+               mCount + 1,
+               gCount,
+               currentCreds + (Number(candidate.credits) || 0),
+               i + 1,
+               gIndex
+             );
+             if (allFoundCombinations.length >= MAX_SEARCH) return;
+          }
+        }
+      }
+
+      if (gCount < geCount) {
+         for (let i = gIndex; i < cleanGeCandidates.length; i++) {
+          const candidate = cleanGeCandidates[i];
+          
+          if (this.hasDuplicateName(currentSet, candidate)) continue;
+
+          if (!this.checkConflict([...fixedLectures, ...currentSet], candidate)) {
+             search(
+               [...currentSet, candidate],
+               mCount,
+               gCount + 1,
+               currentCreds + (Number(candidate.credits) || 0),
+               mIndex,
+               i + 1
+             );
+             if (allFoundCombinations.length >= MAX_SEARCH) return;
+          }
+        }
+      }
+    };
+
+    search([], 0, 0, fixedCredits, 0, 0);
+
+    const resultBuckets: { [key: number]: { score: number, combo: Lecture[] }[] } = {};
+    for (let c = minCredits; c <= maxCredits; c++) {
+      resultBuckets[c] = [];
+    }
+
+    allFoundCombinations.forEach(combo => {
+      const totalCreds = fixedCredits + combo.reduce((acc, l) => acc + (Number(l.credits) || 0), 0);
+      if (resultBuckets[totalCreds]) {
+        const fullTimetable = [...fixedLectures, ...combo];
+        const score = this.calculateTimetableScore(fullTimetable);
+        resultBuckets[totalCreds].push({ score, combo });
+      }
+    });
+
+    const finalCombinations: Lecture[][] = [];
+
+    for (let c = minCredits; c <= maxCredits; c++) {
+      const bucket = resultBuckets[c];
+      if (bucket.length > 0) {
+        bucket.sort((a, b) => a.score - b.score);
+        finalCombinations.push(bucket[0].combo);
+        if (bucket.length > 1) {
+          finalCombinations.push(bucket[1].combo);
+        }
+      }
+    }
+
+    return {
+      combinations: finalCombinations,
+      message: finalCombinations.length > 0 ? '성공' : '조건에 맞는 시간표를 찾지 못했습니다.',
+    };
+  }
+
+  private hasDuplicateName(currentSet: Lecture[], newLecture: Lecture): boolean {
+    return currentSet.some(l => l.courseName.trim() === newLecture.courseName.trim());
+  }
+
+  private checkConflict(currentLectures: any[], newLecture: Lecture): boolean {
+    if (!newLecture.schedule || newLecture.schedule.length === 0) return false;
+
+    const isNewCyber = newLecture.schedule.some((s: any) => s.day === '사이버' || s.day === 'Cyber');
+    if (isNewCyber) return false;
+
+    for (const existing of currentLectures) {
+      if (!existing.schedule || existing.schedule.length === 0) continue;
+       const isExistingCyber = existing.schedule.some((s: any) => s.day === '사이버' || s.day === 'Cyber');
+       if (isExistingCyber) continue;
+
+      for (const t1 of existing.schedule) {
+        for (const t2 of newLecture.schedule) {
+          if (t1.day === t2.day) {
+            const overlap = t1.periods.some((p: number) => t2.periods.includes(p));
+            if (overlap) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private calculateTimetableScore(lectures: any[]): number {
+    let score = 0;
+    const daySchedules: { [key: string]: number[] } = {};
+
+    lectures.forEach(l => {
+      if (l.schedule && l.schedule.length > 0) {
+        l.schedule.forEach((s: any) => {
+          if (s.day === '사이버' || s.day === 'Cyber') return;
+          if (!daySchedules[s.day]) daySchedules[s.day] = [];
+          
+          s.periods.forEach((p: number) => {
+            daySchedules[s.day].push(p);
+            
+            if (p <= 2 || p >= 8) {
+              score += 10;
+            }
+          });
+        });
+      }
+    });
+
+    for (const day in daySchedules) {
+      const periods = daySchedules[day].sort((a, b) => a - b);
+      if (periods.length > 1) {
+        const minP = periods[0];
+        const maxP = periods[periods.length - 1];
+        const span = maxP - minP + 1;
+        const actualClassCount = periods.length;
+        const emptySpace = span - actualClassCount;
+        
+        score += (emptySpace * 5); 
+      }
+    }
+
+    return score;
+  }
+
+  private shuffleArray(array: any[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
   }
 }

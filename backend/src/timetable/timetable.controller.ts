@@ -29,6 +29,7 @@ import { AiValidatorService } from './validation/ai-validator.service';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../auth/get-user.decorator';
 import { User } from '../users/user.entity';
+import { GenerateTimetableDto } from './dto/generate-timetable.dto';
 
 interface TimetableSaveDto extends StandardizedTimetable {}
 
@@ -209,5 +210,11 @@ export class TimetableController {
   @UseGuards(AuthGuard())
   async deleteLecture(@GetUser() user: User, @Param('id') id: number) {
     return this.timetableService.deleteLecture(user, id);
+  }
+
+  @Post('generate')
+  @UseGuards(AuthGuard())
+  async generateTimetable(@GetUser() user: User, @Body() dto: GenerateTimetableDto) {
+    return this.timetableService.generateTimetable(user, dto);
   }
 }

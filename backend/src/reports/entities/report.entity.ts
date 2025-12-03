@@ -27,14 +27,14 @@ export class Report extends BaseEntity {
 
   @ManyToOne(() => User, user => user.reportsMade, {
     eager: true,
-    onDelete: 'CASCADE', // 이 옵션을 추가합니다.
+    onDelete: 'CASCADE', 
   })
   reporter: User;
 
   @ManyToOne(() => User, user => user.reportsReceived, {
     eager: true,
     nullable: true,
-    onDelete: 'CASCADE', // 이 옵션도 추가합니다.
+    onDelete: 'CASCADE',
   })
   reportedUser: User | null;
 

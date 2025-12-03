@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthProvider";
 import apiClient from "@/lib/api";
 import TimetableGrid from "./TimetableGrid";
 import LectureReviewModal from "./LectureReviewModal";
+import AutoScheduleModal from "./AutoScheduleModal";
 import html2canvas from "html2canvas";
 
 const ConfirmModal = ({ isOpen, message, onConfirm, onCancel }) => {
@@ -96,6 +97,7 @@ export default function TimetablePage() {
     
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isDirectAddOpen, setIsDirectAddOpen] = useState(false);
+    const [isAutoModalOpen, setIsAutoModalOpen] = useState(false);
     const [selectedReviewLecture, setSelectedReviewLecture] = useState(null);
     
     const [searchResults, setSearchResults] = useState([]);
@@ -154,22 +156,17 @@ export default function TimetablePage() {
         } catch { alert("생성 실패"); }
     };
 
-    const handleDeleteTimetable = (e, id) => {
+    const handleDeleteTimetable = async (e, id) => {
         e.stopPropagation();
-        setConfirmModal({
-            isOpen: true,
-            message: "시간표를 삭제하시겠습니까?",
-            onConfirm: async () => {
-                try {
-                    await apiClient.delete(`/timetable/my/${id}`);
-                    const newTimetables = timetables.filter(t => t.id !== id);
-                    setTimetables(newTimetables);
-                    if (id === activeTimetableId) setActiveTimetableId(newTimetables.length > 0 ? newTimetables[0].id : null);
-                    fetchTimetables();
-                } catch { alert("삭제 실패"); }
-                setConfirmModal({ isOpen: false });
-            }
-        });
+        if (window.confirm("시간표를 삭제하시겠습니까?")) {
+            try {
+                await apiClient.delete(`/timetable/my/${id}`);
+                const newTimetables = timetables.filter(t => t.id !== id);
+                setTimetables(newTimetables);
+                if (id === activeTimetableId) setActiveTimetableId(newTimetables.length > 0 ? newTimetables[0].id : null);
+                fetchTimetables();
+            } catch { alert("삭제 실패"); }
+        }
     };
 
     const fetchLectureStats = async (lectureIds) => {
@@ -338,6 +335,38 @@ export default function TimetablePage() {
         return lectures.reduce((acc, l) => acc + getCreditDisplay(l), 0);
     };
 
+    const handleAutoGenerate = async (config) => {
+        if (!activeTimetableId) return;
+        try {
+            const res = await apiClient.post('/timetable/generate', {
+                timetableId: activeTimetableId,
+                ...config
+            });
+            return res.data;
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
+    };
+
+    const handleApplyAutoSchedule = async (lecturesToAdd) => {
+        if (!lecturesToAdd || lecturesToAdd.length === 0) return;
+        
+        let successCount = 0;
+        for (const lecture of lecturesToAdd) {
+            try {
+                await apiClient.post(`/timetable/my/${activeTimetableId}/lecture`, { lectureId: lecture.id });
+                successCount++;
+            } catch (e) {
+                console.error(`Failed to add lecture ${lecture.id}`, e);
+            }
+        }
+        
+        alert(`${successCount}개의 강의가 추가되었습니다.`);
+        fetchTimetables();
+        setIsAutoModalOpen(false);
+    };
+
     return (
         <div className="min-h-screen bg-white">
             <style>{`.animate-slideUp{animation:slideUp 0.3s ease-out forwards}.animate-fadeIn{animation:fadeIn 0.2s ease-out forwards}@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes fadeIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}`}</style>
@@ -411,6 +440,16 @@ export default function TimetablePage() {
             </div>
 
             <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+                <button 
+                    onClick={() => {
+                        if(Object.keys(lectureTree).length === 0) fetchAllLectures();
+                        setIsAutoModalOpen(true);
+                    }} 
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg p-4 rounded-full hover:scale-105 transition-transform"
+                    title="시간표 자동완성"
+                >
+                    <i className="fas fa-magic fa-lg"></i>
+                </button>
                 <button onClick={() => setIsDirectAddOpen(true)} className="bg-white text-gray-700 shadow-lg p-4 rounded-full hover:bg-gray-50"><i className="fas fa-pen"></i></button>
                 <button onClick={handleSearchOpen} className="bg-red-500 text-white shadow-lg px-6 py-4 rounded-full hover:bg-red-600 font-bold"><i className="fas fa-search mr-2"></i>강의 검색</button>
             </div>
@@ -489,6 +528,17 @@ export default function TimetablePage() {
             )}
 
             {isDirectAddOpen && <DirectAddModal onClose={() => setIsDirectAddOpen(false)} onSubmit={handleDirectAdd} />}
+            {isAutoModalOpen && (
+                <AutoScheduleModal 
+                    isOpen={isAutoModalOpen} 
+                    onClose={(result) => {
+                        if (Array.isArray(result)) handleApplyAutoSchedule(result);
+                        else setIsAutoModalOpen(false);
+                    }}
+                    onGenerate={handleAutoGenerate}
+                    departments={Object.keys(lectureTree)}
+                />
+            )}
             <ConfirmModal isOpen={confirmModal.isOpen} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={() => setConfirmModal({ isOpen: false })} />
             <LectureReviewModal isOpen={!!selectedReviewLecture} onClose={() => setSelectedReviewLecture(null)} lecture={selectedReviewLecture} />
         </div>

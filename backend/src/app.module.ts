@@ -1,9 +1,7 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
 import { User } from './users/user.entity';
 import { Post } from './posts/entities/post.entity';
 import { Comment } from './comments/entities/comment.entity';
@@ -33,7 +31,6 @@ import { GatheringsModule } from './gatherings/gatherings.module';
 import { Gathering } from './gatherings/entities/gathering.entity';
 import { GatheringParticipant } from './gatherings/entities/gathering-participant.entity';
 import { GatheringMessage } from './gatherings/entities/gathering-message.entity';
-import { ScheduleModule } from '@nestjs/schedule';
 import { TasksModule } from './tasks/tasks.module';
 import { TimetableModule } from './timetable/timetable.module';
 import { Lecture } from './timetable/lecture.entity';
@@ -99,42 +96,7 @@ import { CampusPrediction } from './campus-status/entities/campus-prediction.ent
         synchronize: true,
       }),
     }),
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const redisUrl = configService.get<string>('REDIS_URL');
-        let connection: any = {
-          family: 4, 
-          maxRetriesPerRequest: null,
-          enableReadyCheck: false,
-          keepAlive: 10000, 
-          retryStrategy: (times) => Math.min(times * 100, 3000),
-        };
-
-        if (redisUrl) {
-          try {
-            const url = new URL(redisUrl);
-            connection.host = url.hostname === 'localhost' ? '127.0.0.1' : url.hostname;
-            connection.port = Number(url.port) || 6379;
-            if (url.password) connection.password = url.password;
-            if (url.username) connection.username = url.username;
-            
-            if (url.protocol === 'rediss:') {
-              connection.tls = { rejectUnauthorized: false };
-            }
-          } catch (e) {
-            connection.host = '127.0.0.1';
-            connection.port = 6379;
-          }
-        } else {
-          connection.host = configService.get('REDIS_HOST') || '127.0.0.1';
-          connection.port = +configService.get('REDIS_PORT') || 6379;
-        }
-
-        return { connection };
-      },
-    }),
+    
     ScheduleModule.forRoot(),
     TasksModule,
     AuthModule,

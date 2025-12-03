@@ -57,7 +57,6 @@ export class TradesService {
 
     const savedTrade = await this.tradeRepository.save(trade);
 
-    // 올바른 관계 방식
     const participant = this.tradeParticipantRepository.create({
       trade: savedTrade,
       user: user,

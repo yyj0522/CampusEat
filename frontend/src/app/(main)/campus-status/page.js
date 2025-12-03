@@ -14,11 +14,11 @@ const CATEGORIES = [
 ];
 
 const CATEGORY_STYLES = {
-  TRAFFIC: { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-  CAFETERIA: { color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
-  EVENT: { color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
-  WEATHER: { color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-100' },
-  ETC: { color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-100' },
+  TRAFFIC: { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', icon: '🚌' },
+  CAFETERIA: { color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', icon: '🍱' },
+  EVENT: { color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', icon: '🎉' },
+  WEATHER: { color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-100', icon: '☔' },
+  ETC: { color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-100', icon: '📢' },
 };
 
 const DAYS = [
@@ -44,6 +44,7 @@ export default function CampusStatusPage() {
 
   const [selectedDay, setSelectedDay] = useState('MON');
   const [predictionData, setPredictionData] = useState(null);
+  const [predictionLoading, setPredictionLoading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -67,6 +68,7 @@ export default function CampusStatusPage() {
 
   const fetchPrediction = useCallback(async () => {
     try {
+      setPredictionLoading(true);
       setPredictionData(null);
       const response = await apiClient.get(`/campus/status/prediction?day=${selectedDay}`);
       if (response.data && response.data.status === 'success') {
@@ -74,6 +76,8 @@ export default function CampusStatusPage() {
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      setPredictionLoading(false);
     }
   }, [selectedDay]);
 
@@ -134,6 +138,9 @@ export default function CampusStatusPage() {
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
       `}</style>
 
       <main className="max-w-5xl mx-auto px-4 py-10 pb-24">
@@ -157,15 +164,15 @@ export default function CampusStatusPage() {
           <div className="flex space-x-6">
             <button 
               onClick={() => setActiveTab('REALTIME')}
-              className={`pb-3 font-bold transition-all ${activeTab === 'REALTIME' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`pb-3 font-bold transition-all flex items-center gap-2 ${activeTab === 'REALTIME' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              실시간 현황
+              <i className="fas fa-bolt"></i> 실시간 현황
             </button>
             <button 
               onClick={() => setActiveTab('FORECAST')}
-              className={`pb-3 font-bold transition-all ${activeTab === 'FORECAST' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`pb-3 font-bold transition-all flex items-center gap-2 ${activeTab === 'FORECAST' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              요일별 예측 (Beta)
+              <i className="fas fa-chart-line"></i> AI 혼잡도 예측 (Beta)
             </button>
           </div>
         </div>
@@ -216,7 +223,7 @@ export default function CampusStatusPage() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 sticky top-24">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <span></span> 제보하기
+                  <span>📢</span> 제보하기
                 </h3>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -279,51 +286,86 @@ export default function CampusStatusPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {DAYS.map((day) => (
-                <button
-                  key={day.id}
-                  onClick={() => setSelectedDay(day.id)}
-                  className={`px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all ${
-                    selectedDay === day.id ? 'bg-black text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                  }`}
-                >
-                  {day.label}요일
-                </button>
-              ))}
+            <div className="bg-gray-50 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+               <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
+                {DAYS.map((day) => (
+                  <button
+                    key={day.id}
+                    onClick={() => setSelectedDay(day.id)}
+                    className={`px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all ${
+                      selectedDay === day.id ? 'bg-black text-white shadow-md' : 'bg-white text-gray-500 hover:bg-gray-200 border border-gray-200'
+                    }`}
+                  >
+                    {day.label}요일
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs text-gray-500 font-medium bg-white px-3 py-1.5 rounded-lg border border-gray-200 flex items-center gap-2">
+                <i className="fas fa-robot text-indigo-500"></i>
+                Prophet AI 모델이 과거 데이터를 학습하여 예측한 결과입니다.
+              </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <span className="text-2xl"></span> {selectedDay === 'MON' ? '월요일' : selectedDay === 'TUE' ? '화요일' : selectedDay === 'WED' ? '수요일' : selectedDay === 'THU' ? '목요일' : '금요일'} 예상 시나리오
+            <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
+              <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
+                {selectedDay === 'MON' ? '월요일' : selectedDay === 'TUE' ? '화요일' : selectedDay === 'WED' ? '수요일' : selectedDay === 'THU' ? '목요일' : '금요일'} 시간대별 혼잡도 예측
               </h3>
               
-              {predictionData ? (
-                <div className="space-y-4 relative before:absolute before:inset-y-0 before:left-[19px] before:w-0.5 before:bg-gray-100">
-                  {predictionData.map((item, idx) => (
-                    item.congestion > 0 && (
-                      <div key={idx} className="relative pl-10 flex items-start group animate-fadeIn" style={{ animationDelay: `${idx * 50}ms` }}>
-                        <div className={`absolute left-2 w-5 h-5 rounded-full border-4 border-white ${item.congestion > 50 ? 'bg-red-500' : 'bg-green-500'} shadow-sm mt-1`}></div>
-                        <div className="flex-1">
-                          <span className="text-xs font-bold text-gray-400 block mb-1">{item.time}</span>
-                          <div className={`p-4 rounded-xl ${item.congestion > 50 ? 'bg-red-50' : 'bg-gray-50'} border border-transparent hover:border-gray-200 transition-colors`}>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded ${item.congestion > 50 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                                혼잡도 {item.congestion}%
-                              </span>
-                            </div>
-                            <p className="text-gray-800 font-medium">{item.summary}</p>
+              {predictionLoading ? (
+                 <div className="py-32 flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 border-4 border-gray-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                    <p className="text-gray-400 font-medium animate-pulse">AI가 데이터를 분석하고 있습니다...</p>
+                 </div>
+              ) : predictionData && predictionData.length > 0 ? (
+                <div className="relative">
+                  {/* Vertical Line moved to left-20 (80px) */}
+                  <div className="absolute left-20 top-0 bottom-0 w-0.5 bg-gray-100"></div>
+                  <div className="space-y-6">
+                    {predictionData.map((item, idx) => {
+                       const getCongestionColor = (val) => {
+                          if (val >= 70) return 'bg-red-500';
+                          if (val >= 40) return 'bg-orange-500';
+                          if (val >= 20) return 'bg-yellow-500';
+                          return 'bg-green-500';
+                       };
+                       const barWidth = Math.max(10, item.congestion);
+
+                       return (
+                        <div key={idx} className="relative pl-28 group animate-fadeIn" style={{ animationDelay: `${idx * 30}ms` }}>
+                          {/* Time label width increased to w-16 to prevent overlap */}
+                          <span className="absolute left-0 top-1 text-sm font-bold text-gray-400 w-16 text-right">{item.time}</span>
+                          
+                          {/* Dot centered on the line at 80px (left-[74px]) */}
+                          <div className={`absolute left-[74px] top-2 w-3 h-3 rounded-full border-2 border-white shadow-sm z-10 ${getCongestionColor(item.congestion)}`}></div>
+                          
+                          <div className="bg-gray-50 rounded-xl p-4 hover:bg-white hover:shadow-md border border-transparent hover:border-gray-100 transition-all cursor-default">
+                             <div className="flex items-center gap-3 mb-2">
+                                <div className="h-2 rounded-full bg-gray-200 w-32 md:w-64 overflow-hidden">
+                                   <div className={`h-full rounded-full transition-all duration-1000 ${getCongestionColor(item.congestion)}`} style={{ width: `${barWidth}%` }}></div>
+                                </div>
+                                <span className={`text-xs font-bold ${item.congestion >= 70 ? 'text-red-500' : 'text-gray-500'}`}>
+                                   혼잡도 {item.congestion}%
+                                </span>
+                             </div>
+                             <div className="flex items-start gap-2">
+                                {/* Emoji span removed */}
+                                <p className="text-gray-700 font-medium text-sm leading-relaxed">
+                                   {item.summary}
+                                </p>
+                             </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  ))}
-                  {predictionData.every(d => d.congestion === 0) && (
-                    <div className="text-center py-10 text-gray-400">데이터가 부족하거나 하루 종일 원활합니다.</div>
-                  )}
+                       );
+                    })}
+                  </div>
                 </div>
               ) : (
-                <div className="py-20 text-center text-gray-400 animate-pulse">데이터 분석 중...</div>
+                <div className="py-20 text-center">
+                  <div className="inline-block p-4 rounded-full bg-gray-50 mb-3">
+                    <i className="fas fa-chart-area text-gray-300 text-3xl"></i>
+                  </div>
+                  <p className="text-gray-500">예측할 데이터가 충분하지 않거나, 해당 요일은 원활합니다.</p>
+                </div>
               )}
             </div>
           </div>
