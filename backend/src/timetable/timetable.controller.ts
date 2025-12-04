@@ -30,6 +30,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../auth/get-user.decorator';
 import { User } from '../users/user.entity';
 import { GenerateTimetableDto } from './dto/generate-timetable.dto';
+import { Throttle } from '@nestjs/throttler';
 
 interface TimetableSaveDto extends StandardizedTimetable {}
 
@@ -83,6 +84,7 @@ export class TimetableController {
   }
 
   @Post('preview/pdf')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @UseInterceptors(FileInterceptor('file'))
   async previewPdfTimetable(@UploadedFile() file: Express.Multer.File, @Body('year') year: string, @Body('semester') semester: string, @Body('universityId') universityId: string, @Body('useAi') useAi: string) {
     if (!file) return { message: '파일이 필요합니다.' };
@@ -97,6 +99,7 @@ export class TimetableController {
   }
 
   @Post('preview/scrape')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async previewScrapeTimetable(@Body('url') url: string, @Body('year') year: string, @Body('semester') semester: string, @Body('universityId') universityId: string) {
     if (!url) return { message: 'URL이 필요합니다.' };
     const yearNum = parseInt(year) || new Date().getFullYear();
@@ -107,6 +110,7 @@ export class TimetableController {
   }
 
   @Post('preview/scrape-dynamic')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async previewDynamicScrapeTimetable(@Body('url') url: string, @Body('year') year: string, @Body('semester') semester: string, @Body('universityId') universityId: string) {
     if (!url) return { message: 'URL이 필요합니다.' };
     const yearNum = parseInt(year) || new Date().getFullYear();
@@ -117,6 +121,7 @@ export class TimetableController {
   }
 
   @Post('save')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async saveTimetable(@Body() dto: TimetableSaveDto) {
     this.logger.log(`[저장 시작] ${dto.lectures.length}개 강의`);
 
@@ -214,6 +219,7 @@ export class TimetableController {
 
   @Post('generate')
   @UseGuards(AuthGuard())
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async generateTimetable(@GetUser() user: User, @Body() dto: GenerateTimetableDto) {
     return this.timetableService.generateTimetable(user, dto);
   }

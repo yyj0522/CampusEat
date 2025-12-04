@@ -22,6 +22,26 @@ export class RedisManagerService implements OnModuleInit, OnModuleDestroy {
     this.client.disconnect();
   }
 
+  async get(key: string): Promise<string | null> {
+    return await this.client.get(key);
+  }
+
+  async set(key: string, value: string, ttl?: number): Promise<string> {
+    if (ttl) {
+      return await this.client.set(key, value, 'EX', ttl);
+    }
+    return await this.client.set(key, value);
+  }
+
+  async del(key: string): Promise<number> {
+    return await this.client.del(key);
+  }
+
+  async mget(keys: string[]): Promise<(string | null)[]> {
+    if (!keys || keys.length === 0) return [];
+    return await this.client.mget(keys);
+  }
+
   async addUserToLecture(lectureId: number, userId: number | string): Promise<number> {
     const key = `lecture:${lectureId}:users`;
     await this.client.sadd(key, String(userId));

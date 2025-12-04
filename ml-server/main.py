@@ -1,17 +1,20 @@
 import os
 import urllib.parse
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Security, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import create_engine, text
+import pandas as pd
+import json
 
 load_dotenv()
 
 os.environ["PGCLIENTENCODING"] = "utf-8"
 
-from fastapi import FastAPI
-from sqlalchemy import create_engine, text
-import pandas as pd
-import json
-
 app = FastAPI()
+
+API_KEY = os.getenv("ML_API_KEY", "campuseat-secret-key-1234")
+security = HTTPBearer()
 
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
@@ -31,7 +34,16 @@ engine = create_engine(
     connect_args={'options': '-c client_encoding=utf8'}
 )
 
-@app.post("/train-all")
+def verify_api_key(credentials: HTTPAuthorizationCredentials = Security(security)):
+    if credentials.credentials != API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API Key")
+    return credentials.credentials
+
+@app.get("/")
+def health_check():
+    return {"status": "ok", "message": "ML Server is running"}
+
+@app.post("/train-all", dependencies=[Depends(verify_api_key)])
 def train_all_universities():
     try:
         with engine.connect() as conn:

@@ -6,91 +6,37 @@ import { useAuth } from "../../context/AuthProvider";
 import apiClient from "@/lib/api";
 import { FaChevronDown, FaRegFileImage, FaHeadset, FaHistory, FaQuestionCircle } from "react-icons/fa";
 
-const AlertModal = ({ message, onClose }) => {
-    useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (event.key === 'Enter') onClose();
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose]);
-
-    return (
-        <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
-            onClick={onClose}
-        >
-            <style>{`
-                @keyframes scaleUp {
-                    from { opacity: 0; transform: scale(0.95); }
-                    to { opacity: 1; transform: scale(1); }
-                }
-                .animate-scaleUp {
-                    animation: scaleUp 0.2s ease-out forwards;
-                }
-            `}</style>
-            <div 
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-scaleUp flex flex-col items-center"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-5 shadow-sm">
-                    <i className="fas fa-info text-2xl text-blue-500"></i>
-                </div>
-                <h3 className="text-xl font-extrabold text-gray-900 mb-2">알림</h3>
-                <p className="text-gray-600 text-sm font-medium leading-relaxed mb-8 break-keep">
-                    {message}
-                </p>
-                <button 
-                    onClick={onClose} 
-                    className="w-full py-3.5 bg-blue-600 text-white rounded-2xl font-bold text-sm shadow-md hover:bg-blue-700 transition active:scale-95"
-                >
-                    확인
-                </button>
-            </div>
-        </div>
-    );
-};
-
-const ConfirmModal = ({ message, onConfirm, onCancel }) => {
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-             <style>{`
-                @keyframes scaleUp {
-                    from { opacity: 0; transform: scale(0.95); }
-                    to { opacity: 1; transform: scale(1); }
-                }
-                .animate-scaleUp {
-                    animation: scaleUp 0.2s ease-out forwards;
-                }
-            `}</style>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-scaleUp">
-                <h3 className="text-xl font-extrabold text-gray-900 mb-4">확인</h3>
-                <p className="text-gray-600 font-medium mb-8 break-keep">{message}</p>
-                <div className="flex gap-3">
-                    <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-600 py-3.5 rounded-2xl font-bold text-sm hover:bg-gray-200 transition">취소</button>
-                    <button onClick={onConfirm} className="flex-1 bg-red-500 text-white py-3.5 rounded-2xl font-bold text-sm hover:bg-red-600 transition shadow-md">확인</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 const faqData = [
-  { id: 1, question: "학교/캠퍼스가 바뀌었는데 변경할 수 없나요?", answer: "회원가입 시 선택한 학교/캠퍼스는 가입 이후 변경할 수 없습니다. 다른 학교/캠퍼스로 변경을 원하실 경우, 현재 사용하시는 계정을 탈퇴하신 후 새로운 학교/캠퍼스로 다시 회원가입을 진행해주시기 바랍니다." },
-  { id: 2, question: "닉네임, 프로필 이미지 등 프로필 변경은 어떻게 하나요?", answer: "마이페이지의 '프로필 수정' 메뉴에서 닉네임과 프로필 이미지를 자유롭게 변경하실 수 있습니다. 닉네임은 30일에 한 번만 변경 가능하니 신중하게 선택해주세요." },
-  { id: 3, question: "아이디/비밀번호를 잊어버렸어요.", answer: "로그인 페이지 하단의 '아이디/비밀번호 찾기' 기능을 통해 가입 시 인증한 이메일로 비밀번호 재설정 링크를 발급받을 수 있습니다." },
-  { id: 4, question: "회원 탈퇴는 어떻게 하나요?", answer: "계정 설정 메뉴 가장 하단에 '회원 탈퇴' 버튼이 있습니다. 탈퇴 시 모든 활동 기록과 개인 정보는 복구할 수 없으니 신중하게 결정해주시기 바랍니다." },
-  { id: 5, question: "불량 사용자를 신고하고 싶어요.", answer: "문제가 되는 게시물의 '더보기(...)' 메뉴, 유저의 닉네임 우클릭 -> 신고하기를 통해 신고를 할 수 있습니다. 신고 접수 시 내부 검토를 거쳐 커뮤니티 이용규칙에 따라 조치됩니다." },
-  { id: 6, question: "학교 이메일 인증이 계속 실패해요.", answer: "먼저 스팸 메일함을 확인해보시고, 인증 메일이 오지 않았다면 이메일 주소를 정확히 입력했는지 다시 확인해주세요. 문제가 지속될 경우, '1:1 문의하기'를 통해 문의해주시면 확인 후 처리해드리겠습니다." },
-  { id: 7, question: "가입하려는 학교가 목록에 없어요!", answer: "학교 정보는 주기적으로 업데이트되고 있습니다. 만약 본인의 학교가 목록에 없다면 캠퍼스잇 이메일로 학교 추가를 요청해주세요. 검토 후 빠르게 반영하겠습니다." },
-  { id: 8, question: "자유 게시판 이용 시 주의사항이 있나요?", answer: "자유 게시판은 자유로운 소통을 위한 공간입니다. 건전한 커뮤니티 문화를 위해 매너있는 글, 댓글 작성 부탁드립니다. 이용수칙 위반 시 제재될 수 있습니다." },
-  { id: 9, question: "익명으로 글을 쓰면 정말 아무도 모르는 건가요?", answer: "네, 익명으로 작성된 게시물은 닉네임은 공개되지않고 최소한의 신뢰성을 위해 대학교정보만 공개됩니다. 다만, 심각한 약관 위반이나 법적 문제 발생 시에는 관련 법령에 따라 수사기관에 정보가 제공될 수 있습니다." },
-  { id: 10, question: "제가 쓴 글이나 댓글을 수정/삭제하고 싶어요.", answer: "본인이 작성한 게시물과 댓글은 언제든지 수정하거나 삭제할 수 있습니다." },
-  { id: 11, question: "졸업생도 계속 이용할 수 있나요?", answer: "네, 졸업 후에도 캠퍼스잇 서비스는 계속 이용하실 수 있습니다. 다만, 탈퇴 시 재가입은 제한될 수 있습니다." },
-  { id: 12, question: "알림은 어떻게 설정하나요?", answer: "설정 메뉴에서 새로운 댓글, 좋아요 등에 대한 푸시 알림 및 이메일 알림 수신 여부를 상세하게 설정할 수 있습니다." },
-  { id: 13, question: "파일 첨부 용량 제한이 있나요?", answer: "게시물 작성 시 첨부 가능한 파일의 개수는 최대 5개이며, 각 파일의 용량은 10MB를 초과할 수 없습니다." },
-  { id: 14, question: "서비스 이용 중 오류가 발생했어요.", answer: "서비스 이용에 불편을 드려 죄송합니다. 오류가 발생한 화면을 캡쳐하여 '1:1 문의하기'로 접수해주시면, 문제 상황을 파악하고 해결하는 데 큰 도움이 됩니다." },
-  { id: 15, question: "개인정보는 안전하게 관리되나요?", answer: "그럼요. 회원님의 개인정보는 개인정보처리방침에 따라 암호화되어 안전하게 관리되고 있습니다. 자세한 내용은 홈페이지 하단의 '개인정보처리방침' 문서를 참고해주시기 바랍니다." }
+  { id: 1, question: "학교/캠퍼스가 바뀌었는데 변경할 수 없나요?", 
+    answer: "회원가입 시 선택한 학교/캠퍼스는 가입 이후 변경할 수 없습니다. 다른 학교/캠퍼스로 변경을 원하실 경우, 현재 사용하시는 계정을 탈퇴하신 후 새로운 학교/캠퍼스로 다시 회원가입을 진행해주시기 바랍니다." },
+  { id: 2, question: "닉네임, 프로필 이미지 등 프로필 변경은 어떻게 하나요?", 
+    answer: "마이페이지의 '프로필 수정' 메뉴에서 닉네임과 프로필 이미지를 자유롭게 변경하실 수 있습니다. 닉네임은 30일에 한 번만 변경 가능하니 신중하게 선택해주세요." },
+  { id: 3, question: "아이디/비밀번호를 잊어버렸어요.", 
+    answer: "로그인 페이지 하단의 '아이디/비밀번호 찾기' 기능을 통해 가입 시 인증한 이메일로 비밀번호 재설정 링크를 발급받을 수 있습니다." },
+  { id: 4, question: "회원 탈퇴는 어떻게 하나요?", 
+    answer: "계정 설정 메뉴 가장 하단에 '회원 탈퇴' 버튼이 있습니다. 탈퇴 시 모든 활동 기록과 개인 정보는 복구할 수 없으니 신중하게 결정해주시기 바랍니다." },
+  { id: 5, question: "불량 사용자를 신고하고 싶어요.", 
+    answer: "문제가 되는 게시물의 '더보기(...)' 메뉴, 유저의 닉네임 우클릭 -> 신고하기를 통해 신고를 할 수 있습니다. 신고 접수 시 내부 검토를 거쳐 커뮤니티 이용규칙에 따라 조치됩니다." },
+  { id: 6, question: "학교 이메일 인증이 계속 실패해요.", 
+    answer: "먼저 스팸 메일함을 확인해보시고, 인증 메일이 오지 않았다면 이메일 주소를 정확히 입력했는지 다시 확인해주세요. 문제가 지속될 경우, '1:1 문의하기'를 통해 문의해주시면 확인 후 처리해드리겠습니다." },
+  { id: 7, question: "가입하려는 학교가 목록에 없어요!", 
+    answer: "학교 정보는 주기적으로 업데이트되고 있습니다. 만약 본인의 학교가 목록에 없다면 캠퍼스잇 이메일로 학교 추가를 요청해주세요. 검토 후 빠르게 반영하겠습니다." },
+  { id: 8, question: "자유 게시판 이용 시 주의사항이 있나요?", 
+    answer: "자유 게시판은 자유로운 소통을 위한 공간입니다. 건전한 커뮤니티 문화를 위해 매너있는 글, 댓글 작성 부탁드립니다. 이용수칙 위반 시 제재될 수 있습니다." },
+  { id: 9, question: "익명으로 글을 쓰면 정말 아무도 모르는 건가요?", 
+    answer: "네, 익명으로 작성된 게시물은 닉네임은 공개되지않고 최소한의 신뢰성을 위해 대학교정보만 공개됩니다. 다만, 심각한 약관 위반이나 법적 문제 발생 시에는 관련 법령에 따라 수사기관에 정보가 제공될 수 있습니다." },
+  { id: 10, question: "제가 쓴 글이나 댓글을 수정/삭제하고 싶어요.", 
+    answer: "본인이 작성한 게시물과 댓글은 언제든지 수정하거나 삭제할 수 있습니다." },
+  { id: 11, question: "졸업생도 계속 이용할 수 있나요?", 
+    answer: "네, 졸업 후에도 캠퍼스잇 서비스는 계속 이용하실 수 있습니다. 다만, 탈퇴 시 재가입은 제한될 수 있습니다." },
+  { id: 12, question: "알림은 어떻게 설정하나요?", 
+    answer: "설정 메뉴에서 새로운 댓글, 좋아요 등에 대한 푸시 알림 및 이메일 알림 수신 여부를 상세하게 설정할 수 있습니다." },
+  { id: 13, question: "파일 첨부 용량 제한이 있나요?", 
+    answer: "게시물 작성 시 첨부 가능한 파일의 개수는 최대 5개이며, 각 파일의 용량은 10MB를 초과할 수 없습니다." },
+  { id: 14, question: "서비스 이용 중 오류가 발생했어요.", 
+    answer: "서비스 이용에 불편을 드려 죄송합니다. 오류가 발생한 화면을 캡쳐하여 '1:1 문의하기'로 접수해주시면, 문제 상황을 파악하고 해결하는 데 큰 도움이 됩니다." },
+  { id: 15, question: "개인정보는 안전하게 관리되나요?", 
+    answer: "그럼요. 회원님의 개인정보는 개인정보처리방침에 따라 암호화되어 안전하게 관리되고 있습니다. 자세한 내용은 홈페이지 하단의 '개인정보처리방침' 문서를 참고해주시기 바랍니다." }
 ];
 
 function FaqItem({ faq, isOpen, onClick }) {
@@ -121,7 +67,7 @@ function FaqItem({ faq, isOpen, onClick }) {
   );
 }
 
-function InquiryItem({ inquiry, isOpen, onClick, onCancel, showAlert }) {
+function InquiryItem({ inquiry, isOpen, onClick, onCancel }) {
   const inquiryDate = new Date(inquiry.createdAt).toLocaleDateString('ko-KR');
 
   const handleDownload = async () => {
@@ -130,11 +76,11 @@ function InquiryItem({ inquiry, isOpen, onClick, onCancel, showAlert }) {
       if (response.data?.url) {
         window.open(response.data.url, "_blank");
       } else {
-        showAlert("다운로드 URL을 불러오지 못했습니다.");
+        alert("다운로드 URL을 불러오지 못했습니다.");
       }
     } catch (error) {
       console.error("파일 다운로드 오류:", error);
-      showAlert("파일 다운로드 중 오류가 발생했습니다.");
+      alert("파일 다운로드 중 오류가 발생했습니다.");
     }
   };
 
@@ -227,12 +173,6 @@ export default function ContactPage() {
   const [inquiries, setInquiries] = useState([]);
   const [openInquiryId, setOpenInquiryId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [alertInfo, setAlertInfo] = useState({ show: false, message: "" });
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [inquiryToDelete, setInquiryToDelete] = useState(null);
-
-  const showAlert = (message) => setAlertInfo({ show: true, message });
-  const closeAlert = () => setAlertInfo({ show: false, message: "" });
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -257,7 +197,7 @@ export default function ContactPage() {
       setInquiries(response.data);
     } catch (error) {
       console.error("문의 내역 로딩 실패:", error);
-      showAlert("문의 내역을 불러오는 데 실패했습니다.");
+      alert("문의 내역을 불러오는 데 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -276,11 +216,11 @@ export default function ContactPage() {
 
   const handleSubmitInquiry = async () => {
     if (!title.trim() || !content.trim()) {
-      showAlert("제목 및 내용을 작성해주세요!");
+      alert("제목 및 내용을 작성해주세요!");
       return;
     }
     if (!consent) {
-      showAlert("개인정보 수집 및 이용에 동의해주세요.");
+      alert("개인정보 수집 및 이용에 동의해주세요.");
       return;
     }
     
@@ -305,7 +245,7 @@ export default function ContactPage() {
     setIsSubmitting(true);
     try {
       await apiClient.post("/inquiries", dataToSend, { headers }); 
-      showAlert("문의가 성공적으로 접수되었습니다.");
+      alert("문의가 성공적으로 접수되었습니다.");
       setTitle("");
       setContent("");
       setFile(null);
@@ -313,29 +253,22 @@ export default function ContactPage() {
       setMode("myInquiries");
     } catch (error) {
       console.error("문의 접수 오류:", error);
-      showAlert(error.response?.data?.message || "문의 접수 중 오류가 발생했습니다.");
+      alert(error.response?.data?.message || "문의 접수 중 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
     }
   };
   
-  const handleCancelInquiry = (inquiryId) => {
-    setInquiryToDelete(inquiryId);
-    setShowConfirmModal(true);
-  };
-
-  const executeDeleteInquiry = async () => {
-    if (!inquiryToDelete) return;
-    try {
-      await apiClient.delete(`/inquiries/${inquiryToDelete}`);
-      setShowConfirmModal(false);
-      setInquiryToDelete(null);
-      showAlert("문의가 취소되었습니다.");
-      setInquiries(prev => prev.filter(inq => inq.id !== inquiryToDelete));
-    } catch (error) {
-      console.error("문의 취소 오류:", error);
-      showAlert("문의 취소 중 오류가 발생했습니다.");
-      setShowConfirmModal(false);
+  const handleCancelInquiry = async (inquiryId) => {
+    if (window.confirm("정말 문의를 취소하시겠습니까? (삭제된 문의는 복구할 수 없습니다)")) {
+        try {
+            await apiClient.delete(`/inquiries/${inquiryId}`);
+            alert("문의가 취소되었습니다.");
+            setInquiries(prev => prev.filter(inq => inq.id !== inquiryId));
+        } catch (error) {
+            console.error("문의 취소 오류:", error);
+            alert("문의 취소 중 오류가 발생했습니다.");
+        }
     }
   };
 
@@ -440,7 +373,6 @@ export default function ContactPage() {
                                     isOpen={openInquiryId === inquiry.id}
                                     onClick={() => handleInquiryClick(inquiry.id)}
                                     onCancel={handleCancelInquiry}
-                                    showAlert={showAlert}
                                 />
                             ))
                         ) : (
@@ -574,18 +506,6 @@ export default function ContactPage() {
                 </div>
             )}
         </div>
-
-        {alertInfo.show && (
-          <AlertModal message={alertInfo.message} onClose={closeAlert} />
-        )}
-
-        {showConfirmModal && (
-          <ConfirmModal
-            message="정말 문의를 취소하시겠습니까? (삭제된 문의는 복구할 수 없습니다)"
-            onConfirm={executeDeleteInquiry}
-            onCancel={() => setShowConfirmModal(false)}
-          />
-        )}
       </main>
     </div>
   );

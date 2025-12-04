@@ -3,9 +3,25 @@ import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { Request, Response, NextFunction } from 'express';
+import helmet from 'helmet';
+import { winstonLogger } from './common/winston.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: winstonLogger,
+  });
+
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }));
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader(
+      'Permissions-Policy',
+      'geolocation=(), microphone=(), camera=()'
+    );
+    next();
+  });
 
   app.enableCors({
     origin: [

@@ -382,7 +382,7 @@ export default function BookPage() {
                 setMyTrades(prev => prev.filter(t => t.id !== tradeId));
                 if (selectedTrade?.id === tradeId) setSelectedTrade(null);
             });
-            const handleRemoved = (data) => { showAlert(data.title ? `'${data.title}' 강퇴됨` : '나감'); fetchTrades(); };
+            const handleRemoved = (data) => { showAlert(data.title ? `'${data.title}' 에서 강퇴되었습니다.` : '에서 퇴장하셨습니다.'); fetchTrades(); };
             newSocket.on('kicked', handleRemoved);
             newSocket.on('leftTrade', handleRemoved);
             return () => { newSocket.disconnect(); };

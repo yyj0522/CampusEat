@@ -1,33 +1,56 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, Logger } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 
-@Catch(HttpException)
+@Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
-  catch(exception: HttpException, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
-    const status = exception.getStatus();
-    const error = exception.getResponse() as
-      | string
-      | { error: string; statusCode: number; message: string | string[] };
+
+    const status =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const res =
+      exception instanceof HttpException
+        ? exception.getResponse()
+        : { message: (exception as Error).message || 'Internal Server Error' };
+
+    const message =
+      typeof res === 'string'
+        ? res
+        : (res as any).message || (res as any).error || 'Internal Server Error';
 
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
-      message: typeof error === 'string' ? error : error.message,
+      message: message,
     };
 
-    this.logger.error(
-      `HTTP Status ${status} Error Message: ${JSON.stringify(errorResponse.message)}`,
-    );
+    if (status >= 500) {
+      this.logger.error(
+        `${request.method} ${request.url}`,
+        exception instanceof Error ? exception.stack : '',
+      );
+    } else {
+      this.logger.warn(
+        `${request.method} ${request.url} - ${JSON.stringify(message)}`,
+      );
+    }
 
-    response
-      .status(status)
-      .json(errorResponse);
+    response.status(status).json(errorResponse);
   }
 }

@@ -2,20 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "../../context/AuthProvider";
 import apiClient from "@/lib/api";
 import { FaUserEdit, FaKey, FaUniversity, FaSignOutAlt, FaUserSlash, FaChevronRight, FaPen, FaCommentDots, FaStar, FaExclamationTriangle, FaCog } from "react-icons/fa";
 
-const ModalOverlay = ({ children, onClose }) => (
-    <div 
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300"
-        onClick={onClose}
-    >
-        <div onClick={e => e.stopPropagation()} className="w-full max-w-md">
-            {children}
-        </div>
-    </div>
-);
+const Portal = ({ children }) => {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
+
+    if (!mounted) return null;
+
+    return createPortal(children, document.body);
+};
 
 const AlertModal = ({ message, onClose }) => {
     useEffect(() => {
@@ -25,20 +28,28 @@ const AlertModal = ({ message, onClose }) => {
     }, [onClose]);
 
     return (
-        <ModalOverlay onClose={onClose}>
-            <div className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-scaleUp border border-gray-100 transform transition-all">
-                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                    <i className="fas fa-info text-2xl text-blue-500"></i>
-                </div>
-                <p className="text-gray-800 font-bold text-lg mb-8 break-keep leading-relaxed">{message}</p>
-                <button 
-                    onClick={onClose} 
-                    className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-black transition-all active:scale-[0.98]"
+        <Portal>
+            <div 
+                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 transition-all duration-300"
+                onClick={onClose}
+            >
+                <div 
+                    className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-scaleUp border border-gray-100 transform transition-all w-full max-w-sm relative"
+                    onClick={e => e.stopPropagation()}
                 >
-                    확인
-                </button>
+                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                        <i className="fas fa-info text-2xl text-blue-500"></i>
+                    </div>
+                    <p className="text-gray-800 font-bold text-lg mb-8 break-keep leading-relaxed">{message}</p>
+                    <button 
+                        onClick={onClose} 
+                        className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-black transition-all active:scale-[0.98]"
+                    >
+                        확인
+                    </button>
+                </div>
             </div>
-        </ModalOverlay>
+        </Portal>
     );
 };
 
@@ -60,33 +71,42 @@ const ChangeNicknameModal = ({ isOpen, onClose, currentNickname, onSave, showAle
     };
 
     if (!isOpen) return null;
+    
     return (
-        <ModalOverlay onClose={onClose}>
-            <div className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100">
-                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">닉네임 변경</h3>
-                <p className="text-gray-500 text-sm mb-8">새로운 닉네임을 입력해주세요.</p>
-                
-                <input 
-                    type="text" 
-                    value={newNickname} 
-                    onChange={(e) => setNewNickname(e.target.value)} 
-                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-base font-medium focus:bg-white focus:border-blue-500 focus:outline-none transition-all mb-8 placeholder-gray-400" 
-                    placeholder="새 닉네임 입력" 
-                    autoFocus
-                />
-                
-                <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
-                    <button 
-                        onClick={handleSave} 
-                        disabled={isSaving} 
-                        className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-blue-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
-                    >
-                        {isSaving ? '저장 중...' : '변경하기'}
-                    </button>
+        <Portal>
+            <div 
+                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 transition-all duration-300"
+                onClick={onClose}
+            >
+                <div 
+                    className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100 w-full max-w-md relative"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <h3 className="text-2xl font-extrabold text-gray-900 mb-2">닉네임 변경</h3>
+                    <p className="text-gray-500 text-sm mb-8">새로운 닉네임을 입력해주세요.</p>
+                    
+                    <input 
+                        type="text" 
+                        value={newNickname} 
+                        onChange={(e) => setNewNickname(e.target.value)} 
+                        className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-base font-medium focus:bg-white focus:border-blue-500 focus:outline-none transition-all mb-8 placeholder-gray-400" 
+                        placeholder="새 닉네임 입력" 
+                        autoFocus
+                    />
+                    
+                    <div className="flex gap-3">
+                        <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
+                        <button 
+                            onClick={handleSave} 
+                            disabled={isSaving} 
+                            className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-blue-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
+                        >
+                            {isSaving ? '저장 중...' : '변경하기'}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </ModalOverlay>
+        </Portal>
     );
 };
 
@@ -119,29 +139,37 @@ const ChangePasswordModal = ({ isOpen, onClose, showAlert, onSave }) => {
 
     if (!isOpen) return null;
     return (
-        <ModalOverlay onClose={onClose}>
-            <div className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100">
-                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">비밀번호 변경</h3>
-                <p className="text-gray-500 text-sm mb-8">안전한 비밀번호로 변경해주세요.</p>
+        <Portal>
+            <div 
+                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 transition-all duration-300"
+                onClick={onClose}
+            >
+                <div 
+                    className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100 w-full max-w-md relative"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <h3 className="text-2xl font-extrabold text-gray-900 mb-2">비밀번호 변경</h3>
+                    <p className="text-gray-500 text-sm mb-8">안전한 비밀번호로 변경해주세요.</p>
 
-                <div className="space-y-4 mb-8">
-                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-medium focus:bg-white focus:border-purple-500 focus:outline-none transition-all" placeholder="현재 비밀번호" />
-                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-medium focus:bg-white focus:border-purple-500 focus:outline-none transition-all" placeholder="새 비밀번호 (4자 이상)" />
-                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-medium focus:bg-white focus:border-purple-500 focus:outline-none transition-all" placeholder="새 비밀번호 확인" />
-                </div>
+                    <div className="space-y-4 mb-8">
+                        <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-medium focus:bg-white focus:border-purple-500 focus:outline-none transition-all" placeholder="현재 비밀번호" />
+                        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-medium focus:bg-white focus:border-purple-500 focus:outline-none transition-all" placeholder="새 비밀번호 (4자 이상)" />
+                        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-medium focus:bg-white focus:border-purple-500 focus:outline-none transition-all" placeholder="새 비밀번호 확인" />
+                    </div>
 
-                <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
-                    <button 
-                        onClick={handleSave} 
-                        disabled={isSaving} 
-                        className="flex-[2] py-4 bg-purple-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-purple-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
-                    >
-                        {isSaving ? '변경 중...' : '변경하기'}
-                    </button>
+                    <div className="flex gap-3">
+                        <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
+                        <button 
+                            onClick={handleSave} 
+                            disabled={isSaving} 
+                            className="flex-[2] py-4 bg-purple-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-purple-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
+                        >
+                            {isSaving ? '변경 중...' : '변경하기'}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </ModalOverlay>
+        </Portal>
     );
 };
 
@@ -212,55 +240,63 @@ const ChangeUniversityModal = ({ isOpen, onClose, onSave, showAlert }) => {
 
     if (!isOpen) return null;
     return (
-        <ModalOverlay onClose={onClose}>
-            <div className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100 overflow-visible">
-                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">대학교 변경</h3>
-                <p className="text-gray-500 text-sm mb-8">새로운 소속 대학교를 검색하세요.</p>
+        <Portal>
+            <div 
+                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 transition-all duration-300"
+                onClick={onClose}
+            >
+                <div 
+                    className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100 overflow-visible w-full max-w-md relative"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <h3 className="text-2xl font-extrabold text-gray-900 mb-2">대학교 변경</h3>
+                    <p className="text-gray-500 text-sm mb-8">새로운 소속 대학교를 검색하세요.</p>
 
-                <div className="relative mb-8">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <i className="fas fa-search text-gray-400"></i>
+                    <div className="relative mb-8">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i className="fas fa-search text-gray-400"></i>
+                        </div>
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                            className="w-full pl-11 p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-base font-medium focus:bg-white focus:border-emerald-500 focus:outline-none transition-all"
+                            placeholder="대학교 검색"
+                            disabled={isLoading}
+                        />
+                        {searchTerm && filteredUniversities.length > 0 && !selectedUniversity && (
+                            <div className="absolute z-[1000] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                                {filteredUniversities.map(uni => (
+                                    <div
+                                        key={uni}
+                                        onClick={() => handleSelectUniversity(uni)}
+                                        className="p-4 hover:bg-emerald-50 cursor-pointer text-sm font-medium text-gray-700 border-b border-gray-50 last:border-none transition-colors"
+                                    >
+                                        {uni}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {searchTerm && filteredUniversities.length === 0 && !selectedUniversity && (
+                             <div className="absolute z-[1000] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl p-4 text-center text-sm text-gray-500">
+                                검색 결과가 없습니다.
+                            </div>
+                        )}
                     </div>
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={handleSearchChange}
-                        className="w-full pl-11 p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-base font-medium focus:bg-white focus:border-emerald-500 focus:outline-none transition-all"
-                        placeholder="대학교 검색"
-                        disabled={isLoading}
-                    />
-                    {searchTerm && filteredUniversities.length > 0 && !selectedUniversity && (
-                        <div className="absolute z-[1000] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
-                            {filteredUniversities.map(uni => (
-                                <div
-                                    key={uni}
-                                    onClick={() => handleSelectUniversity(uni)}
-                                    className="p-4 hover:bg-emerald-50 cursor-pointer text-sm font-medium text-gray-700 border-b border-gray-50 last:border-none transition-colors"
-                                >
-                                    {uni}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {searchTerm && filteredUniversities.length === 0 && !selectedUniversity && (
-                         <div className="absolute z-[1000] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl p-4 text-center text-sm text-gray-500">
-                            검색 결과가 없습니다.
-                        </div>
-                    )}
-                </div>
 
-                <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
-                    <button 
-                        onClick={handleSave} 
-                        disabled={isSaving || !selectedUniversity} 
-                        className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-emerald-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
-                    >
-                        {isSaving ? '저장 중...' : '변경하기'}
-                    </button>
+                    <div className="flex gap-3">
+                        <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
+                        <button 
+                            onClick={handleSave} 
+                            disabled={isSaving || !selectedUniversity} 
+                            className="flex-[2] py-4 bg-emerald-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-emerald-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
+                        >
+                            {isSaving ? '저장 중...' : '변경하기'}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </ModalOverlay>
+        </Portal>
     );
 };
 
@@ -275,47 +311,55 @@ const DeleteAccountModal = ({ isOpen, onClose, onDelete }) => {
     };
     if (!isOpen) return null;
     return (
-        <ModalOverlay onClose={onClose}>
-            <div className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100">
-                <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                        <FaExclamationTriangle className="text-3xl text-red-500" />
+        <Portal>
+            <div 
+                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 transition-all duration-300"
+                onClick={onClose}
+            >
+                <div 
+                    className="bg-white rounded-3xl shadow-2xl p-8 animate-scaleUp border border-gray-100 w-full max-w-md relative"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <div className="text-center mb-6">
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                            <FaExclamationTriangle className="text-3xl text-red-500" />
+                        </div>
+                        <h3 className="text-2xl font-extrabold text-red-600">회원 탈퇴</h3>
                     </div>
-                    <h3 className="text-2xl font-extrabold text-red-600">회원 탈퇴</h3>
-                </div>
-                
-                <div className="bg-red-50 p-5 rounded-2xl mb-6 border border-red-100">
-                    <p className="font-bold text-red-800 mb-2 text-sm text-center">⚠️ 주의: 복구가 불가능합니다</p>
-                    <ul className="space-y-1.5 text-xs text-red-700/80 list-disc list-inside">
-                        <li>계정 정보 및 개인 프로필 삭제</li>
-                        <li>작성한 모든 게시글 및 댓글 삭제</li>
-                        <li>활동 포인트 및 내역 영구 소실</li>
-                    </ul>
-                </div>
+                    
+                    <div className="bg-red-50 p-5 rounded-2xl mb-6 border border-red-100">
+                        <p className="font-bold text-red-800 mb-2 text-sm text-center">⚠️ 주의: 복구가 불가능합니다</p>
+                        <ul className="space-y-1.5 text-xs text-red-700/80 list-disc list-inside">
+                            <li>계정 정보 및 개인 프로필 삭제</li>
+                            <li>작성한 모든 게시글 및 댓글 삭제</li>
+                            <li>활동 포인트 및 내역 영구 소실</li>
+                        </ul>
+                    </div>
 
-                <p className="text-sm text-gray-600 mb-3 text-center">
-                    아래 문구를 똑같이 입력해주세요.
-                </p>
-                <input 
-                    type="text" 
-                    value={confirmationText} 
-                    onChange={(e) => setConfirmationText(e.target.value)} 
-                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-bold focus:bg-white focus:border-red-500 focus:outline-none transition-all mb-8 text-center placeholder-gray-300" 
-                    placeholder={requiredText}
-                />
+                    <p className="text-sm text-gray-600 mb-3 text-center">
+                        아래 문구를 똑같이 입력해주세요.
+                    </p>
+                    <input 
+                        type="text" 
+                        value={confirmationText} 
+                        onChange={(e) => setConfirmationText(e.target.value)} 
+                        className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-bold focus:bg-white focus:border-red-500 focus:outline-none transition-all mb-8 text-center placeholder-gray-300" 
+                        placeholder={requiredText}
+                    />
 
-                <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
-                    <button 
-                        onClick={handleDelete} 
-                        disabled={confirmationText !== requiredText || isDeleting} 
-                        className="flex-[2] py-4 bg-red-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-                    >
-                        {isDeleting ? '처리 중...' : '탈퇴하기'}
-                    </button>
+                    <div className="flex gap-3">
+                        <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base hover:bg-gray-200 transition-colors">취소</button>
+                        <button 
+                            onClick={handleDelete} 
+                            disabled={confirmationText !== requiredText || isDeleting} 
+                            className="flex-[2] py-4 bg-red-600 text-white rounded-2xl font-bold text-base shadow-lg hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                        >
+                            {isDeleting ? '처리 중...' : '탈퇴하기'}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </ModalOverlay>
+        </Portal>
     );
 };
 

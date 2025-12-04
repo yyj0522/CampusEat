@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "../../context/AuthProvider";
@@ -102,39 +102,6 @@ export default function HomePage() {
     },
   ];
 
-  const slideStyles = useMemo(() => [
-    {
-      bg: "bg-gradient-to-r from-orange-50 via-orange-50/50 to-orange-100/50",
-      blob: "bg-orange-200",
-      badge: "bg-orange-900",
-      button: "bg-orange-900 hover:bg-orange-800"
-    },
-    {
-      bg: "bg-gradient-to-r from-blue-50 via-blue-50/50 to-blue-100/50",
-      blob: "bg-blue-200",
-      badge: "bg-blue-900",
-      button: "bg-blue-900 hover:bg-blue-800"
-    },
-    {
-      bg: "bg-gradient-to-r from-emerald-50 via-emerald-50/50 to-emerald-100/50",
-      blob: "bg-emerald-200",
-      badge: "bg-emerald-900",
-      button: "bg-emerald-900 hover:bg-emerald-800"
-    },
-    {
-      bg: "bg-gradient-to-r from-purple-50 via-purple-50/50 to-purple-100/50",
-      blob: "bg-purple-200",
-      badge: "bg-purple-900",
-      button: "bg-purple-900 hover:bg-purple-800"
-    },
-    {
-      bg: "bg-gradient-to-r from-yellow-50 via-yellow-50/50 to-yellow-100/50",
-      blob: "bg-yellow-200",
-      badge: "bg-yellow-900",
-      button: "bg-yellow-900 hover:bg-yellow-800"
-    }
-  ], []);
-
   if (loading) return <div className="min-h-screen bg-white" />;
 
   return (
@@ -188,14 +155,14 @@ export default function HomePage() {
 
               <div className="hidden md:block w-full h-full bg-white relative">
                  {slides.map((slide, idx) => {
-                    const style = slideStyles[idx % slideStyles.length];
                     return (
                         <div 
                             key={idx}
-                            className={`absolute inset-0 flex transition-opacity duration-1000 ${currentSlide === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'} ${style.bg}`}
+                            className={`absolute inset-0 flex transition-opacity duration-1000 ${currentSlide === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                            style={{ backgroundColor: slide.slideBackgroundColor || '#EBF5FF' }}
                         >
                             <div className="w-1/2 h-full flex flex-col justify-center items-start p-12 lg:p-20 z-10">
-                                <span className={`inline-block px-4 py-1.5 ${style.badge} text-white text-xs font-bold rounded-full mb-6 shadow-sm`}>
+                                <span className={`inline-block px-4 py-1.5 bg-black text-white text-xs font-bold rounded-full mb-6 shadow-sm`}>
                                     HOT ISSUE
                                 </span>
                                 <h2 className="text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4 leading-tight break-keep tracking-tight">
@@ -206,14 +173,14 @@ export default function HomePage() {
                                 </p>
                                 <button
                                     onClick={() => handleNavigation(`/community/${slide.id}`)}
-                                    className={`px-8 py-3.5 ${style.button} text-white text-base font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5`}
+                                    className={`px-8 py-3.5 bg-black hover:bg-gray-800 text-white text-base font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5`}
                                 >
                                     자세히 보기
                                 </button>
                             </div>
                             
                             <div className="w-1/2 h-full relative flex items-end justify-center overflow-hidden">
-                                <div className={`absolute w-[400px] h-[400px] rounded-full ${style.blob} blur-3xl opacity-60 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}></div>
+                                <div className={`absolute w-[400px] h-[400px] rounded-full bg-white blur-3xl opacity-40 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}></div>
                                 <div className="relative w-full h-full z-10">
                                     <Image
                                         src={slide.slideImage}
@@ -236,7 +203,7 @@ export default function HomePage() {
                     onClick={() => setCurrentSlide(idx)}
                     className={`h-2 rounded-full transition-all duration-500 ${
                       currentSlide === idx 
-                        ? `w-8 ${slideStyles[idx % slideStyles.length].badge}` 
+                        ? `w-8 bg-black` 
                         : "w-2 bg-gray-400/50 hover:bg-gray-500/50"
                     }`}
                   />

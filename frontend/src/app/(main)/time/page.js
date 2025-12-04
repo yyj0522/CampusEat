@@ -218,8 +218,9 @@ export default function TimetablePage() {
 
     const handleSearchOpen = () => {
         setIsSearchOpen(true);
-        if (allLectures.length === 0) fetchAllLectures();
-        else fetchLectureStats(allLectures.map(l => l.id));
+        if (allLectures.length === 0) {
+            fetchAllLectures();
+        }
     };
 
     const handleSearch = (e) => {

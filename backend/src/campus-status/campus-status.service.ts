@@ -84,7 +84,22 @@ export class CampusStatusService {
   async scheduleWeeklyTraining() {
     this.logger.log('Starting weekly ML training for all universities...');
     try {
-        await axios.post('http://127.0.0.1:8000/train-all');
+        const mlApiKey = this.configService.get<string>('ML_API_KEY');
+
+        if (!mlApiKey) {
+            this.logger.error('ML_API_KEY is missing in .env file. Training skipped.');
+            return;
+        }
+        
+        await axios.post(
+            'http://127.0.0.1:8000/train-all', 
+            {}, 
+            {
+                headers: {
+                    Authorization: `Bearer ${mlApiKey}`,
+                },
+            }
+        );
         this.logger.log('Weekly training request sent successfully.');
     } catch (error) {
         this.logger.error(`Weekly training failed: ${error.message}`);
@@ -165,8 +180,8 @@ export class CampusStatusService {
 
       [Instructions]
       1. Group reports by their topic (Traffic, Cafeteria, Event, Weather, Etc).
-      2. For each group, write a **detailed summary** that includes specific locations and the situation.
-      3. **Do not be vague.**
+      2. For each group, write a detailed summary that includes specific locations and the situation.
+      3. Do not be vague.
       4. Calculate 'confidence' (0-100%).
       5. Count 'reportCount'.
       6. Output must be a valid JSON Array. Korean language only.
