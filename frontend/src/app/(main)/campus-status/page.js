@@ -100,7 +100,6 @@ export default function CampusStatusPage() {
     }
   }, [fetchPrediction, user, activeTab]);
 
-  // [수정] 불필요한 외부 레이아웃 div 제거 (layout.js가 처리함)
   return (
     <>
       <style jsx global>{`
@@ -108,7 +107,6 @@ export default function CampusStatusPage() {
         .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
       `}</style>
 
-      {/* 탭 네비게이션 */}
       <div className="mb-6 border-b border-gray-200" role="tablist">
         <div className="flex space-x-6">
           <button 
@@ -130,7 +128,6 @@ export default function CampusStatusPage() {
         </div>
       </div>
 
-      {/* 로딩 및 데이터 뷰 */}
       {authLoading || !user ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2"><SkeletonLoader /></div>

@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { StandardizedTimetable } from './timetable.interface';
 import puppeteer from 'puppeteer-extra';
-import { Browser, Page } from 'puppeteer';
+import { Browser} from 'puppeteer';
 import StealthPlugin = require('puppeteer-extra-plugin-stealth');
 import { IDynamicScraperStrategy } from './scrapers/i-dynamic-scraper.strategy';
 import { GachonGeneralStrategy } from './scrapers/gachon-general.strategy';

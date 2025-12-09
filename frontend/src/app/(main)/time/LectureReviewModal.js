@@ -109,16 +109,16 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
             <div className="bg-white w-full max-w-lg h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fadeIn relative">
                 
                 <div className="bg-white px-6 py-5 border-b flex justify-between items-start sticky top-0 z-10">
-                    <div>
-                        <h3 className="font-extrabold text-gray-900 text-xl leading-tight">{lecture.courseName}</h3>
+                    <div className="pr-4">
+                        <h3 className="font-extrabold text-gray-900 text-lg sm:text-xl leading-tight line-clamp-2">{lecture.courseName}</h3>
                         <p className="text-sm text-gray-500 mt-1">{lecture.professor} 교수님</p>
                     </div>
-                    <button onClick={onClose} className="p-2 -mr-2 text-gray-400 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100">
+                    <button onClick={onClose} className="p-2 -mr-2 text-gray-400 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100 flex-shrink-0">
                         <i className="fas fa-times fa-lg"></i>
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-4" ref={scrollRef}>
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50 space-y-4" ref={scrollRef}>
                     {reviews.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
                             <i className="fas fa-comment-dots text-4xl mb-2 opacity-50"></i>
@@ -177,7 +177,7 @@ export default function LectureReviewModal({ isOpen, onClose, lecture }) {
 
                 <div className="bg-white p-4 border-t shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
                     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between flex-wrap gap-y-2">
                             <div className="flex gap-2">
                                 <select className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none bg-gray-50 text-gray-600 font-medium focus:border-blue-500 transition-colors" value={year} onChange={e => setYear(Number(e.target.value))}>
                                     {[2023, 2024, 2025, 2026].map(y => <option key={y} value={y}>{y}년</option>)}

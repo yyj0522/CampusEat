@@ -13,7 +13,7 @@ const TimetableGrid = forwardRef(({ currentTimetable, onDeleteLecture, onLecture
     const days = ['월', '화', '수', '목', '금'];
     const startHour = 9;
     const hours = Array.from({ length: 14 }, (_, i) => startHour + i);
-    const cellHeight = 90;
+    const cellHeight = 60; 
 
     const lectureBlocks = [];
     const cyberLectures = [];
@@ -36,21 +36,21 @@ const TimetableGrid = forwardRef(({ currentTimetable, onDeleteLecture, onLecture
             lectureBlocks.push(
                 <div
                     key={`${lec.id}-${item.day}`}
-                    className="absolute w-[20%] p-1 z-10 group cursor-pointer"
+                    className="absolute w-[20%] p-0.5 z-10 group cursor-pointer"
                     style={{ top: `${top}px`, left: left, height: `${height}px` }}
                     onClick={() => onLectureClick(lec)}
                 >
-                    <div className="w-full h-full p-2 flex flex-col justify-center overflow-hidden rounded-md border-l-4 relative shadow-sm hover:brightness-95 transition"
+                    <div className="w-full h-full p-1.5 flex flex-col justify-center overflow-hidden rounded-md border-l-4 relative shadow-sm hover:brightness-95 transition"
                         style={{ backgroundColor: lec.color || '#eeeeee', borderColor: 'rgba(0,0,0,0.1)', borderLeftColor: 'rgba(0,0,0,0.2)' }}>
-                        <span className="font-bold text-xs leading-tight mb-1" style={{color: '#1f2937'}}>{lec.courseName}</span>
-                        <span className="text-[10px] block" style={{color: '#4b5563'}}>{lec.professor}</span>
-                        <span className="text-[10px] block" style={{color: '#4b5563'}}>{getLectureClassroom(lec)}</span>
+                        <span className="font-bold text-xs leading-tight mb-0.5 break-words line-clamp-2" style={{color: '#1f2937'}}>{lec.courseName}</span>
+                        <span className="text-[10px] block truncate" style={{color: '#4b5563'}}>{lec.professor}</span>
+                        <span className="text-[10px] block truncate" style={{color: '#4b5563'}}>{getLectureClassroom(lec)}</span>
                         <button 
                             data-html2canvas-ignore="true"
                             onClick={(e) => { e.stopPropagation(); onDeleteLecture(lec.id); }}
-                            className="absolute top-1 right-1 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                            className="absolute top-0.5 right-0.5 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-20 p-1"
                         >
-                            <i className="fas fa-times"></i>
+                            <i className="fas fa-times text-xs"></i>
                         </button>
                     </div>
                 </div>
@@ -59,57 +59,59 @@ const TimetableGrid = forwardRef(({ currentTimetable, onDeleteLecture, onLecture
     });
 
     return (
-        <div className="bg-white w-full h-auto" ref={ref} data-html2canvas-target style={{ backgroundColor: '#ffffff' }}>
-            <div className="relative bg-white border border-gray-200 rounded-lg select-none h-auto flex flex-col" style={{ borderColor: '#e5e7eb' }}>
-                <div className="flex border-b bg-gray-50" style={{ backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }}>
-                    <div className="w-12 flex-shrink-0 border-r" style={{ borderColor: '#e5e7eb' }}></div>
-                    {days.map(day => (
-                        <div key={day} className="flex-1 text-center py-2 font-medium border-r last:border-r-0" style={{ color: '#4b5563', borderColor: '#e5e7eb' }}>
-                            {day}
-                        </div>
-                    ))}
-                </div>
-                <div className="flex relative w-full" style={{ height: `${hours.length * cellHeight}px` }}>
-                    <div className="w-12 flex-shrink-0 flex flex-col border-r bg-gray-50 text-xs" style={{ backgroundColor: '#f9fafb', color: '#9ca3af', borderColor: '#e5e7eb' }}>
-                        {hours.map(h => (
-                            <div key={h} className="flex-1 border-b relative" style={{ height: `${cellHeight}px`, borderColor: '#e5e7eb' }}>
-                                <span className="absolute top-1 right-1">{h}</span>
+        <div className="bg-white w-full h-auto flex flex-col" ref={ref} data-html2canvas-target style={{ backgroundColor: '#ffffff' }}>
+            <div className="w-full overflow-x-auto">
+                <div className="min-w-[600px] relative bg-white border border-gray-200 rounded-lg select-none h-auto flex flex-col" style={{ borderColor: '#e5e7eb' }}>
+                    <div className="flex border-b bg-gray-50" style={{ backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }}>
+                        <div className="w-10 flex-shrink-0 border-r" style={{ borderColor: '#e5e7eb' }}></div>
+                        {days.map(day => (
+                            <div key={day} className="flex-1 text-center py-2 font-medium border-r last:border-r-0 text-sm" style={{ color: '#4b5563', borderColor: '#e5e7eb' }}>
+                                {day}
                             </div>
                         ))}
                     </div>
-                    <div className="flex-1 relative bg-white h-full" style={{ backgroundColor: '#ffffff' }}>
-                        {hours.map(h => (
-                            <div key={`row-${h}`} className="absolute w-full border-b border-gray-100" style={{ top: `${(h - startHour + 1) * cellHeight}px`, borderColor: '#f3f4f6' }}></div>
-                        ))}
-                        {[1, 2, 3, 4].map(i => (
-                            <div key={`col-${i}`} className="absolute h-full border-r border-gray-100" style={{ left: `${i * 20}%`, borderColor: '#f3f4f6' }}></div>
-                        ))}
-                        {lectureBlocks}
-                    </div>
-                </div>
-                {cyberLectures.length > 0 && (
-                    <div className="p-4 border-t bg-gray-50" style={{ backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }}>
-                        <h4 className="text-sm font-bold mb-2" style={{ color: '#4b5563' }}>기타 / 사이버 강의</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {cyberLectures.map(lec => (
-                                <div key={lec.id} onClick={() => onLectureClick(lec)} className="bg-white px-3 py-2 rounded border shadow-sm text-sm flex items-center gap-2 group cursor-pointer" style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
-                                    <div>
-                                        <span className="font-semibold mr-2" style={{ color: '#374151' }}>{lec.courseName}</span>
-                                        <span className="text-xs" style={{ color: '#6b7280' }}>{lec.professor}</span>
-                                    </div>
-                                    <button 
-                                        data-html2canvas-ignore="true"
-                                        onClick={(e) => { e.stopPropagation(); onDeleteLecture(lec.id); }}
-                                        className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <i className="fas fa-trash-alt"></i>
-                                    </button>
+                    <div className="flex relative w-full" style={{ height: `${hours.length * cellHeight}px` }}>
+                        <div className="w-10 flex-shrink-0 flex flex-col border-r bg-gray-50 text-[10px]" style={{ backgroundColor: '#f9fafb', color: '#9ca3af', borderColor: '#e5e7eb' }}>
+                            {hours.map(h => (
+                                <div key={h} className="flex-1 border-b relative" style={{ height: `${cellHeight}px`, borderColor: '#e5e7eb' }}>
+                                    <span className="absolute top-1 right-1">{h}</span>
                                 </div>
                             ))}
                         </div>
+                        <div className="flex-1 relative bg-white h-full" style={{ backgroundColor: '#ffffff' }}>
+                            {hours.map(h => (
+                                <div key={`row-${h}`} className="absolute w-full border-b border-gray-100" style={{ top: `${(h - startHour + 1) * cellHeight}px`, borderColor: '#f3f4f6' }}></div>
+                            ))}
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={`col-${i}`} className="absolute h-full border-r border-gray-100" style={{ left: `${i * 20}%`, borderColor: '#f3f4f6' }}></div>
+                            ))}
+                            {lectureBlocks}
+                        </div>
                     </div>
-                )}
+                </div>
             </div>
+            {cyberLectures.length > 0 && (
+                <div className="p-4 border-t bg-gray-50 mt-auto" style={{ backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }}>
+                    <h4 className="text-sm font-bold mb-2" style={{ color: '#4b5563' }}>기타 / 사이버 강의</h4>
+                    <div className="flex flex-wrap gap-2">
+                        {cyberLectures.map(lec => (
+                            <div key={lec.id} onClick={() => onLectureClick(lec)} className="bg-white px-3 py-2 rounded border shadow-sm text-sm flex items-center gap-2 group cursor-pointer" style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
+                                <div>
+                                    <span className="font-semibold mr-2" style={{ color: '#374151' }}>{lec.courseName}</span>
+                                    <span className="text-xs" style={{ color: '#6b7280' }}>{lec.professor}</span>
+                                </div>
+                                <button 
+                                    data-html2canvas-ignore="true"
+                                    onClick={(e) => { e.stopPropagation(); onDeleteLecture(lec.id); }}
+                                    className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <i className="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 });

@@ -194,7 +194,7 @@ export default function AutoScheduleModal({ isOpen, onClose, onGenerate, departm
                             <div className="space-y-3">
                                 <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                     <span className="bg-gradient-to-br from-red-400 to-red-600 text-white w-6 h-6 flex items-center justify-center rounded-lg text-xs shadow-sm">4</span>
-                                    목표 학점 범위 (최종 합계)
+                                    목표 학점 범위
                                 </label>
                                 <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                                     <div className="flex-1 text-center">
@@ -224,12 +224,12 @@ export default function AutoScheduleModal({ isOpen, onClose, onGenerate, departm
                                     <span className="bg-gradient-to-br from-red-400 to-red-600 text-white w-6 h-6 flex items-center justify-center rounded-lg text-xs shadow-sm">5</span>
                                     수업 가능한 요일
                                 </label>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 overflow-x-auto pb-1">
                                     {days.map(day => (
                                         <button
                                             key={day}
                                             onClick={() => handleDayToggle(day)}
-                                            className={`flex-1 py-3 rounded-xl font-bold transition-all shadow-sm ${
+                                            className={`flex-1 py-3 px-2 rounded-xl font-bold transition-all shadow-sm min-w-[50px] ${
                                                 config.preferredDays.includes(day)
                                                     ? "bg-gray-800 text-white transform scale-105"
                                                     : "bg-white border text-gray-400 hover:bg-gray-50"
@@ -246,7 +246,7 @@ export default function AutoScheduleModal({ isOpen, onClose, onGenerate, departm
                                     <span className="bg-gradient-to-br from-red-400 to-red-600 text-white w-6 h-6 flex items-center justify-center rounded-lg text-xs shadow-sm">6</span>
                                     추가 옵션
                                 </label>
-                                <div className="flex gap-3">
+                                <div className="flex flex-col sm:flex-row gap-3">
                                     <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all shadow-sm ${config.avoidLunch ? 'bg-orange-50 border-orange-200 text-orange-700 font-bold' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
                                         <input type="checkbox" className="hidden" checked={config.avoidLunch} onChange={(e) => setConfig({...config, avoidLunch: e.target.checked})} />
                                         <i className="fas fa-utensils"></i> 점심시간 비우기

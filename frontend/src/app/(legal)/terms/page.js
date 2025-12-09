@@ -19,7 +19,6 @@ export default function TermsPage() {
             `}</style>
 
             <main className="max-w-4xl mx-auto px-4 py-10 animate-fadeIn">
-                {/* Header */}
                 <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-gray-700 to-gray-900 text-white shadow-lg text-center relative overflow-hidden">
                     <div className="relative z-10">
                         <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
@@ -36,8 +35,6 @@ export default function TermsPage() {
 
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="p-6 md:p-10 space-y-12">
-                        
-                        {/* 1. 목적 */}
                         <section>
                             <div className="flex items-center gap-3 mb-4">
                                 <span className="w-10 h-10 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center text-xl">
@@ -55,7 +52,6 @@ export default function TermsPage() {
 
                         <hr className="border-gray-100" />
 
-                        {/* 2. 정의 */}
                         <section>
                             <div className="flex items-center gap-3 mb-4">
                                 <span className="w-10 h-10 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center text-xl">
@@ -83,7 +79,6 @@ export default function TermsPage() {
 
                         <hr className="border-gray-100" />
 
-                        {/* 3. 약관 게시 및 개정 */}
                         <section>
                             <div className="flex items-center gap-3 mb-4">
                                 <span className="w-10 h-10 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center text-xl">
@@ -100,7 +95,6 @@ export default function TermsPage() {
 
                         <hr className="border-gray-100" />
 
-                         {/* 4. 이용계약 체결 */}
                          <section>
                             <div className="flex items-center gap-3 mb-4">
                                 <span className="w-10 h-10 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center text-xl">
@@ -121,7 +115,6 @@ export default function TermsPage() {
 
                         <hr className="border-gray-100" />
 
-                        {/* 5. 의무 (회사/회원) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <section>
                                 <h2 className="text-lg font-bold text-gray-800 mb-3">제5조 (회사의 의무)</h2>
@@ -157,7 +150,6 @@ export default function TermsPage() {
 
                         <hr className="border-gray-100" />
 
-                        {/* 7 ~ 11. 나머지 조항들 */}
                         <section>
                             <h2 className="text-xl font-bold text-gray-800 mb-4">기타 조항</h2>
                             <div className="space-y-6">
@@ -187,7 +179,6 @@ export default function TermsPage() {
                     </div>
                 </div>
 
-                {/* Footer Note */}
                 <div className="mt-8 text-center space-y-4">
                     <p className="text-sm text-gray-500">
                         <span className="mr-4"><b>공고일자:</b> 2025년 10월 10일</span>

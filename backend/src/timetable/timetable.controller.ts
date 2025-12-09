@@ -8,18 +8,14 @@ import {
   Get,
   Query,
   UseGuards,
-  Put,
   Param,
-  HttpCode,
-  HttpStatus,
   Delete,
-  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PdfParserService } from './pdf-parser.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
-import { Lecture, ScheduleItem } from './lecture.entity';
+import { Repository} from 'typeorm';
+import { Lecture} from './lecture.entity';
 import { StandardizedTimetable } from './timetable.interface';
 import { HtmlScraperService } from './html-scraper.service';
 import { DynamicScraperService } from './dynamic-scraper.service';
