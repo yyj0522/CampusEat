@@ -9,7 +9,7 @@ import { useAuth } from "../../context/AuthProvider";
 const SkeletonLoader = () => (
   <div className="space-y-4 animate-pulse">
     {[1, 2, 3].map((i) => (
-      <div key={i} className="bg-gray-100 rounded-2xl h-32 w-full"></div>
+      <div key={i} className="bg-white/70 border border-gray-200/70 rounded-3xl h-32 w-full"></div>
     ))}
   </div>
 );
@@ -104,34 +104,50 @@ export default function CampusStatusPage() {
     <>
       <style jsx global>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-fadeIn { animation: fadeIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
       `}</style>
 
-      <div className="mb-6 border-b border-gray-200" role="tablist">
-        <div className="flex space-x-6">
-          <button 
+      <div className="mb-8 flex flex-col gap-3">
+        <div
+          className="inline-flex w-fit items-center gap-2 rounded-2xl border border-gray-200/70 bg-white/80 p-1 shadow-sm ring-1 ring-black/[0.03] backdrop-blur"
+          role="tablist"
+          aria-label="캠퍼스 현황 탭"
+        >
+          <button
             role="tab"
             aria-selected={activeTab === 'REALTIME'}
             onClick={() => setActiveTab('REALTIME')}
-            className={`pb-3 font-bold transition-all flex items-center gap-2 text-base ${activeTab === 'REALTIME' ? 'text-indigo-700 border-b-2 border-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`rounded-xl px-4 py-2 text-sm font-extrabold tracking-tight transition ${
+              activeTab === 'REALTIME'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
           >
-            실시간 현황
+            실시간
           </button>
-          <button 
+          <button
             role="tab"
             aria-selected={activeTab === 'FORECAST'}
             onClick={() => setActiveTab('FORECAST')}
-            className={`pb-3 font-bold transition-all flex items-center gap-2 text-base ${activeTab === 'FORECAST' ? 'text-indigo-700 border-b-2 border-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`rounded-xl px-4 py-2 text-sm font-extrabold tracking-tight transition ${
+              activeTab === 'FORECAST'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
           >
-            AI 혼잡도 예측 (Beta)
+            AI 예측 <span className="opacity-70">(Beta)</span>
           </button>
         </div>
+
+        <p className="text-sm text-gray-500 font-medium leading-relaxed">
+          실시간 탭은 최근 제보를 요약해 보여주고, AI 예측 탭은 과거 데이터를 학습한 모델 기반 혼잡 타임라인을 제공합니다.
+        </p>
       </div>
 
       {authLoading || !user ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2"><SkeletonLoader /></div>
-          <div className="lg:col-span-1 h-64 bg-gray-50 rounded-[2rem] animate-pulse"></div>
+          <div className="lg:col-span-1 h-64 bg-white/70 border border-gray-200/70 rounded-[2rem] animate-pulse"></div>
         </div>
       ) : (
         <>

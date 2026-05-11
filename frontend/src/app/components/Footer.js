@@ -5,13 +5,7 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 
 export default function Footer() {
   const companyInfo = {
-    name: "캠퍼스잇 주식회사",
-    ceo: "유영재",
-    address: "OO시 OO구 OO로 OOO, O층 (OO동, OO빌딩)",
-    registrationNumber: "XXX-XX-XXXXX",
-    reportNumber: "2025-서울강남-XXXX",
     email: "projectc029@gmail.com",
-    phone: "02-0000-0000",
   };
 
   const footerSections = [
@@ -43,18 +37,11 @@ export default function Footer() {
     }
   ];
 
-  const socialLinks = [
-    { icon: "instagram", href: "https://www.instagram.com" },
-    { icon: "facebook-f", href: "https://www.facebook.com" },
-    { icon: "youtube", href: "https://www.youtube.com" },
-    { icon: "twitter", href: "https://twitter.com" },
-  ];
-
   return (
-    <footer className="bg-white border-t border-gray-100 pt-16 pb-8 text-gray-600 font-sans">
+    <footer className="bg-white border-t border-gray-100 py-10 text-gray-600 font-sans">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16">
-          <div className="lg:col-span-4 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <div className="lg:col-span-4 space-y-4">
             <div>
               <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-pink-500">
@@ -65,17 +52,6 @@ export default function Footer() {
                 대학생을 위한 올인원 라이프 스타일 플랫폼.<br />
                 점심추천부터 시간표, 중고거래까지 캠퍼스잇과 함께하세요.
               </p>
-            </div>
-            <div className="flex gap-4">
-              {socialLinks.map((social, idx) => (
-                <Link 
-                  key={idx} 
-                  href={social.href}
-                  className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-indigo-500 transition-all duration-300"
-                >
-                  <i className={`fab fa-${social.icon} text-lg`}></i>
-                </Link>
-              ))}
             </div>
           </div>
 
@@ -100,26 +76,13 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-gray-100 pt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="text-xs text-gray-400 space-y-1.5">
-            </div>
-            <div className="text-xs text-gray-400 md:text-right space-y-1.5">
-              <div className="flex md:justify-end gap-4">
-                <a href={`mailto:${companyInfo.email}`} className="hover:text-gray-600">이메일: {companyInfo.email}</a>
-                <span className="hidden md:inline">|</span>
-                <a href={`tel:${companyInfo.phone}`} className="hover:text-gray-600">고객센터: {companyInfo.phone}</a>
-              </div>
-              <p>운영시간: 평일 10:00 ~ 18:00 (주말/공휴일 휴무)</p>
-            </div>
-          </div>
-          
-          <div className="flex flex-col md:flex-row justify-between items-center pt-4 border-t border-gray-50">
-            <p className="text-xs text-gray-400">
-              &copy; {new Date().getFullYear()} Campuseat Corp. All rights reserved.
-            </p>
-            <p className="text-[10px] text-gray-300 mt-2 md:mt-0">
-              캠퍼스잇은 통신판매중개자이며 통신판매의 당사자가 아닙니다. 상품 거래 정보 및 거래에 대한 책임은 판매자에게 있습니다.
+        <div className="mt-10 border-t border-gray-100 pt-6">
+          <div className="flex flex-col gap-2 text-xs text-gray-400 md:flex-row md:items-center md:justify-between">
+            <a href={`mailto:${companyInfo.email}`} className="hover:text-gray-600">
+              이메일: {companyInfo.email}
+            </a>
+            <p>
+              &copy; 2026 Campuseat Corp. All rights reserved.
             </p>
           </div>
         </div>

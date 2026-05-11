@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthProvider";
 import apiClient from "../../../lib/api";
+
+const SLIDE_INTERVAL_MS = 5500;
+const slideEase = [0.22, 1, 0.36, 1];
 
 export default function HomePage() {
   const router = useRouter();
@@ -12,6 +16,7 @@ export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slides, setSlides] = useState([]);
   const [notices, setNotices] = useState([]);
+  const [slideshowPaused, setSlideshowPaused] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,14 +37,39 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (slides.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-      }, 5000);
-      return () => clearInterval(interval);
-    }
+  const goNextSlide = useCallback(() => {
+    setCurrentSlide((prev) =>
+      slides.length === 0 ? 0 : prev === slides.length - 1 ? 0 : prev + 1
+    );
   }, [slides.length]);
+
+  const goPrevSlide = useCallback(() => {
+    setCurrentSlide((prev) =>
+      slides.length === 0 ? 0 : prev === 0 ? slides.length - 1 : prev - 1
+    );
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (slides.length <= 1 || slideshowPaused) return;
+    const interval = setInterval(goNextSlide, SLIDE_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [slides.length, slideshowPaused, goNextSlide]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (slides.length === 0) return;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goPrevSlide();
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        goNextSlide();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [slides.length, goNextSlide, goPrevSlide]);
 
   const handleNavigation = (path) => {
     if (!user && path !== "/login") {
@@ -56,9 +86,9 @@ export default function HomePage() {
       subtitle: "최고의 선택을 도와드려요",
       icon: "fa-utensils",
       path: "/restaurant",
-      bg: "bg-orange-50 hover:bg-orange-100",
-      accent: "text-orange-500",
-      iconBg: "bg-orange-100",
+      bar: "from-orange-400 to-amber-500",
+      iconBg: "bg-orange-50",
+      accent: "text-orange-600",
     },
     {
       id: "meeting",
@@ -66,9 +96,9 @@ export default function HomePage() {
       subtitle: "맘이 통하는 친구를 찾아 보세요",
       icon: "fa-bolt",
       path: "/meeting",
-      bg: "bg-yellow-50 hover:bg-yellow-100",
-      accent: "text-yellow-500",
-      iconBg: "bg-yellow-100",
+      bar: "from-amber-400 to-yellow-500",
+      iconBg: "bg-amber-50",
+      accent: "text-amber-600",
     },
     {
       id: "community",
@@ -76,9 +106,9 @@ export default function HomePage() {
       subtitle: "전국의 학우들과 소통해 보세요",
       icon: "fa-comments",
       path: "/community",
-      bg: "bg-indigo-50 hover:bg-indigo-100",
+      bar: "from-indigo-500 to-violet-500",
+      iconBg: "bg-indigo-50",
       accent: "text-indigo-600",
-      iconBg: "bg-indigo-100",
     },
     {
       id: "time",
@@ -86,9 +116,9 @@ export default function HomePage() {
       subtitle: "나만의 시간표를 작성해 보세요",
       icon: "fa-clock",
       path: "/time",
-      bg: "bg-blue-50 hover:bg-blue-100",
-      accent: "text-blue-500",
-      iconBg: "bg-blue-100",
+      bar: "from-sky-400 to-blue-600",
+      iconBg: "bg-sky-50",
+      accent: "text-sky-600",
     },
     {
       id: "book",
@@ -96,229 +126,364 @@ export default function HomePage() {
       subtitle: "더 이상 쓰지 않는 교재를 판매해 보세요",
       icon: "fa-book",
       path: "/book",
-      bg: "bg-emerald-50 hover:bg-emerald-100",
+      bar: "from-emerald-400 to-teal-500",
+      iconBg: "bg-emerald-50",
       accent: "text-emerald-600",
-      iconBg: "bg-emerald-100",
     },
   ];
 
-  if (loading) return <div className="min-h-screen bg-white" />;
+  if (loading) return <div className="min-h-screen bg-gray-50" />;
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <main className="pb-24 pt-4 md:pt-8 px-4 md:px-8 max-w-7xl mx-auto space-y-8">
-        
-        <section className="relative w-full rounded-[2.5rem] overflow-hidden shadow-2xl shadow-gray-200/50 group md:h-[400px]">
+    <div className="min-h-screen bg-gray-50/90 bg-[radial-gradient(ellipse_120%_70%_at_50%_-8%,rgba(99,102,241,0.07),transparent_52%)]">
+      <main className="mx-auto max-w-7xl space-y-10 px-4 pb-24 pt-5 md:space-y-12 md:px-8 md:pt-10">
+        <section
+          className="relative isolate w-full overflow-hidden rounded-[1.75rem] shadow-[0_24px_56px_-18px_rgba(15,23,42,0.14)] ring-1 ring-black/[0.05] md:h-[420px] md:rounded-[2rem]"
+          onMouseEnter={() => setSlideshowPaused(true)}
+          onMouseLeave={() => setSlideshowPaused(false)}
+          aria-roledescription="carousel"
+          aria-label="추천 소식 슬라이드"
+        >
           {slides.length === 0 ? (
-            <div className="w-full h-[300px] md:h-full bg-white flex items-center justify-center text-gray-400">
-              슬라이드를 불러오는 중...
+            <div className="flex h-[280px] w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-gray-100 via-white to-gray-50 text-gray-400 md:h-full">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+              <span className="text-sm font-medium">슬라이드를 불러오는 중...</span>
             </div>
           ) : (
             <>
-              <div className="block md:hidden aspect-[4/3] w-full relative">
-                 <div
-                    className="flex w-full h-full transition-transform duration-700 cubic-bezier(0.4, 0, 0.2, 1)"
-                    style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-                 >
-                    {slides.map((slide, idx) => (
-                      <div key={idx} className="min-w-full h-full relative">
-                        <Image
-                          src={slide.slideImage}
-                          alt={slide.title}
-                          fill
-                          className="object-cover"
-                          priority={idx === 0}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
-                           <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                              <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md text-white text-xs font-bold rounded-full mb-3 border border-white/10">
-                                  HOT ISSUE
-                              </span>
-                              <h2 className="text-2xl font-bold text-white mb-2 leading-tight">
-                                 {slide.slideCaption}
-                              </h2>
-                              <p className="text-white/80 text-sm mb-6 line-clamp-1">
-                                 {slide.slideCaptionSmall || slide.title}
-                              </p>
-                              <button
-                                onClick={() => handleNavigation(`/community/${slide.id}`)}
-                                className="px-6 py-2.5 bg-white text-black text-sm font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
-                              >
-                                자세히 보기
-                              </button>
-                           </div>
+              <div className="relative block aspect-[4/3] w-full touch-pan-y md:hidden">
+                <motion.div
+                  className="flex h-full w-full"
+                  animate={{ x: `-${currentSlide * 100}%` }}
+                  transition={{
+                    type: "tween",
+                    duration: 0.55,
+                    ease: slideEase,
+                  }}
+                >
+                  {slides.map((slide, idx) => (
+                    <div
+                      key={slide.id ?? idx}
+                      className="relative h-full min-w-full shrink-0"
+                    >
+                      <Image
+                        src={slide.slideImage}
+                        alt={slide.title}
+                        fill
+                        className="object-cover"
+                        priority={idx === 0}
+                        sizes="100vw"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/28 to-black/10" />
+                      <div className="absolute inset-0 flex flex-col justify-end p-6 pb-14">
+                        <div className="space-y-3">
+                          <h2 className="text-xl font-bold leading-snug tracking-tight text-white drop-shadow-sm">
+                            {slide.slideCaption}
+                          </h2>
+                          <p className="line-clamp-2 text-sm leading-relaxed text-white/88">
+                            {slide.slideCaptionSmall || slide.title}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleNavigation(`/community/${slide.id}`)
+                            }
+                            className="inline-flex w-fit items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 shadow-lg transition hover:bg-gray-50 active:scale-[0.98]"
+                          >
+                            자세히 보기
+                            <i className="fas fa-arrow-right text-xs opacity-70" />
+                          </button>
                         </div>
                       </div>
-                    ))}
-                 </div>
+                    </div>
+                  ))}
+                </motion.div>
+                <button
+                  type="button"
+                  aria-label="이전 슬라이드"
+                  onClick={goPrevSlide}
+                  className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white backdrop-blur-md transition hover:bg-black/50"
+                >
+                  <i className="fas fa-chevron-left text-xs" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="다음 슬라이드"
+                  onClick={goNextSlide}
+                  className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white backdrop-blur-md transition hover:bg-black/50"
+                >
+                  <i className="fas fa-chevron-right text-xs" />
+                </button>
               </div>
 
-              <div className="hidden md:block w-full h-full bg-white relative">
-                 {slides.map((slide, idx) => {
-                    return (
-                        <div 
-                            key={idx}
-                            className={`absolute inset-0 flex transition-opacity duration-1000 ${currentSlide === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                            style={{ backgroundColor: slide.slideBackgroundColor || '#EBF5FF' }}
-                        >
-                            <div className="w-1/2 h-full flex flex-col justify-center items-start p-12 lg:p-20 z-10">
-                                <span className={`inline-block px-4 py-1.5 bg-black text-white text-xs font-bold rounded-full mb-6 shadow-sm`}>
-                                    HOT ISSUE
-                                </span>
-                                <h2 className="text-4xl lg:text-5xl font-extrabold text-gray-900 mb-4 leading-tight break-keep tracking-tight">
-                                    {slide.slideCaption}
-                                </h2>
-                                <p className="text-gray-600 text-lg mb-8 font-medium">
-                                    {slide.slideCaptionSmall || slide.title}
-                                </p>
-                                <button
-                                    onClick={() => handleNavigation(`/community/${slide.id}`)}
-                                    className={`px-8 py-3.5 bg-black hover:bg-gray-800 text-white text-base font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5`}
-                                >
-                                    자세히 보기
-                                </button>
-                            </div>
-                            
-                            <div className="w-1/2 h-full relative flex items-end justify-center overflow-hidden">
-                                <div className={`absolute w-[400px] h-[400px] rounded-full bg-white blur-3xl opacity-40 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2`}></div>
-                                <div className="relative w-full h-full z-10">
-                                    <Image
-                                        src={slide.slideImage}
-                                        alt={slide.title}
-                                        fill
-                                        className="object-contain object-bottom" 
-                                        priority={idx === 0}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    );
-                 })}
+              <div className="relative hidden min-h-[380px] w-full md:block md:h-full">
+                <AnimatePresence initial={false} mode="wait">
+                  <motion.div
+                    key={currentSlide}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.45, ease: slideEase }}
+                    className="absolute inset-0 flex"
+                    style={{
+                      backgroundColor:
+                        slides[currentSlide]?.slideBackgroundColor || "#EBF5FF",
+                    }}
+                  >
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_55%_at_18%_22%,rgba(255,255,255,0.55),transparent_55%),radial-gradient(ellipse_55%_45%_at_92%_78%,rgba(255,255,255,0.38),transparent_52%)]" />
+                    <div className="relative z-10 flex w-full flex-col justify-center px-10 py-10 lg:w-[48%] lg:px-16 lg:py-14 xl:px-20">
+                      <motion.h2
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.06, duration: 0.4, ease: slideEase }}
+                        className="mb-4 break-keep text-3xl font-extrabold leading-[1.15] tracking-tight text-gray-900 lg:text-4xl xl:text-[2.65rem]"
+                      >
+                        {slides[currentSlide]?.slideCaption}
+                      </motion.h2>
+                      <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1, duration: 0.4, ease: slideEase }}
+                        className="mb-8 max-w-md text-base font-medium leading-relaxed text-gray-600 lg:text-lg"
+                      >
+                        {slides[currentSlide]?.slideCaptionSmall ||
+                          slides[currentSlide]?.title}
+                      </motion.p>
+                      <motion.button
+                        type="button"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.14, duration: 0.35 }}
+                        onClick={() =>
+                          handleNavigation(
+                            `/community/${slides[currentSlide]?.id}`
+                          )
+                        }
+                        className="group inline-flex w-fit items-center gap-2 rounded-2xl bg-gray-900 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-gray-900/18 transition hover:bg-gray-800 hover:shadow-xl active:scale-[0.99]"
+                      >
+                        자세히 보기
+                        <i className="fas fa-arrow-right text-sm transition-transform group-hover:translate-x-0.5" />
+                      </motion.button>
+                    </div>
+                    <div className="relative z-10 flex flex-1 items-end justify-center overflow-hidden pb-4 pr-6 lg:pr-10">
+                      <div className="absolute right-[8%] top-[18%] h-[min(420px,55vh)] w-[min(420px,55vh)] rounded-full bg-white/50 blur-3xl" />
+                      <motion.div
+                        className="relative h-full w-full max-w-[min(100%,520px)]"
+                        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.5, ease: slideEase }}
+                      >
+                        <Image
+                          src={slides[currentSlide]?.slideImage}
+                          alt={slides[currentSlide]?.title}
+                          fill
+                          className="object-contain object-bottom drop-shadow-[0_22px_44px_rgba(0,0,0,0.11)]"
+                          sizes="(min-width: 768px) 50vw, 100vw"
+                          priority={currentSlide === 0}
+                        />
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+                <button
+                  type="button"
+                  aria-label="이전 슬라이드"
+                  onClick={goPrevSlide}
+                  className="absolute left-4 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-gray-900/10 bg-white/85 text-gray-800 shadow-lg backdrop-blur-md transition hover:bg-white hover:shadow-xl"
+                >
+                  <i className="fas fa-chevron-left text-sm" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="다음 슬라이드"
+                  onClick={goNextSlide}
+                  className="absolute right-4 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-gray-900/10 bg-white/85 text-gray-800 shadow-lg backdrop-blur-md transition hover:bg-white hover:shadow-xl"
+                >
+                  <i className="fas fa-chevron-right text-sm" />
+                </button>
               </div>
-              
-              <div className="absolute bottom-6 right-6 md:bottom-10 md:left-20 md:right-auto flex gap-3 z-20">
-                {slides.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentSlide(idx)}
-                    className={`h-2 rounded-full transition-all duration-500 ${
-                      currentSlide === idx 
-                        ? `w-8 bg-black` 
-                        : "w-2 bg-gray-400/50 hover:bg-gray-500/50"
-                    }`}
-                  />
-                ))}
+
+              <div className="pointer-events-none absolute bottom-4 left-0 right-0 z-30 flex justify-center px-4 md:bottom-6">
+                <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/22 bg-black/38 px-3 py-2 backdrop-blur-md md:border-gray-900/10 md:bg-white/88">
+                  {slides.map((_, idx) => (
+                    <motion.button
+                      key={idx}
+                      type="button"
+                      aria-label={`슬라이드 ${idx + 1}로 이동`}
+                      aria-current={idx === currentSlide ? "true" : undefined}
+                      onClick={() => setCurrentSlide(idx)}
+                      className="h-2 overflow-hidden rounded-full bg-white/32 md:bg-gray-900/14"
+                      initial={false}
+                      animate={{
+                        width: idx === currentSlide ? 28 : 8,
+                        opacity: idx === currentSlide ? 1 : 0.5,
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 34,
+                      }}
+                    >
+                      <span className="block h-full w-full rounded-full bg-white md:bg-gray-900" />
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             </>
           )}
         </section>
 
-        <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
           {menuItems.map((item) => (
-            <div
+            <motion.div
               key={item.id}
+              role="button"
+              tabIndex={0}
               onClick={() => handleNavigation(item.path)}
-              className={`
-                relative group overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1
-                ${item.bg} 
-                border border-white/50
-                flex flex-col justify-between min-h-[140px] md:min-h-[180px]
-              `}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNavigation(item.path);
+                }
+              }}
+              whileHover={{ y: -3 }}
+              transition={{ type: "spring", stiffness: 400, damping: 28 }}
+              className="group relative flex min-h-[132px] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-gray-200/80 bg-white/90 p-4 shadow-sm ring-1 ring-black/[0.03] backdrop-blur-sm md:min-h-[168px] md:rounded-3xl md:p-5"
             >
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div className={`w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm mb-4 group-hover:scale-110 transition-transform duration-300 ${item.accent}`}>
-                  <i className={`fas ${item.icon} text-xl`}></i>
+              <div
+                className={`absolute left-0 top-0 h-full w-1 bg-gradient-to-b ${item.bar}`}
+                aria-hidden
+              />
+              <div className="relative z-10 flex flex-col justify-between gap-4 pl-2">
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-2xl ${item.iconBg} shadow-inner transition-transform duration-300 group-hover:scale-105 md:h-12 md:w-12`}
+                >
+                  <i className={`fas ${item.icon} text-lg ${item.accent}`} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 group-hover:text-gray-700">{item.title}</h3>
-                  <p className="text-sm text-gray-500 mt-1 font-medium group-hover:text-gray-600">{item.subtitle}</p>
+                  <h3 className="text-base font-bold tracking-tight text-gray-900 md:text-lg">
+                    {item.title}
+                  </h3>
+                  <p className="mt-1 text-xs font-medium leading-snug text-gray-500 md:text-sm">
+                    {item.subtitle}
+                  </p>
                 </div>
               </div>
-              
-              <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full opacity-10 group-hover:scale-150 transition-transform duration-500 ${item.accent.replace("text", "bg")}`}></div>
-            </div>
+              <div className="pointer-events-none absolute -right-6 -bottom-8 h-28 w-28 rounded-full bg-gradient-to-br from-gray-100 to-transparent opacity-60 transition-transform duration-500 group-hover:scale-110" />
+            </motion.div>
           ))}
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-6 bg-purple-600 rounded-full"></span>
-                <h2 className="text-xl font-bold text-gray-900">최신 공지사항</h2>
+        <section className="grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2 overflow-hidden rounded-[1.75rem] border border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-black/[0.03] backdrop-blur-sm md:rounded-3xl">
+            <div className="border-b border-gray-100/90 bg-gradient-to-r from-gray-50/90 to-white px-6 py-5 md:px-8 md:py-6">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">
+                    Campus
+                  </p>
+                  <h2 className="mt-0.5 text-xl font-bold tracking-tight text-gray-900 md:text-2xl">
+                    최신 공지사항
+                  </h2>
+                </div>
               </div>
             </div>
-            
-            <div className="flex flex-col gap-3">
+            <div className="p-4 md:p-6">
               {notices.length === 0 ? (
-                <div className="py-10 text-center text-gray-400 bg-gray-50 rounded-2xl">
+                <div className="rounded-2xl bg-gray-50/90 py-14 text-center text-sm font-medium text-gray-400">
                   등록된 공지사항이 없습니다.
                 </div>
               ) : (
-                notices.map((notice) => (
-                  <div
-                    key={notice.id}
-                    onClick={() => handleNavigation(`/community/${notice.id}`)}
-                    className="group flex items-center justify-between p-4 rounded-2xl hover:bg-purple-50 transition-colors cursor-pointer border border-transparent hover:border-purple-100"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 flex-1 min-w-0">
-                      <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-gray-100 text-gray-500 text-[10px] font-bold w-fit">
-                        NOTICE
-                      </span>
-                      <h3 className="text-sm md:text-base font-semibold text-gray-800 truncate group-hover:text-purple-700 transition-colors">
-                        {notice.title}
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-4 pl-4">
-                      <span className="text-xs text-gray-400 font-medium whitespace-nowrap">
-                        {new Date(notice.createdAt).toLocaleDateString("ko-KR", {month: "2-digit", day: "2-digit"})}
-                      </span>
-                      <i className="fas fa-chevron-right text-gray-300 text-xs group-hover:text-purple-500 group-hover:translate-x-1 transition-transform"></i>
-                    </div>
-                  </div>
-                ))
+                <ul className="divide-y divide-gray-100">
+                  {notices.map((notice) => (
+                    <li key={notice.id}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleNavigation(`/community/${notice.id}`)
+                        }
+                        className="group flex w-full items-center gap-4 rounded-xl px-3 py-4 text-left transition hover:bg-gray-50/95 md:px-4"
+                      >
+                        <span className="hidden w-14 shrink-0 text-right text-xs font-medium tabular-nums text-gray-400 sm:block">
+                          {new Date(notice.createdAt).toLocaleDateString(
+                            "ko-KR",
+                            { month: "2-digit", day: "2-digit" }
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-indigo-700 md:text-[15px]">
+                            {notice.title}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] text-gray-400 sm:hidden">
+                            {new Date(notice.createdAt).toLocaleDateString(
+                              "ko-KR",
+                              { month: "2-digit", day: "2-digit" }
+                            )}
+                          </span>
+                        </span>
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200/80 bg-white text-gray-400 transition group-hover:border-indigo-200 group-hover:bg-indigo-50 group-hover:text-indigo-600">
+                          <i className="fas fa-chevron-right text-xs transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden group cursor-pointer" onClick={() => handleNavigation("/restaurant")}>
+          <div className="flex flex-col gap-5">
+            <motion.button
+              type="button"
+              whileHover={{ y: -2 }}
+              transition={{ type: "spring", stiffness: 380, damping: 26 }}
+              onClick={() => handleNavigation("/restaurant")}
+              className="group relative overflow-hidden rounded-[1.75rem] border border-gray-800/20 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-left text-white shadow-xl shadow-slate-900/25 md:rounded-3xl md:p-8"
+            >
+              <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-amber-400/25 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-violet-500/20 blur-3xl" />
               <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-4 text-yellow-400">
-                  <i className="fas fa-star text-sm"></i>
-                  <span className="text-xs font-bold tracking-wider">학우들의 PICK!</span>
-                </div>
-                <h3 className="text-2xl font-bold mb-2">오늘 점심,<br/>어디서 먹을까?</h3>
-                <p className="text-gray-400 text-sm mb-6">실패 없는 맛집 큐레이션</p>
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-sm group-hover:bg-white group-hover:text-black transition-all">
-                  <i className="fas fa-arrow-right"></i>
-                </div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">
+                  맛집
+                </p>
+                <h3 className="mt-2 text-2xl font-bold leading-snug tracking-tight">
+                  오늘 점심,
+                  <br />
+                  어디서 먹을까?
+                </h3>
+                <p className="mt-3 max-w-[220px] text-sm leading-relaxed text-white/65">
+                  실패 없는 맛집 큐레이션
+                </p>
+                <span className="mt-6 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-sm transition group-hover:border-white/30 group-hover:bg-white group-hover:text-slate-900">
+                  <i className="fas fa-arrow-right text-sm" />
+                </span>
               </div>
-              <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
-              <div className="absolute bottom-0 right-0 w-40 h-40 bg-purple-500/20 rounded-full blur-2xl translate-y-1/2 translate-x-1/4"></div>
-            </div>
+            </motion.button>
 
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center items-center text-center group cursor-pointer" onClick={() => handleNavigation("/meeting")}>
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative">
-                <i className="fas fa-user-friends text-blue-500 text-2xl"></i>
-                <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-bounce"></span>
+            <motion.button
+              type="button"
+              whileHover={{ y: -2 }}
+              transition={{ type: "spring", stiffness: 380, damping: 26 }}
+              onClick={() => handleNavigation("/meeting")}
+              className="group relative overflow-hidden rounded-[1.75rem] border border-gray-200/90 bg-white p-6 text-center shadow-sm ring-1 ring-black/[0.04] md:rounded-3xl md:p-7"
+            >
+              <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-sky-100/80 bg-gradient-to-br from-sky-50 to-indigo-50 shadow-inner transition group-hover:scale-[1.03]">
+                <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-35" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-2 border-white bg-sky-500 shadow-sm" />
+                </span>
+                <i className="fas fa-user-friends text-2xl text-sky-600" />
               </div>
-              <h3 className="font-bold text-gray-900 mb-1">지금 참여 가능한 모임</h3>
-              <p className="text-xs text-gray-500">새로운 친구들과 함께하세요</p>
-            </div>
+              <h3 className="font-bold text-gray-900">
+                지금 참여 가능한 모임
+              </h3>
+              <p className="mt-1.5 text-xs font-medium text-gray-500">
+                새로운 친구들과 함께하세요
+              </p>
+            </motion.button>
           </div>
         </section>
       </main>
-
-      <style jsx global>{`
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.6s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 }

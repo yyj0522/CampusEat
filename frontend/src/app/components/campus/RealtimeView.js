@@ -44,19 +44,28 @@ export default function RealtimeView({
   };
 
   const getConfidenceBadge = (score) => {
-    if (score >= 80) return <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full border border-green-200">신뢰도 높음 ({score}%)</span>;
-    if (score >= 50) return <span className="text-xs font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full border border-yellow-200">신뢰도 보통 ({score}%)</span>;
-    return <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-full border border-gray-200">확인 필요 ({score}%)</span>;
+    if (score >= 80) return <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/70">신뢰도 높음 · {score}%</span>;
+    if (score >= 50) return <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/70">신뢰도 보통 · {score}%</span>;
+    return <span className="text-[11px] font-bold text-gray-600 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200/70">확인 필요 · {score}%</span>;
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
-        <div className="flex justify-between items-center px-2">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <span className="text-2xl" aria-hidden="true"></span> {user?.university || '우리 학교'} 실시간 상황 분석
-          </h2>
-          {lastUpdated && <span className="text-xs text-gray-600 font-semibold bg-gray-100 px-3 py-1 rounded-full border border-gray-200">{formatTime(lastUpdated)} 갱신됨</span>}
+        <div className="flex flex-col gap-3 rounded-3xl border border-gray-200/70 bg-white/80 p-5 shadow-sm ring-1 ring-black/[0.03] backdrop-blur md:flex-row md:items-center md:justify-between md:p-6">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">
+              Campus status
+            </p>
+            <h2 className="mt-1 text-xl font-extrabold tracking-tight text-gray-900">
+              {user?.university || '우리 학교'} 실시간 상황 분석
+            </h2>
+          </div>
+          {lastUpdated && (
+            <span className="text-xs text-gray-600 font-semibold bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200/70 w-fit">
+              {formatTime(lastUpdated)} 갱신
+            </span>
+          )}
         </div>
 
         {summaryData && summaryData.length > 0 ? (
@@ -64,37 +73,62 @@ export default function RealtimeView({
             {summaryData.map((item, index) => {
               const style = CATEGORY_STYLES[item.category] || CATEGORY_STYLES.ETC;
               return (
-                <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border hover:shadow-md transition-shadow animate-fadeIn" style={{ animationDelay: `${index * 100}ms`, borderColor: style.border }}>
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-8 h-8 flex items-center justify-center rounded-full ${style.bg} text-lg`} aria-hidden="true">{style.icon}</span>
-                      <span className={`text-sm font-bold ${style.color}`}>{CATEGORIES.find(c => c.id === item.category)?.label || item.category}</span>
+                <div
+                  key={index}
+                  className="group overflow-hidden rounded-3xl border border-gray-200/70 bg-white/90 p-6 shadow-sm ring-1 ring-black/[0.03] transition hover:shadow-md animate-fadeIn"
+                  style={{ animationDelay: `${index * 70}ms` }}
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`flex h-10 w-10 items-center justify-center rounded-2xl ${style.bg} text-lg shadow-inner`}
+                        aria-hidden="true"
+                      >
+                        {style.icon}
+                      </span>
+                      <div>
+                        <p className={`text-sm font-extrabold ${style.color}`}>
+                          {CATEGORIES.find(c => c.id === item.category)?.label || item.category}
+                        </p>
+                        <p className="text-xs text-gray-400 font-semibold">
+                          {item.reportCount}건 제보 기반
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 font-semibold">{item.reportCount}건의 제보 분석</span>
+                    <div className="flex items-center justify-between gap-2 md:justify-end">
                       {getConfidenceBadge(item.confidence)}
                     </div>
                   </div>
-                  <p className="text-gray-800 text-lg font-medium leading-relaxed pl-10">{item.summary}</p>
+                  <div className="mt-4 rounded-2xl bg-gray-50/70 border border-gray-100 p-4">
+                    <p className="text-gray-900 text-[15px] md:text-base font-semibold leading-relaxed">
+                      {item.summary}
+                    </p>
+                  </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-[2rem] border border-gray-200 p-12 text-center shadow-sm">
-            <div className="inline-block p-4 rounded-full bg-gray-50 mb-4">
-              <span className="text-gray-300 text-3xl">✅</span>
+          <div className="overflow-hidden rounded-3xl border border-gray-200/70 bg-white/90 p-12 text-center shadow-sm ring-1 ring-black/[0.03]">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+              <span className="text-xl" aria-hidden="true">✓</span>
             </div>
-            <p className="text-gray-600 font-medium text-lg">현재 특이사항이 없습니다.</p>
+            <p className="text-gray-900 font-extrabold text-lg tracking-tight">현재 특이사항이 없습니다</p>
+            <p className="mt-2 text-sm text-gray-500 font-medium">새로운 제보가 들어오면 자동으로 반영됩니다.</p>
           </div>
         )}
       </div>
 
       <div className="lg:col-span-1">
-        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-200 p-6 sticky top-24">
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span aria-hidden="true"></span> 제보하기
-          </h3>
+        <div className="sticky top-24 rounded-[2rem] border border-gray-200/70 bg-white/85 p-6 shadow-sm ring-1 ring-black/[0.03] backdrop-blur">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h3 className="text-lg font-extrabold text-gray-900 tracking-tight">
+              제보하기
+            </h3>
+            <span className="text-[11px] font-semibold text-gray-400 bg-gray-50 border border-gray-200/70 px-2.5 py-1 rounded-full">
+              200자
+            </span>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-2" role="group" aria-label="제보 카테고리 선택">
               {CATEGORIES.map((cat) => (
@@ -103,8 +137,8 @@ export default function RealtimeView({
                   type="button"
                   aria-pressed={selectedCategory === cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 ${
-                    selectedCategory === cat.id ? 'bg-gray-900 text-white shadow-md transform scale-105' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  className={`px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-200 ${
+                    selectedCategory === cat.id ? 'bg-gray-900 text-white shadow-md' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200/70'
                   }`}
                 >
                   {cat.label}
@@ -118,15 +152,17 @@ export default function RealtimeView({
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="상황을 구체적으로 알려주세요."
-                className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-4 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none h-40 placeholder-gray-400 text-gray-900"
+                className="w-full bg-gray-50/80 border border-gray-200/70 rounded-2xl px-4 py-4 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none h-40 placeholder-gray-400 text-gray-900"
                 maxLength={200}
               />
-              <div className="absolute bottom-3 right-3 text-[10px] text-gray-500 font-medium bg-white/80 px-1 rounded">{content.length}/200</div>
+              <div className="absolute bottom-3 right-3 text-[10px] text-gray-500 font-medium bg-white/80 px-2 py-0.5 rounded-full border border-gray-200/70">
+                {content.length}/200
+              </div>
             </div>
             <button
               type="submit"
               disabled={isSubmitting || !content.trim()}
-              className={`w-full py-3.5 rounded-full font-bold text-sm shadow-lg transition-all transform active:scale-95 flex justify-center items-center ${
+              className={`w-full py-3.5 rounded-2xl font-extrabold text-sm shadow-lg transition-all transform active:scale-[0.99] flex justify-center items-center ${
                 isSubmitting || !content.trim() ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
               }`}
             >
